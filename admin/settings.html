@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - Admin - TrenCart</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../assets/css/theme.css">
+    <link rel="stylesheet" href="../assets/css/admin.css">
+</head>
+<body class="admin-body">
+
+    <nav class="admin-sidebar" id="sidebar"></nav>
+
+    <div class="admin-overlay" id="overlay"></div>
+
+    <div class="admin-main">
+        <div class="admin-topbar">
+            <div class="d-flex align-items-center gap-3">
+                <button class="menu-toggle" id="menuToggle"><i class="fas fa-bars"></i></button>
+                <h5 class="page-title">Platform Settings</h5>
+            </div>
+        </div>
+
+        <div class="admin-content">
+
+            <div id="settingsLoader" class="text-center py-5">
+                <i class="fas fa-spinner fa-spin fa-2x"></i>
+            </div>
+
+            <form id="settingsForm" style="display:none;" onsubmit="saveSettings(event)">
+                <!-- Commission -->
+                <div class="admin-card mb-4">
+                    <div class="admin-card-header">
+                        <h6 class="mb-0"><i class="fas fa-percent me-2"></i>Commission & Payouts</h6>
+                    </div>
+                    <div class="admin-card-body">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Commission Rate (%)</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="s_commission_rate"
+                                           min="0" max="50" step="0.5" required>
+                                    <span class="input-group-text">%</span>
+                                </div>
+                                <div class="form-text">Percentage taken from each shop's sales as platform fee.</div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Minimum Payout (₹)</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">₹</span>
+                                    <input type="number" class="form-control" id="s_min_payout" min="0" step="50">
+                                </div>
+                                <div class="form-text">Minimum shop earnings before a payout is triggered.</div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Payment Cycle</label>
+                                <select class="form-select" id="s_payment_cycle">
+                                    <option value="daily">Daily</option>
+                                    <option value="weekly">Weekly</option>
+                                    <option value="monthly">Monthly</option>
+                                </select>
+                                <div class="form-text">How often shop payments are settled.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Orders -->
+                <div class="admin-card mb-4">
+                    <div class="admin-card-header">
+                        <h6 class="mb-0"><i class="fas fa-shopping-bag me-2"></i>Order Settings</h6>
+                    </div>
+                    <div class="admin-card-body">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Auto-Confirm Orders (hrs)</label>
+                                <input type="number" class="form-control" id="s_order_auto_confirm_hours" min="0" step="1">
+                                <div class="form-text">0 = disabled. Orders auto-confirm after this many hours.</div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Max Return Days</label>
+                                <input type="number" class="form-control" id="s_max_return_days" min="0" step="1">
+                                <div class="form-text">Days after delivery within which returns are accepted.</div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Cash on Delivery</label>
+                                <select class="form-select" id="s_cod_enabled">
+                                    <option value="1">Enabled</option>
+                                    <option value="0">Disabled</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary px-4" id="saveBtn">
+                        <i class="fas fa-save me-2"></i>Save Settings
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" onclick="loadSettings()">
+                        <i class="fas fa-undo me-1"></i>Reset
+                    </button>
+                </div>
+            </form>
+
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../assets/js/admin-common.js"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', loadSettings);
+
+    async function loadSettings() {
+        document.getElementById('settingsLoader').style.display = '';
+        document.getElementById('settingsForm').style.display = 'none';
+        try {
+            const res  = await fetch('../api/admin/settings.php');
+            const data = await res.json();
+            if (!data.success) { alert('Failed to load settings'); return; }
+            const s = data.data;
+
+            document.getElementById('s_commission_rate').value           = s.commission_rate?.value ?? 10;
+            document.getElementById('s_min_payout').value                = s.min_payout?.value ?? 500;
+            document.getElementById('s_payment_cycle').value             = s.payment_cycle?.value ?? 'weekly';
+            document.getElementById('s_order_auto_confirm_hours').value  = s.order_auto_confirm_hours?.value ?? 24;
+            document.getElementById('s_max_return_days').value           = s.max_return_days?.value ?? 7;
+            document.getElementById('s_cod_enabled').value               = s.cod_enabled?.value ?? 1;
+
+            document.getElementById('settingsLoader').style.display = 'none';
+            document.getElementById('settingsForm').style.display   = '';
+        } catch (e) {
+            alert('Error loading settings: ' + e.message);
+        }
+    }
+
+    async function saveSettings(e) {
+        e.preventDefault();
+        const btn = document.getElementById('saveBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Saving...';
+
+        const settings = [
+            { key: 'commission_rate',           value: document.getElementById('s_commission_rate').value },
+            { key: 'min_payout',                value: document.getElementById('s_min_payout').value },
+            { key: 'payment_cycle',             value: document.getElementById('s_payment_cycle').value },
+            { key: 'order_auto_confirm_hours',  value: document.getElementById('s_order_auto_confirm_hours').value },
+            { key: 'max_return_days',           value: document.getElementById('s_max_return_days').value },
+            { key: 'cod_enabled',               value: document.getElementById('s_cod_enabled').value },
+        ];
+
+        try {
+            const res  = await fetch('../api/admin/settings.php', {
+                method:  'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body:    JSON.stringify({ settings })
+            });
+            const data = await res.json();
+            if (data.success) {
+                showAdminToast('Settings saved successfully', 'success');
+            } else {
+                showAdminToast(data.message || 'Save failed', 'error');
+            }
+        } catch (err) {
+            showAdminToast('Error: ' + err.message, 'error');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-save me-2"></i>Save Settings';
+        }
+    }
+
+    function showAdminToast(msg, type) {
+        const el = document.createElement('div');
+        el.className = `alert alert-${type === 'success' ? 'success' : 'danger'} position-fixed`;
+        el.style.cssText = 'bottom:20px;right:20px;z-index:9999;min-width:260px;';
+        el.textContent = msg;
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), 3000);
+    }
+    </script>
+</body>
+</html>

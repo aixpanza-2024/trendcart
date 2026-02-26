@@ -1,0 +1,58 @@
+/* ===================================
+   TRENCART - Color Theme Configuration
+   Black: 30% | Grey: 5% | White: 65%
+   =================================== */
+
+:root {
+    /* Primary Colors - 30% Black */
+    --primary-black: #1a1a1a;
+    --black-dark: #0d0d0d;
+    --black-light: #2d2d2d;
+
+    /* Grey Accent - 5% */
+    --grey-primary: #6c757d;
+    --grey-light: #adb5bd;
+    --grey-border: #dee2e6;
+
+    /* White & Light Tones - 65% */
+    --white-primary: #ffffff;
+    --white-secondary: #f8f9fa;
+    --white-tertiary: #e9ecef;
+
+    /* Theme Application */
+    --navbar-bg: var(--primary-black);
+    --footer-bg: var(--primary-black);
+    --body-bg: var(--white-primary);
+    --card-bg: var(--white-secondary);
+    --text-primary: var(--primary-black);
+    --text-secondary: var(--grey-primary);
+    --border-color: var(--grey-border);
+
+    /* Interactive States */
+    --hover-black: var(--black-light);
+    --hover-white: var(--white-tertiary);
+
+    /* Spacing */
+    --section-padding: 4rem 0;
+    --card-padding: 1.5rem;
+
+    /* Transitions */
+    --transition-speed: 0.3s;
+
+    /* Shadows */
+    --shadow-sm: 0 2px 4px rgba(26, 26, 26, 0.1);
+    --shadow-md: 0 4px 6px rgba(26, 26, 26, 0.15);
+    --shadow-lg: 0 10px 15px rgba(26, 26, 26, 0.2);
+}
+
+/* Dark theme text on light background */
+body {
+    background-color: var(--body-bg);
+    color: var(--text-primary);
+}
+
+/* Light text on dark background (navbar, footer) */
+.dark-bg {
+    background-color: var(--navbar-bg);
+    color: var(--white-primary);
+}

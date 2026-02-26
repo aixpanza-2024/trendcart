@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Browse all premium dress material shops on TrenCart">
+    <title>All Shops - TrenCart</title>
+
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="../assets/css/theme.css">
+    <link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+        <div class="container-fluid px-4">
+            <a class="navbar-brand" href="../index.html">
+                <img src="../assets/images/trencartlogo.png" alt="TrenCart" style="height: 36px;">
+            </a>
+            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-2">
+                    <li class="nav-item">
+                        <a class="nav-link" href="shops.html">Shops</a>
+                    </li>
+                </ul>
+                <form class="navbar-search-form d-flex" onsubmit="navProductSearch(event)">
+                    <div class="input-group">
+                        <input type="text" class="form-control nav-search-input" id="navSearchInput"
+                               placeholder="Search products..." autocomplete="off">
+                        <button class="nav-search-btn" type="submit">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </form>
+                <ul class="navbar-nav align-items-center ms-2">
+                    <li class="nav-item">
+                        <a class="nav-link" href="products.html">Products</a>
+                    </li>
+                    <li class="nav-item auth-buttons">
+                        <a class="nav-link" href="login.html">
+                            <i class="fas fa-user me-1"></i>Login
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link nav-cart-link" href="cart.html">
+                            <i class="fas fa-shopping-bag cart-icon"></i>
+                            <span class="cart-badge">0</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Page Banner -->
+    <section class="page-banner">
+        <div class="container-xl px-4">
+            <div class="d-flex align-items-end justify-content-between flex-wrap gap-3">
+                <div>
+                    <div class="pb-eyebrow">TrenCart</div>
+                    <h1 class="pb-title">All Shops</h1>
+                    <p class="pb-sub">Explore our curated collection of premium dress material shops</p>
+                    <span class="pb-count"><i class="fas fa-store"></i> <span id="shopCount">0</span> shops</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Horizontal Filter Strip -->
+    <div class="filter-strip">
+        <div class="container-xl px-4">
+            <div class="filter-row">
+                <input type="text" class="fs-search" id="shopSearch" placeholder="Search shops or city...">
+
+                <select id="shopSort">
+                    <option value="featured">Featured</option>
+                    <option value="rating">Top Rated</option>
+                    <option value="products">Most Products</option>
+                    <option value="newest">Newest</option>
+                    <option value="name">Name A–Z</option>
+                </select>
+
+                <select id="shopRating">
+                    <option value="0">All Ratings</option>
+                    <option value="4">4★ &amp; above</option>
+                    <option value="3">3★ &amp; above</option>
+                    <option value="2">2★ &amp; above</option>
+                </select>
+
+                <select id="shopCategory">
+                    <option value="0">All Categories</option>
+                </select>
+
+                <select id="shopPrice">
+                    <option value="0">Any Price</option>
+                    <option value="500">Under ₹500</option>
+                    <option value="1000">Under ₹1,000</option>
+                    <option value="2000">Under ₹2,000</option>
+                    <option value="5000">Under ₹5,000</option>
+                </select>
+
+                <button class="btn btn-outline-secondary" id="shopOffers" data-active="false">
+                    <i class="fas fa-tag"></i> Offers
+                </button>
+                <button class="btn btn-outline-secondary" id="shopTopSellers" data-active="false">
+                    <i class="fas fa-fire"></i> Top Sellers
+                </button>
+
+                <button class="btn btn-outline-primary" onclick="resetShopFilters()">
+                    <i class="fas fa-redo"></i> Reset
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Shops Grid -->
+    <div class="page-body">
+        <div class="container-xl px-4">
+            <div class="row g-4" id="shopsGrid">
+                <!-- Loaded dynamically by shops.js -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-4 mb-4">
+                    <h5><img src="../assets/images/trencartlogo.png" alt="TrenCart Logo" style="height: 35px; margin-bottom: 10px;"></h5>
+                    <p>Your premier destination for quality dress materials and fabrics. Experience the perfect blend of tradition and modernity.</p>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <h5>Quick Links</h5>
+                    <ul>
+                        <li><a href="../index.html">Home</a></li>
+                        <li><a href="shops.html">All Shops</a></li>
+                        <li><a href="cart.html">Shopping Cart</a></li>
+                        <li><a href="login.html">Login / Register</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <h5>Contact Us</h5>
+                    <ul>
+                        <li><i class="fas fa-envelope me-2"></i> info@trencart.com</li>
+                        <li><i class="fas fa-phone me-2"></i> +91 98765 43210</li>
+                        <li><i class="fas fa-map-marker-alt me-2"></i> Mumbai, India</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 TrenCart. All rights reserved. | Designed with <i class="fas fa-heart text-danger"></i></p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap 5 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Custom JavaScript -->
+    <script src="../assets/js/main.js"></script>
+    <script src="../assets/js/cart.js"></script>
+    <script src="../assets/js/auth.js"></script>
+    <script src="../assets/js/shops.js"></script>
+
+</body>
+</html>

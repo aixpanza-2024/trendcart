@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Login to your TrenCart account">
+    <title>Login - TrenCart</title>
+
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="../assets/css/theme.css">
+    <link rel="stylesheet" href="../assets/css/style.css">
+
+    <style>
+        /* Timeline Stepper */
+        .login-timeline {
+            position: relative;
+            max-width: 480px;
+            width: 100%;
+        }
+
+        .timeline-header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+
+        .timeline-header h2 {
+            font-weight: 700;
+            font-size: 1.75rem;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        .timeline-header p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            margin: 0;
+        }
+
+        /* Timeline Steps */
+        .timeline-steps {
+            position: relative;
+            padding-left: 40px;
+        }
+
+        /* Vertical line connecting steps */
+        .timeline-steps::before {
+            content: '';
+            position: absolute;
+            left: 15px;
+            top: 16px;
+            bottom: 16px;
+            width: 2px;
+            background-color: var(--grey-border);
+            transition: background 0.5s ease;
+        }
+
+        .timeline-step {
+            position: relative;
+            margin-bottom: 0;
+            padding-bottom: 2rem;
+        }
+
+        .timeline-step:last-child {
+            padding-bottom: 0;
+        }
+
+        /* Step circle indicator */
+        .timeline-step .step-dot {
+            position: absolute;
+            left: -40px;
+            top: 0;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background-color: var(--white-primary);
+            border: 2px solid var(--grey-border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--grey-light);
+            z-index: 2;
+            transition: all 0.4s ease;
+        }
+
+        .timeline-step.active .step-dot {
+            border-color: var(--primary-black);
+            background-color: var(--primary-black);
+            color: var(--white-primary);
+            box-shadow: 0 0 0 4px rgba(26, 26, 26, 0.15);
+        }
+
+        .timeline-step.completed .step-dot {
+            border-color: #198754;
+            background-color: #198754;
+            color: var(--white-primary);
+        }
+
+        /* Step content area */
+        .step-content {
+            background-color: var(--white-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 1.5rem;
+            transition: all 0.4s ease;
+        }
+
+        .timeline-step.active .step-content {
+            border-color: var(--primary-black);
+            box-shadow: var(--shadow-md);
+        }
+
+        .timeline-step:not(.active) .step-content {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        .timeline-step.completed .step-content {
+            opacity: 1;
+            pointer-events: none;
+            border-color: #198754;
+        }
+
+        .step-title {
+            font-weight: 600;
+            font-size: 1rem;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+
+        .step-title i {
+            margin-right: 0.5rem;
+        }
+
+        /* OTP Input styling */
+        .otp-inputs {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin: 1rem 0;
+        }
+
+        .otp-input {
+            width: 46px;
+            height: 52px;
+            text-align: center;
+            font-size: 1.25rem;
+            font-weight: 700;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .otp-input:focus {
+            border-color: var(--primary-black);
+            box-shadow: 0 0 0 3px rgba(26, 26, 26, 0.12);
+        }
+
+        /* Dev OTP badge */
+        .dev-otp-badge {
+            display: none;
+            background: linear-gradient(135deg, #1a1a1a, #2d2d2d);
+            color: #fff;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            text-align: center;
+            margin-bottom: 1rem;
+            font-size: 0.85rem;
+        }
+
+        .dev-otp-badge .otp-code {
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: 6px;
+            display: block;
+            margin-top: 0.25rem;
+        }
+
+        .dev-otp-badge .dev-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.7;
+        }
+
+        /* Completed email display */
+        .completed-email {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #198754;
+            font-weight: 500;
+        }
+
+        .completed-email i {
+            font-size: 1rem;
+        }
+
+        /* Step links */
+        .step-links {
+            text-align: center;
+            margin-top: 1rem;
+        }
+
+        .step-links a {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .step-links a:hover {
+            color: var(--primary-black);
+        }
+
+        .step-links .divider {
+            margin: 0 0.5rem;
+            color: var(--grey-light);
+        }
+
+        /* Progress connector */
+        .timeline-steps .progress-line {
+            position: absolute;
+            left: 15px;
+            top: 16px;
+            width: 2px;
+            height: 0;
+            background-color: #198754;
+            z-index: 1;
+            transition: height 0.5s ease;
+        }
+
+        /* Responsive */
+        @media (max-width: 576px) {
+            .login-timeline {
+                padding: 0 0.5rem;
+            }
+
+            .step-content {
+                padding: 1.25rem;
+            }
+
+            .otp-input {
+                width: 40px;
+                height: 46px;
+                font-size: 1.1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+        <div class="container-fluid px-4">
+            <a class="navbar-brand" href="../index.html">
+                <img src="../assets/images/trencartlogo.png" alt="TrenCart" style="height: 36px;">
+            </a>
+            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-2">
+                    <li class="nav-item">
+                        <a class="nav-link" href="shops.html">Shops</a>
+                    </li>
+                </ul>
+                <form class="navbar-search-form d-flex" onsubmit="navProductSearch(event)">
+                    <div class="input-group">
+                        <input type="text" class="form-control nav-search-input" id="navSearchInput"
+                               placeholder="Search products..." autocomplete="off">
+                        <button class="nav-search-btn" type="submit">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </form>
+                <ul class="navbar-nav align-items-center ms-2">
+                    <li class="nav-item">
+                        <a class="nav-link" href="products.html">Products</a>
+                    </li>
+                    <li class="nav-item auth-buttons">
+                        <a class="nav-link" href="login.html">
+                            <i class="fas fa-user me-1"></i>Login
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link nav-cart-link" href="cart.html">
+                            <i class="fas fa-shopping-bag cart-icon"></i>
+                            <span class="cart-badge">0</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Login Timeline -->
+    <section class="auth-container">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-md-7 col-lg-6">
+                    <div class="login-timeline">
+
+                        <!-- Header -->
+                        <div class="timeline-header">
+                            <h2><i class="fas fa-user-circle"></i> Login</h2>
+                            <p>Welcome back! Verify your identity to continue</p>
+                        </div>
+
+                        <!-- Timeline Steps -->
+                        <div class="timeline-steps">
+                            <!-- Progress line overlay -->
+                            <div class="progress-line" id="progressLine"></div>
+
+                            <!-- Step 1: Enter Email -->
+                            <div class="timeline-step active" id="step1">
+                                <div class="step-dot">1</div>
+                                <div class="step-content">
+                                    <div class="step-title"><i class="fas fa-envelope"></i> Enter Email</div>
+
+                                    <!-- Email form -->
+                                    <div id="emailFormContent">
+                                        <form id="loginForm">
+                                            <div class="mb-3">
+                                                <input type="email" class="form-control" id="loginEmail"
+                                                       placeholder="Enter your registered email" required>
+                                            </div>
+                                            <button type="submit" class="btn btn-primary w-100" id="loginBtn">
+                                                <i class="fas fa-paper-plane"></i> Send OTP
+                                            </button>
+                                        </form>
+                                        <div class="step-links mt-3">
+                                            <span class="text-grey">Don't have an account?</span>
+                                            <a href="register.html" class="fw-bold ms-1">Register here</a>
+                                        </div>
+                                    </div>
+
+                                    <!-- Completed state -->
+                                    <div id="emailCompleted" style="display: none;">
+                                        <div class="completed-email">
+                                            <i class="fas fa-check-circle"></i>
+                                            <span id="completedEmailText"></span>
+                                        </div>
+                                        <a href="#" id="changeEmail" class="d-inline-block mt-2" style="font-size: 0.85rem;">
+                                            <i class="fas fa-pen"></i> Change email
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Step 2: Verify OTP -->
+                            <div class="timeline-step" id="step2">
+                                <div class="step-dot">2</div>
+                                <div class="step-content">
+                                    <div class="step-title"><i class="fas fa-shield-alt"></i> Verify OTP</div>
+
+                                    <!-- Dev OTP Display -->
+                                    <div class="dev-otp-badge" id="devOtpBadge">
+                                        <span class="dev-label">Dev Mode - Your OTP</span>
+                                        <span class="otp-code" id="devOtpCode"></span>
+                                    </div>
+
+                                    <form id="verifyOtpForm">
+                                        <div class="otp-inputs">
+                                            <input type="text" class="form-control otp-input" maxlength="1" id="otp1" required>
+                                            <input type="text" class="form-control otp-input" maxlength="1" id="otp2" required>
+                                            <input type="text" class="form-control otp-input" maxlength="1" id="otp3" required>
+                                            <input type="text" class="form-control otp-input" maxlength="1" id="otp4" required>
+                                            <input type="text" class="form-control otp-input" maxlength="1" id="otp5" required>
+                                            <input type="text" class="form-control otp-input" maxlength="1" id="otp6" required>
+                                        </div>
+
+                                        <button type="submit" class="btn btn-primary w-100 mb-2" id="verifyBtn">
+                                            <i class="fas fa-check-circle"></i> Verify & Login
+                                        </button>
+                                    </form>
+
+                                    <div class="step-links">
+                                        <a href="#" id="resendOtp"><i class="fas fa-redo"></i> Resend OTP</a>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-4 mb-4">
+                    <h5><img src="../assets/images/trencartlogo.png" alt="TrenCart Logo" style="height: 35px; margin-bottom: 10px;"></h5>
+                    <p>Your premier destination for quality dress materials and fabrics.</p>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <h5>Quick Links</h5>
+                    <ul>
+                        <li><a href="../index.html">Home</a></li>
+                        <li><a href="shops.html">All Shops</a></li>
+                        <li><a href="cart.html">Shopping Cart</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <h5>Contact Us</h5>
+                    <ul>
+                        <li><i class="fas fa-envelope me-2"></i> info@trencart.com</li>
+                        <li><i class="fas fa-phone me-2"></i> +91 98765 43210</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 TrenCart. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap 5 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Custom JavaScript -->
+    <script src="../assets/js/main.js"></script>
+    <script src="../assets/js/cart.js"></script>
+    <script src="../assets/js/login-otp.js"></script>
+
+</body>
+</html>

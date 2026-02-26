@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Create a new TrenCart account">
+    <title>Register - TrenCart</title>
+
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="../assets/css/theme.css">
+    <link rel="stylesheet" href="../assets/css/style.css">
+
+    <style>
+        .otp-inputs {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin: 20px 0;
+        }
+        .otp-input {
+            width: 50px;
+            height: 60px;
+            text-align: center;
+            font-size: 24px;
+            font-weight: bold;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+        }
+        .otp-input:focus {
+            border-color: var(--primary-black);
+            outline: none;
+        }
+        .step-indicator {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+        .step {
+            display: flex;
+            align-items: center;
+            margin: 0 10px;
+        }
+        .step-number {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: var(--grey-border);
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        .step.active .step-number {
+            background-color: var(--primary-black);
+            color: white;
+        }
+        .step.completed .step-number {
+            background-color: #28a745;
+            color: white;
+        }
+
+        /* Dev OTP badge */
+        .dev-otp-badge {
+            display: none;
+            background: linear-gradient(135deg, #1a1a1a, #2d2d2d);
+            color: #fff;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+        .dev-otp-badge .otp-code {
+            font-size: 1.6rem;
+            font-weight: 700;
+            letter-spacing: 6px;
+            display: block;
+            margin-top: 0.25rem;
+        }
+        .dev-otp-badge .dev-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.7;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+        <div class="container-fluid px-4">
+            <a class="navbar-brand" href="../index.html">
+                <img src="../assets/images/trencartlogo.png" alt="TrenCart" style="height: 36px;">
+            </a>
+            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-2">
+                    <li class="nav-item">
+                        <a class="nav-link" href="shops.html">Shops</a>
+                    </li>
+                </ul>
+                <form class="navbar-search-form d-flex" onsubmit="navProductSearch(event)">
+                    <div class="input-group">
+                        <input type="text" class="form-control nav-search-input" id="navSearchInput"
+                               placeholder="Search products..." autocomplete="off">
+                        <button class="nav-search-btn" type="submit">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </form>
+                <ul class="navbar-nav align-items-center ms-2">
+                    <li class="nav-item">
+                        <a class="nav-link" href="products.html">Products</a>
+                    </li>
+                    <li class="nav-item auth-buttons">
+                        <a class="nav-link" href="login.html">
+                            <i class="fas fa-user me-1"></i>Login
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link nav-cart-link" href="cart.html">
+                            <i class="fas fa-shopping-bag cart-icon"></i>
+                            <span class="cart-badge">0</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Registration Form -->
+    <section class="auth-container">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-md-6">
+                    <div class="auth-card">
+                        <h2><i class="fas fa-user-plus"></i> Create Account</h2>
+                        <p class="text-center text-grey mb-4">Join TrenCart with Email & OTP</p>
+
+                        <!-- Step Indicator -->
+                        <div class="step-indicator">
+                            <div class="step active" id="step1-indicator">
+                                <div class="step-number">1</div>
+                                <span>Details</span>
+                            </div>
+                            <div class="step" id="step2-indicator">
+                                <div class="step-number">2</div>
+                                <span>Verify OTP</span>
+                            </div>
+                        </div>
+
+                        <!-- Step 1: Registration Form -->
+                        <form id="registerForm" style="display: block;">
+                            <!-- Full Name Field -->
+                            <div class="mb-3">
+                                <label for="registerName" class="form-label">Full Name</label>
+                                <input type="text" class="form-control" id="registerName"
+                                       placeholder="Enter your full name" required>
+                            </div>
+
+                            <!-- Email Field -->
+                            <div class="mb-3">
+                                <label for="registerEmail" class="form-label">Email Address</label>
+                                <input type="email" class="form-control" id="registerEmail"
+                                       placeholder="Enter your email" required>
+                            </div>
+
+                            <!-- Phone Number Field -->
+                            <div class="mb-3">
+                                <label for="registerPhone" class="form-label">Phone Number</label>
+                                <input type="tel" class="form-control" id="registerPhone"
+                                       placeholder="Enter your 10-digit phone number" maxlength="10" pattern="[6-9][0-9]{9}" required>
+                                <small class="text-grey">Must start with 6-9 and be 10 digits</small>
+                            </div>
+
+                            <!-- Terms and Conditions -->
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="termsConditions" required>
+                                    <label class="form-check-label" for="termsConditions">
+                                        I agree to the <a href="#" class="text-decoration-none">Terms and Conditions</a>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Submit Button -->
+                            <button type="submit" class="btn btn-primary w-100 mb-3" id="registerBtn">
+                                <i class="fas fa-paper-plane"></i> Send OTP
+                            </button>
+
+                            <!-- Login Link -->
+                            <div class="text-center">
+                                <p class="text-grey mb-0">
+                                    Already have an account?
+                                    <a href="login.html" class="text-decoration-none fw-bold">Login here</a>
+                                </p>
+                            </div>
+                        </form>
+
+                        <!-- Step 2: OTP Verification Form -->
+                        <div id="otpForm" style="display: none;">
+                            <p class="text-center mb-3">
+                                OTP sent to <strong id="otpEmail"></strong>
+                            </p>
+
+                            <!-- Dev OTP Display -->
+                            <div class="dev-otp-badge" id="devOtpBadge">
+                                <span class="dev-label">Dev Mode - Your OTP</span>
+                                <span class="otp-code" id="devOtpCode"></span>
+                            </div>
+
+                            <form id="verifyOtpForm">
+                                <!-- OTP Input Fields -->
+                                <div class="otp-inputs">
+                                    <input type="text" class="form-control otp-input" maxlength="1" id="otp1" required>
+                                    <input type="text" class="form-control otp-input" maxlength="1" id="otp2" required>
+                                    <input type="text" class="form-control otp-input" maxlength="1" id="otp3" required>
+                                    <input type="text" class="form-control otp-input" maxlength="1" id="otp4" required>
+                                    <input type="text" class="form-control otp-input" maxlength="1" id="otp5" required>
+                                    <input type="text" class="form-control otp-input" maxlength="1" id="otp6" required>
+                                </div>
+
+                                <!-- Verify Button -->
+                                <button type="submit" class="btn btn-primary w-100 mb-3" id="verifyBtn">
+                                    <i class="fas fa-check-circle"></i> Verify & Register
+                                </button>
+
+                                <!-- Resend OTP -->
+                                <div class="text-center">
+                                    <p class="text-grey mb-2">
+                                        Didn't receive OTP?
+                                        <a href="#" id="resendOtp" class="text-decoration-none fw-bold">Resend OTP</a>
+                                    </p>
+                                    <a href="#" id="changeEmail" class="text-decoration-none">Change Email</a>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-4 mb-4">
+                    <h5><img src="../assets/images/trencartlogo.png" alt="TrenCart Logo" style="height: 35px; margin-bottom: 10px;"></h5>
+                    <p>Your premier destination for quality dress materials and fabrics.</p>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <h5>Quick Links</h5>
+                    <ul>
+                        <li><a href="../index.html">Home</a></li>
+                        <li><a href="shops.html">All Shops</a></li>
+                        <li><a href="cart.html">Shopping Cart</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <h5>Contact Us</h5>
+                    <ul>
+                        <li><i class="fas fa-envelope me-2"></i> info@trencart.com</li>
+                        <li><i class="fas fa-phone me-2"></i> +91 98765 43210</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 TrenCart. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap 5 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Custom JavaScript -->
+    <script src="../assets/js/main.js"></script>
+    <script src="../assets/js/cart.js"></script>
+
+    <!-- Registration OTP Script -->
+    <script src="../assets/js/register-otp.js"></script>
+
+</body>
+</html>

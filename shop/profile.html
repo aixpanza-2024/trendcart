@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shop Profile - TrenCart</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../assets/css/theme.css">
+    <link rel="stylesheet" href="../assets/css/style.css">
+
+    <style>
+        .sidebar {
+            position: fixed; top: 0; left: -280px; width: 280px; height: 100vh;
+            background-color: var(--primary-black); color: white;
+            transition: left 0.3s ease; z-index: 1050; overflow-y: auto;
+        }
+        .sidebar.active { left: 0; }
+        .sidebar-header { padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .sidebar-nav { padding: 20px 0; }
+        .sidebar-nav .nav-link {
+            color: rgba(255,255,255,0.8); padding: 12px 20px;
+            display: flex; align-items: center; gap: 12px; transition: all 0.3s;
+        }
+        .sidebar-nav .nav-link:hover, .sidebar-nav .nav-link.active {
+            color: white; background-color: rgba(255,255,255,0.1);
+        }
+        .sidebar-nav .nav-link i { width: 20px; text-align: center; }
+        .main-content { margin-left: 0; padding: 20px; transition: margin-left 0.3s ease; }
+        @media (min-width: 992px) { .sidebar { left: 0; } .main-content { margin-left: 280px; } }
+        .top-bar {
+            background-color: white; padding: 15px 20px; margin: -20px -20px 20px -20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex;
+            justify-content: space-between; align-items: center;
+        }
+        .menu-toggle { background: none; border: none; font-size: 24px; cursor: pointer; }
+        @media (min-width: 992px) { .menu-toggle { display: none; } }
+        .sidebar-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.5); z-index: 1040; display: none;
+        }
+        .sidebar-overlay.active { display: block; }
+
+        .profile-card { background: white; border-radius: 10px; padding: 25px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 20px; }
+        .section-title { font-size: 15px; font-weight: 600; padding-bottom: 10px; margin-bottom: 18px; border-bottom: 2px solid var(--white-light); }
+        .stat-pill { background: var(--white-light); border-radius: 8px; padding: 12px 16px; text-align: center; }
+        .stat-pill .value { font-size: 22px; font-weight: 700; }
+        .stat-pill .label { font-size: 12px; color: var(--grey-primary); }
+        .shop-status-open   { background-color: #d4edda; color: #155724; }
+        .shop-status-closed { background-color: #fff3cd; color: #856404; }
+        .shop-status-suspended { background-color: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <img src="../assets/images/trencartlogo.png" alt="TrenCart" style="height: 35px;">
+            <p class="mb-0 mt-2 small text-white-50">Shop Owner Panel</p>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="dashboard.html" class="nav-link"><i class="fas fa-home"></i><span>Dashboard</span></a>
+            <a href="products.html" class="nav-link"><i class="fas fa-box"></i><span>Products</span></a>
+            <a href="add-product.html" class="nav-link"><i class="fas fa-plus-circle"></i><span>Add Product</span></a>
+            <a href="orders.html" class="nav-link"><i class="fas fa-shopping-bag"></i><span>Orders</span></a>
+            <a href="profile.html" class="nav-link active"><i class="fas fa-store"></i><span>Shop Profile</span></a>
+            <a href="finance.html" class="nav-link"><i class="fas fa-wallet"></i><span>Finance</span></a>
+            <a href="reports.html" class="nav-link"><i class="fas fa-file-alt"></i><span>Reports</span></a>
+            <hr style="border-color: rgba(255,255,255,0.1); margin: 10px 0;">
+            <a href="../index.html" class="nav-link"><i class="fas fa-globe"></i><span>View Website</span></a>
+            <a href="#" onclick="logout()" class="nav-link"><i class="fas fa-sign-out-alt"></i><span>Logout</span></a>
+        </nav>
+    </div>
+
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <div class="top-bar">
+            <div class="d-flex align-items-center gap-3">
+                <button class="menu-toggle" id="menuToggle"><i class="fas fa-bars"></i></button>
+                <h5 class="mb-0">Shop Profile</h5>
+            </div>
+            <div>
+                <span id="shopStatusBadge" class="badge rounded-pill px-3 py-2"></span>
+            </div>
+        </div>
+
+        <!-- Shop Stats (read-only) -->
+        <div class="row g-3 mb-4">
+            <div class="col-6 col-md-3">
+                <div class="stat-pill">
+                    <div class="value" id="statProducts">-</div>
+                    <div class="label">Products</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="stat-pill">
+                    <div class="value" id="statOrders">-</div>
+                    <div class="label">Total Orders</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="stat-pill">
+                    <div class="value" id="statSales">-</div>
+                    <div class="label">Total Sales</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="stat-pill">
+                    <div class="value" id="statRating">-</div>
+                    <div class="label">Rating</div>
+                </div>
+            </div>
+        </div>
+
+        <form id="profileForm">
+            <!-- Shop Logo -->
+            <div class="profile-card">
+                <div class="section-title"><i class="fas fa-image me-2"></i>Shop Logo</div>
+                <div class="d-flex align-items-center gap-4 flex-wrap">
+                    <div id="logoPreviewWrap" style="width:100px;height:100px;border-radius:12px;overflow:hidden;background:#f4f4f4;display:flex;align-items:center;justify-content:center;border:2px dashed #dee2e6;flex-shrink:0;">
+                        <i class="fas fa-store fa-2x text-muted" id="logoPlaceholder"></i>
+                        <img id="logoPreview" src="" alt="Shop Logo" style="width:100%;height:100%;object-fit:cover;display:none;">
+                    </div>
+                    <div>
+                        <p class="mb-2 text-muted small">Square image recommended (200×200 px min). Max 2 MB — JPG, PNG or WebP.</p>
+                        <div class="d-flex gap-2 align-items-center flex-wrap">
+                            <input type="file" id="logoInput" accept="image/jpeg,image/png,image/webp" class="d-none" onchange="previewLogo(this)">
+                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="document.getElementById('logoInput').click()">
+                                <i class="fas fa-folder-open me-1"></i>Choose Image
+                            </button>
+                            <button type="button" class="btn btn-primary btn-sm" id="uploadLogoBtn" onclick="uploadLogo()" style="display:none;">
+                                <i class="fas fa-upload me-1"></i>Upload Logo
+                            </button>
+                            <span id="logoFileName" class="text-muted small"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Shop Details -->
+            <div class="profile-card">
+                <div class="section-title"><i class="fas fa-store me-2"></i>Shop Details</div>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Shop Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="shopName" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Shop Email</label>
+                        <input type="email" class="form-control" id="shopEmail">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Shop Phone</label>
+                        <input type="tel" class="form-control" id="shopPhone" placeholder="10-digit number">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">GST Number</label>
+                        <input type="text" class="form-control" id="gstNumber" placeholder="e.g., 22AAAAA0000A1Z5">
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Shop Description</label>
+                        <textarea class="form-control" id="shopDescription" rows="3" placeholder="Describe your shop..."></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Address -->
+            <div class="profile-card">
+                <div class="section-title"><i class="fas fa-map-marker-alt me-2"></i>Shop Address</div>
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label class="form-label">Address</label>
+                        <textarea class="form-control" id="shopAddress" rows="2" placeholder="Street address, building, landmark..."></textarea>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">City</label>
+                        <input type="text" class="form-control" id="shopCity">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">State</label>
+                        <input type="text" class="form-control" id="shopState">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Pincode</label>
+                        <input type="text" class="form-control" id="shopPincode" maxlength="6" placeholder="6-digit">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Owner Info (read-only) -->
+            <div class="profile-card">
+                <div class="section-title"><i class="fas fa-user me-2"></i>Owner Details</div>
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Full Name</label>
+                        <input type="text" class="form-control" id="ownerName" readonly>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Email</label>
+                        <input type="email" class="form-control" id="ownerEmail" readonly>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Phone</label>
+                        <input type="tel" class="form-control" id="ownerPhone" placeholder="Update phone number">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Save Button -->
+            <div class="profile-card">
+                <div class="d-flex gap-2 justify-content-end">
+                    <button type="submit" class="btn btn-primary" id="saveBtn">
+                        <i class="fas fa-save"></i> <span id="saveBtnText">Save Profile</span>
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../assets/js/main.js"></script>
+    <script src="../assets/js/shop-profile.js"></script>
+    <script>
+        const menuToggle = document.getElementById('menuToggle');
+        const sidebar = document.getElementById('sidebar');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+        menuToggle.addEventListener('click', function() {
+            sidebar.classList.toggle('active');
+            sidebarOverlay.classList.toggle('active');
+        });
+        sidebarOverlay.addEventListener('click', function() {
+            sidebar.classList.remove('active');
+            sidebarOverlay.classList.remove('active');
+        });
+        function logout() {
+            if (confirm('Are you sure you want to logout?')) {
+                fetch('../api/logout.php', { method: 'POST' })
+                    .then(() => window.location.href = '../pages/login.html')
+                    .catch(() => window.location.href = '../pages/login.html');
+            }
+        }
+    </script>
+</body>
+</html>

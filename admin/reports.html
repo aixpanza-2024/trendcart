@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reports - Admin - TrenCart</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../assets/css/theme.css">
+    <link rel="stylesheet" href="../assets/css/admin.css">
+</head>
+<body class="admin-body">
+
+    <nav class="admin-sidebar" id="sidebar"></nav>
+
+    <div class="admin-overlay" id="overlay"></div>
+
+    <div class="admin-main">
+        <div class="admin-topbar">
+            <div class="d-flex align-items-center gap-3">
+                <button class="menu-toggle" id="menuToggle"><i class="fas fa-bars"></i></button>
+                <h5 class="page-title">Orders Report</h5>
+            </div>
+            <div class="topbar-right">
+                <button class="btn btn-sm btn-success" onclick="exportCSV()">
+                    <i class="fas fa-file-excel me-1"></i>Export Excel
+                </button>
+            </div>
+        </div>
+
+        <div class="admin-content">
+
+            <!-- Filters -->
+            <div class="admin-filter-bar mb-4">
+                <div class="row g-2 align-items-end">
+                    <div class="col-md-2">
+                        <label class="form-label small mb-1">From Date</label>
+                        <input type="date" class="form-control form-control-sm" id="filterFrom">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small mb-1">To Date</label>
+                        <input type="date" class="form-control form-control-sm" id="filterTo">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small mb-1">Status</label>
+                        <select class="form-select form-select-sm" id="filterStatus">
+                            <option value="">All Statuses</option>
+                            <option value="pending">Pending</option>
+                            <option value="confirmed">Confirmed</option>
+                            <option value="processing">Processing</option>
+                            <option value="shipped">Shipped</option>
+                            <option value="delivered">Delivered</option>
+                            <option value="cancelled">Cancelled</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small mb-1">Shop</label>
+                        <select class="form-select form-select-sm" id="filterShop">
+                            <option value="">All Shops</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 d-flex gap-2">
+                        <button class="btn btn-dark btn-sm flex-grow-1" onclick="loadReport()">
+                            <i class="fas fa-search me-1"></i>Apply
+                        </button>
+                        <button class="btn btn-outline-secondary btn-sm" onclick="clearFilters()">
+                            <i class="fas fa-redo"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Summary Cards -->
+            <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                    <div class="admin-stat-card">
+                        <div class="stat-icon"><i class="fas fa-shopping-bag"></i></div>
+                        <div class="stat-info">
+                            <div class="stat-value" id="statOrders">—</div>
+                            <div class="stat-label">Total Orders</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="admin-stat-card">
+                        <div class="stat-icon"><i class="fas fa-rupee-sign"></i></div>
+                        <div class="stat-info">
+                            <div class="stat-value" id="statRevenue">—</div>
+                            <div class="stat-label">Total Revenue</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="admin-stat-card">
+                        <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+                        <div class="stat-info">
+                            <div class="stat-value" id="statDelivered">—</div>
+                            <div class="stat-label">Delivered</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Table -->
+            <div class="admin-card">
+                <div class="admin-card-header d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0">Orders</h6>
+                    <span class="text-muted small" id="tableCount"></span>
+                </div>
+                <div class="admin-card-body p-0">
+                    <div id="reportLoader" class="text-center py-5">
+                        <i class="fas fa-spinner fa-spin fa-2x"></i>
+                    </div>
+                    <div class="table-responsive" id="reportTableWrap" style="display:none;">
+                        <table class="table table-hover mb-0" id="reportTable">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Order #</th>
+                                    <th>Date</th>
+                                    <th>Customer</th>
+                                    <th>Shops</th>
+                                    <th>Items</th>
+                                    <th>Amount</th>
+                                    <th>Payment</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="reportBody"></tbody>
+                        </table>
+                    </div>
+                    <div id="reportEmpty" class="text-center py-5 text-muted" style="display:none;">
+                        <i class="fas fa-file-alt fa-2x mb-2"></i><br>No orders found
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../assets/js/admin-common.js"></script>
+    <script>
+    let reportData = [];
+
+    document.addEventListener('DOMContentLoaded', () => {
+        loadReport(); // Load all orders by default (no date restriction)
+    });
+
+    async function loadReport() {
+        document.getElementById('reportLoader').style.display    = '';
+        document.getElementById('reportTableWrap').style.display = 'none';
+        document.getElementById('reportEmpty').style.display     = 'none';
+
+        const params = new URLSearchParams();
+        const from   = document.getElementById('filterFrom').value;
+        const to     = document.getElementById('filterTo').value;
+        const status = document.getElementById('filterStatus').value;
+        const shop   = document.getElementById('filterShop').value;
+        if (from)   params.set('date_from', from);
+        if (to)     params.set('date_to',   to);
+        if (status) params.set('status',    status);
+        if (shop)   params.set('shop_id',   shop);
+
+        try {
+            const res  = await fetch('../api/admin/reports.php?' + params);
+            const data = await res.json();
+            if (!data.success) { alert(data.message); return; }
+
+            // Populate shop dropdown (only first load)
+            const shopSel = document.getElementById('filterShop');
+            if (shopSel.options.length === 1 && data.shops?.length) {
+                data.shops.forEach(s => {
+                    const o = document.createElement('option');
+                    o.value = s.shop_id; o.textContent = s.shop_name;
+                    shopSel.appendChild(o);
+                });
+            }
+
+            reportData = data.data;
+            renderTable(reportData);
+
+            const delivered = reportData.filter(o => o.order_status === 'delivered').length;
+            document.getElementById('statOrders').textContent   = data.total_orders;
+            document.getElementById('statRevenue').textContent  = '₹' + parseFloat(data.total_revenue).toLocaleString('en-IN', {minimumFractionDigits:2});
+            document.getElementById('statDelivered').textContent = delivered;
+
+        } catch (err) {
+            alert('Error: ' + err.message);
+        } finally {
+            document.getElementById('reportLoader').style.display = 'none';
+        }
+    }
+
+    function renderTable(orders) {
+        const tbody  = document.getElementById('reportBody');
+        const wrap   = document.getElementById('reportTableWrap');
+        const empty  = document.getElementById('reportEmpty');
+        const countEl = document.getElementById('tableCount');
+
+        countEl.textContent = orders.length + ' orders';
+
+        if (!orders.length) { empty.style.display = ''; return; }
+
+        const statusBadge = s => {
+            const map = { pending:'warning', confirmed:'info', processing:'primary',
+                          shipped:'info', delivered:'success', cancelled:'danger', refunded:'secondary' };
+            return `<span class="badge bg-${map[s]||'secondary'} text-capitalize">${s}</span>`;
+        };
+
+        tbody.innerHTML = orders.map(o => `
+            <tr>
+                <td><span class="fw-semibold">${o.order_number}</span></td>
+                <td>${new Date(o.order_date).toLocaleDateString('en-IN')}</td>
+                <td>
+                    <div class="fw-semibold">${o.customer_name || '—'}</div>
+                    <small class="text-muted">${o.customer_email || ''}</small>
+                </td>
+                <td><small>${o.shops || '—'}</small></td>
+                <td class="text-center">${o.item_count}</td>
+                <td>₹${parseFloat(o.total_amount).toLocaleString('en-IN', {minimumFractionDigits:2})}</td>
+                <td><span class="text-capitalize">${o.payment_method}</span></td>
+                <td>${statusBadge(o.order_status)}</td>
+            </tr>`).join('');
+
+        wrap.style.display = '';
+    }
+
+    function clearFilters() {
+        document.getElementById('filterFrom').value   = '';
+        document.getElementById('filterTo').value     = '';
+        document.getElementById('filterStatus').value = '';
+        document.getElementById('filterShop').value   = '';
+        loadReport();
+    }
+
+    function exportCSV() {
+        if (!reportData.length) { alert('No data to export'); return; }
+        const headers = ['Order #','Date','Customer','Email','Shops','Items','Amount','Payment','Status'];
+        const rows = reportData.map(o => [
+            o.order_number,
+            new Date(o.order_date).toLocaleDateString('en-IN'),
+            o.customer_name || '',
+            o.customer_email || '',
+            o.shops || '',
+            o.item_count,
+            parseFloat(o.total_amount).toFixed(2),
+            o.payment_method,
+            o.order_status
+        ]);
+        downloadCSV('admin_orders_report.csv', [headers, ...rows]);
+    }
+
+    function downloadCSV(filename, rows) {
+        const csv = rows.map(r => r.map(v => '"' + String(v).replace(/"/g,'""') + '"').join(',')).join('\n');
+        const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = filename;
+        a.click();
+    }
+    </script>
+</body>
+</html>

@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reports - Shop Dashboard - TrenCart</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../assets/css/theme.css">
+    <link rel="stylesheet" href="../assets/css/style.css">
+    <style>
+        .sidebar {
+            position: fixed; top: 0; left: -280px; width: 280px; height: 100vh;
+            background-color: var(--primary-black); color: white;
+            transition: left 0.3s ease; z-index: 1050; overflow-y: auto;
+        }
+        .sidebar.active { left: 0; }
+        .sidebar-header { padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .sidebar-nav { padding: 20px 0; }
+        .sidebar-nav .nav-link {
+            color: rgba(255,255,255,0.8); padding: 12px 20px;
+            display: flex; align-items: center; gap: 12px; transition: all 0.3s;
+        }
+        .sidebar-nav .nav-link:hover, .sidebar-nav .nav-link.active {
+            color: white; background-color: rgba(255,255,255,0.1);
+        }
+        .sidebar-nav .nav-link i { width: 20px; text-align: center; }
+        .main-content { margin-left: 0; padding: 20px; transition: margin-left 0.3s ease; }
+        @media (min-width: 992px) { .sidebar { left: 0; } .main-content { margin-left: 280px; } }
+        .top-bar {
+            background-color: white; padding: 15px 20px; margin: -20px -20px 20px -20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex;
+            justify-content: space-between; align-items: center;
+        }
+        .menu-toggle { background: none; border: none; font-size: 24px; cursor: pointer; }
+        @media (min-width: 992px) { .menu-toggle { display: none; } }
+        .sidebar-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.5); z-index: 1040; display: none;
+        }
+        .sidebar-overlay.active { display: block; }
+        .stat-card {
+            background: white; border-radius: 12px; padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08); text-align: center;
+        }
+        .stat-card .stat-val { font-size: 1.6rem; font-weight: 700; }
+        .stat-card .stat-lbl { color: #6c757d; font-size: 0.85rem; }
+        .content-card {
+            background: white; border-radius: 12px; padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <img src="../assets/images/trencartlogo.png" alt="TrenCart" style="height: 35px;">
+            <p class="mb-0 mt-2 small text-white-50">Shop Owner Panel</p>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="dashboard.html" class="nav-link"><i class="fas fa-home"></i><span>Dashboard</span></a>
+            <a href="products.html" class="nav-link"><i class="fas fa-box"></i><span>Products</span></a>
+            <a href="add-product.html" class="nav-link"><i class="fas fa-plus-circle"></i><span>Add Product</span></a>
+            <a href="orders.html" class="nav-link"><i class="fas fa-shopping-bag"></i><span>Orders</span></a>
+            <a href="profile.html" class="nav-link"><i class="fas fa-store"></i><span>Shop Profile</span></a>
+            <a href="finance.html" class="nav-link"><i class="fas fa-wallet"></i><span>Finance</span></a>
+            <a href="reports.html" class="nav-link active"><i class="fas fa-file-alt"></i><span>Reports</span></a>
+            <hr style="border-color: rgba(255,255,255,0.1); margin: 10px 0;">
+            <a href="../index.html" class="nav-link"><i class="fas fa-globe"></i><span>View Website</span></a>
+            <a href="#" onclick="logout()" class="nav-link"><i class="fas fa-sign-out-alt"></i><span>Logout</span></a>
+        </nav>
+    </div>
+
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <div class="main-content">
+        <div class="top-bar">
+            <div class="d-flex align-items-center gap-3">
+                <button class="menu-toggle" id="menuToggle"><i class="fas fa-bars"></i></button>
+                <h5 class="mb-0">Orders Report</h5>
+            </div>
+            <button class="btn btn-success btn-sm" onclick="exportCSV()">
+                <i class="fas fa-file-excel me-1"></i>Export Excel
+            </button>
+        </div>
+
+        <!-- Filters -->
+        <div class="content-card mb-4">
+            <div class="row g-2 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label small mb-1">From Date</label>
+                    <input type="date" class="form-control form-control-sm" id="filterFrom">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small mb-1">To Date</label>
+                    <input type="date" class="form-control form-control-sm" id="filterTo">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small mb-1">Status</label>
+                    <select class="form-select form-select-sm" id="filterStatus">
+                        <option value="">All Statuses</option>
+                        <option value="pending">Pending</option>
+                        <option value="confirmed">Confirmed</option>
+                        <option value="processing">Processing</option>
+                        <option value="shipped">Shipped</option>
+                        <option value="delivered">Delivered</option>
+                        <option value="cancelled">Cancelled</option>
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex gap-2">
+                    <button class="btn btn-dark btn-sm flex-grow-1" onclick="loadReport()">
+                        <i class="fas fa-search me-1"></i>Apply
+                    </button>
+                    <button class="btn btn-outline-secondary btn-sm" onclick="clearFilters()">
+                        <i class="fas fa-redo"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="row g-3 mb-4">
+            <div class="col-6 col-md-4">
+                <div class="stat-card">
+                    <div class="stat-val" id="statOrders">—</div>
+                    <div class="stat-lbl">Orders</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-4">
+                <div class="stat-card">
+                    <div class="stat-val" id="statRevenue">—</div>
+                    <div class="stat-lbl">Revenue</div>
+                </div>
+            </div>
+            <div class="col-12 col-md-4">
+                <div class="stat-card">
+                    <div class="stat-val" id="statDelivered">—</div>
+                    <div class="stat-lbl">Delivered</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Table -->
+        <div class="content-card">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="mb-0 fw-bold">Orders</h6>
+                <span class="text-muted small" id="tableCount"></span>
+            </div>
+            <div id="reportLoader" class="text-center py-5"><i class="fas fa-spinner fa-spin fa-2x"></i></div>
+            <div class="table-responsive" id="reportTableWrap" style="display:none;">
+                <table class="table table-hover table-sm mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Order #</th>
+                            <th>Date</th>
+                            <th>Customer</th>
+                            <th>City</th>
+                            <th class="text-center">Items</th>
+                            <th class="text-end">Amount</th>
+                            <th>Payment</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="reportBody"></tbody>
+                </table>
+            </div>
+            <div id="reportEmpty" class="text-center py-5 text-muted" style="display:none;">
+                <i class="fas fa-file-alt fa-2x mb-2"></i><br>No orders found
+            </div>
+        </div>
+
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+    let reportData = [];
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const today = new Date();
+        const from  = new Date(today); from.setDate(today.getDate() - 30);
+        document.getElementById('filterTo').value   = today.toISOString().split('T')[0];
+        document.getElementById('filterFrom').value = from.toISOString().split('T')[0];
+        loadReport();
+    });
+
+    async function loadReport() {
+        document.getElementById('reportLoader').style.display    = '';
+        document.getElementById('reportTableWrap').style.display = 'none';
+        document.getElementById('reportEmpty').style.display     = 'none';
+
+        const params = new URLSearchParams();
+        const from   = document.getElementById('filterFrom').value;
+        const to     = document.getElementById('filterTo').value;
+        const status = document.getElementById('filterStatus').value;
+        if (from)   params.set('date_from', from);
+        if (to)     params.set('date_to',   to);
+        if (status) params.set('status',    status);
+
+        try {
+            const res  = await fetch('../api/shop/reports.php?' + params);
+            const data = await res.json();
+            if (!data.success) {
+                if (res.status === 401) { window.location.href = '../pages/login.html'; return; }
+                alert(data.message); return;
+            }
+
+            reportData = data.data;
+            const delivered = reportData.filter(o => o.order_status === 'delivered').length;
+            document.getElementById('statOrders').textContent   = data.total_orders;
+            document.getElementById('statRevenue').textContent  = '₹' + parseFloat(data.total_revenue).toLocaleString('en-IN',{minimumFractionDigits:2});
+            document.getElementById('statDelivered').textContent = delivered;
+
+            renderTable(reportData);
+
+        } catch (err) {
+            alert('Error: ' + err.message);
+        } finally {
+            document.getElementById('reportLoader').style.display = 'none';
+        }
+    }
+
+    function renderTable(orders) {
+        const wrap   = document.getElementById('reportTableWrap');
+        const empty  = document.getElementById('reportEmpty');
+        const count  = document.getElementById('tableCount');
+        count.textContent = orders.length + ' orders';
+
+        if (!orders.length) { empty.style.display = ''; return; }
+
+        const statusMap = { pending:'warning', confirmed:'info', processing:'primary',
+                            shipped:'info', delivered:'success', cancelled:'danger', refunded:'secondary' };
+
+        document.getElementById('reportBody').innerHTML = orders.map(o => `
+            <tr>
+                <td class="fw-semibold small">${o.order_number}</td>
+                <td class="small">${new Date(o.order_date).toLocaleDateString('en-IN')}</td>
+                <td>${o.shipping_name || '—'}</td>
+                <td class="small">${o.shipping_city || '—'}</td>
+                <td class="text-center">${o.item_count}</td>
+                <td class="text-end">₹${parseFloat(o.shop_subtotal).toLocaleString('en-IN',{minimumFractionDigits:2})}</td>
+                <td class="text-capitalize small">${o.payment_method}</td>
+                <td><span class="badge bg-${statusMap[o.order_status]||'secondary'} text-capitalize">${o.order_status}</span></td>
+            </tr>`).join('');
+
+        wrap.style.display = '';
+    }
+
+    function clearFilters() {
+        document.getElementById('filterFrom').value   = '';
+        document.getElementById('filterTo').value     = '';
+        document.getElementById('filterStatus').value = '';
+        loadReport();
+    }
+
+    function exportCSV() {
+        if (!reportData.length) { alert('No data to export'); return; }
+        const headers = ['Order #','Date','Customer','City','Items','Amount','Payment','Status'];
+        const rows = reportData.map(o => [
+            o.order_number,
+            new Date(o.order_date).toLocaleDateString('en-IN'),
+            o.shipping_name || '',
+            o.shipping_city || '',
+            o.item_count,
+            parseFloat(o.shop_subtotal).toFixed(2),
+            o.payment_method,
+            o.order_status
+        ]);
+        downloadCSV('shop_orders_report.csv', [headers, ...rows]);
+    }
+
+    function downloadCSV(filename, rows) {
+        const csv = rows.map(r => r.map(v => '"' + String(v).replace(/"/g,'""') + '"').join(',')).join('\n');
+        const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = filename;
+        a.click();
+    }
+
+    document.getElementById('menuToggle')?.addEventListener('click', () => {
+        document.getElementById('sidebar').classList.toggle('active');
+        document.getElementById('sidebarOverlay').classList.toggle('active');
+    });
+    document.getElementById('sidebarOverlay')?.addEventListener('click', () => {
+        document.getElementById('sidebar').classList.remove('active');
+        document.getElementById('sidebarOverlay').classList.remove('active');
+    });
+
+    async function logout() {
+        try { await fetch('../api/customer/logout.php'); } catch(e) {}
+        localStorage.removeItem('isLoggedIn');
+        localStorage.removeItem('userName');
+        window.location.href = '../pages/login.html';
+    }
+    </script>
+</body>
+</html>

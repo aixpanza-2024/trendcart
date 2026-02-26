@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cmd /c \"mkdir f:\\\\xampp\\\\htdocs\\\\trencart_new\\\\uploads\\\\shops\")",
+      "Bash(echo:*)",
+      "Bash(cmd /c \"dir f:\\\\xampp\\\\htdocs\\\\trencart_new\\\\api\\\\admin\")",
+      "Bash(cmd /c \"dir \"\"f:\\\\xampp\\\\htdocs\\\\trencart_new\\\\api\\\\admin\"\"\")",
+      "Bash(powershell -Command:*)",
+      "Bash(ls:*)",
+      "Bash(\"/c/Users/Razi Farook/AppData/Local/Programs/Python/Python311/python\":*)",
+      "Bash(python3:*)",
+      "Bash(grep:*)",
+      "Bash(mysql:*)",
+      "Bash(wc:*)"
+    ],
+    "additionalDirectories": [
+      "F:\\xampp\\htdocs\\trencart_new"
+    ]
+  }
+}

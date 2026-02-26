@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Add/Edit Product - TrenCart Shop">
+    <title>Add Product - Shop Dashboard - TrenCart</title>
+
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="../assets/css/theme.css">
+    <link rel="stylesheet" href="../assets/css/style.css">
+
+    <style>
+        /* Sidebar and layout styles */
+        .dashboard-container {
+            min-height: 100vh;
+            background-color: var(--white-light);
+        }
+
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: -280px;
+            width: 280px;
+            height: 100vh;
+            background-color: var(--primary-black);
+            color: white;
+            transition: left 0.3s ease;
+            z-index: 1050;
+            overflow-y: auto;
+        }
+
+        .sidebar.active {
+            left: 0;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .sidebar-nav {
+            padding: 20px 0;
+        }
+
+        .sidebar-nav .nav-link {
+            color: rgba(255,255,255,0.8);
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: all 0.3s;
+        }
+
+        .sidebar-nav .nav-link:hover,
+        .sidebar-nav .nav-link.active {
+            color: white;
+            background-color: rgba(255,255,255,0.1);
+        }
+
+        .sidebar-nav .nav-link i {
+            width: 20px;
+            text-align: center;
+        }
+
+        .main-content {
+            margin-left: 0;
+            padding: 20px;
+            transition: margin-left 0.3s ease;
+        }
+
+        @media (min-width: 992px) {
+            .sidebar {
+                left: 0;
+            }
+            .main-content {
+                margin-left: 280px;
+            }
+        }
+
+        .top-bar {
+            background-color: white;
+            padding: 15px 20px;
+            margin: -20px -20px 20px -20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .menu-toggle {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        @media (min-width: 992px) {
+            .menu-toggle {
+                display: none;
+            }
+        }
+
+        .sidebar-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 1040;
+            display: none;
+        }
+
+        .sidebar-overlay.active {
+            display: block;
+        }
+
+        /* Form styles */
+        .form-card {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            margin-bottom: 20px;
+        }
+
+        .form-section-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--white-light);
+        }
+
+        .image-preview-container {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+
+        .image-preview {
+            position: relative;
+            width: 100px;
+            height: 100px;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 2px solid #dee2e6;
+        }
+
+        .image-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .image-preview .remove-image {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: rgba(220, 53, 69, 0.9);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .image-preview .primary-badge {
+            position: absolute;
+            bottom: 5px;
+            left: 5px;
+            background: rgba(40, 167, 69, 0.9);
+            color: white;
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        .required-field::after {
+            content: " *";
+            color: red;
+        }
+
+        /* ── Size variant builder ─────────────────────────────── */
+        .size-toggle-btn {
+            border: 2px solid #dee2e6;
+            border-radius: 6px;
+            padding: 6px 14px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            background: #fff;
+            transition: all 0.15s;
+            user-select: none;
+        }
+        .size-toggle-btn.selected {
+            background: var(--primary-black, #1a1a1a);
+            color: #fff;
+            border-color: var(--primary-black, #1a1a1a);
+        }
+        .size-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 8px 12px;
+            margin-bottom: 6px;
+            flex-wrap: wrap;
+        }
+        .size-row .size-label-badge {
+            font-weight: 600;
+            min-width: 70px;
+            font-size: 14px;
+        }
+        .size-row .size-stock-input {
+            max-width: 110px;
+        }
+        .size-row .remove-size {
+            margin-left: auto;
+            cursor: pointer;
+            color: #dc3545;
+            background: none;
+            border: none;
+            font-size: 16px;
+            padding: 0 4px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Sidebar Navigation -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <img src="../assets/images/trencartlogo.png" alt="TrenCart" style="height: 35px;">
+            <p class="mb-0 mt-2 small text-white-50">Shop Owner Panel</p>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="dashboard.html" class="nav-link">
+                <i class="fas fa-home"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="products.html" class="nav-link">
+                <i class="fas fa-box"></i>
+                <span>Products</span>
+            </a>
+            <a href="add-product.html" class="nav-link active">
+                <i class="fas fa-plus-circle"></i>
+                <span>Add Product</span>
+            </a>
+            <a href="orders.html" class="nav-link">
+                <i class="fas fa-shopping-bag"></i>
+                <span>Orders</span>
+            </a>
+            <a href="profile.html" class="nav-link">
+                <i class="fas fa-store"></i>
+                <span>Shop Profile</span>
+            </a>
+            <a href="finance.html" class="nav-link"><i class="fas fa-wallet"></i><span>Finance</span></a>
+            <a href="reports.html" class="nav-link"><i class="fas fa-file-alt"></i><span>Reports</span></a>
+            <hr style="border-color: rgba(255,255,255,0.1); margin: 10px 0;">
+            <a href="../index.html" class="nav-link">
+                <i class="fas fa-globe"></i>
+                <span>View Website</span>
+            </a>
+            <a href="#" onclick="logout()" class="nav-link">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Logout</span>
+            </a>
+        </nav>
+    </div>
+
+    <!-- Sidebar Overlay (Mobile) -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Top Bar -->
+        <div class="top-bar">
+            <div class="d-flex align-items-center gap-3">
+                <button class="menu-toggle" id="menuToggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <h5 class="mb-0" id="pageTitle">Add New Product</h5>
+            </div>
+            <div>
+                <a href="products.html" class="btn btn-outline-dark btn-sm">
+                    <i class="fas fa-arrow-left"></i> Back to Products
+                </a>
+            </div>
+        </div>
+
+        <!-- Product Form -->
+        <form id="productForm">
+            <input type="hidden" id="productId" value="">
+
+            <!-- Basic Information -->
+            <div class="form-card">
+                <div class="form-section-title">
+                    <i class="fas fa-info-circle"></i> Basic Information
+                </div>
+                <div class="row g-3">
+                    <div class="col-md-8">
+                        <label for="productName" class="form-label required-field">Product Name</label>
+                        <input type="text" class="form-control" id="productName" required placeholder="Enter product name">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="productCode" class="form-label">Product Code/SKU</label>
+                        <input type="text" class="form-control" id="productCode" placeholder="e.g., SAR-001">
+                    </div>
+                    <div class="col-12">
+                        <label for="productDescription" class="form-label">Description</label>
+                        <textarea class="form-control" id="productDescription" rows="4" placeholder="Describe your product..."></textarea>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="parentCategory" class="form-label required-field">Category</label>
+                        <select class="form-select" id="parentCategory" required>
+                            <option value="">Select Category</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="subCategory" class="form-label">Sub-Category</label>
+                        <select class="form-select" id="subCategory" disabled>
+                            <option value="">— None —</option>
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <small class="text-muted">
+                            Can't find your category?
+                            <a href="#" onclick="openRequestCategoryModal(); return false;" class="text-primary fw-semibold">
+                                <i class="fas fa-paper-plane"></i> Request it from Admin
+                            </a>
+                        </small>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="productStatus" class="form-label">Status</label>
+                        <select class="form-select" id="productStatus">
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pricing & Stock -->
+            <div class="form-card">
+                <div class="form-section-title">
+                    <i class="fas fa-rupee-sign"></i> Pricing & Stock
+                </div>
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label for="price" class="form-label required-field">Selling Price (₹)</label>
+                        <input type="number" class="form-control" id="price" required min="0" step="0.01" placeholder="0.00">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="originalPrice" class="form-label">Original Price (₹)</label>
+                        <input type="number" class="form-control" id="originalPrice" min="0" step="0.01" placeholder="0.00">
+                        <small class="text-muted">Leave blank if no discount</small>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="discount" class="form-label">Discount (%)</label>
+                        <input type="number" class="form-control" id="discount" min="0" max="100" step="0.01" placeholder="0" readonly>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="stockQuantity" class="form-label required-field">Stock Quantity</label>
+                        <input type="number" class="form-control" id="stockQuantity" required min="0" placeholder="0">
+                    </div>
+                    <div class="col-md-6">
+                        <label for="lowStockThreshold" class="form-label">Low Stock Alert</label>
+                        <input type="number" class="form-control" id="lowStockThreshold" min="0" value="10" placeholder="10">
+                        <small class="text-muted">Alert when stock falls below this</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Product Details -->
+            <div class="form-card">
+                <div class="form-section-title">
+                    <i class="fas fa-tags"></i> Product Details
+                </div>
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label for="color" class="form-label">Color</label>
+                        <input type="text" class="form-control" id="color" placeholder="e.g., Red, Blue">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="material" class="form-label">Material</label>
+                        <input type="text" class="form-control" id="material" placeholder="e.g., Cotton, Silk">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="fabricType" class="form-label">Fabric Type</label>
+                        <input type="text" class="form-control" id="fabricType" placeholder="e.g., Chiffon">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="pattern" class="form-label">Pattern</label>
+                        <input type="text" class="form-control" id="pattern" placeholder="e.g., Printed, Plain">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="weight" class="form-label">Weight (grams)</label>
+                        <input type="number" class="form-control" id="weight" min="0" step="0.01" placeholder="0">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="length" class="form-label">Length (meters)</label>
+                        <input type="number" class="form-control" id="length" min="0" step="0.01" placeholder="0.00">
+                    </div>
+                    <div class="col-md-6">
+                        <label for="width" class="form-label">Width (meters)</label>
+                        <input type="number" class="form-control" id="width" min="0" step="0.01" placeholder="0.00">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Size Variants -->
+            <div class="form-card">
+                <div class="form-section-title">
+                    <i class="fas fa-ruler-combined"></i> Size Variants
+                    <small class="text-muted fw-normal ms-2">Click sizes to add them, then set stock per size</small>
+                </div>
+
+                <!-- Quick-pick standard sizes -->
+                <div class="d-flex flex-wrap gap-2 mb-3" id="sizeToggleGroup">
+                    <button type="button" class="size-toggle-btn" data-size="Free Size">Free Size</button>
+                    <button type="button" class="size-toggle-btn" data-size="XS">XS</button>
+                    <button type="button" class="size-toggle-btn" data-size="S">S</button>
+                    <button type="button" class="size-toggle-btn" data-size="M">M</button>
+                    <button type="button" class="size-toggle-btn" data-size="L">L</button>
+                    <button type="button" class="size-toggle-btn" data-size="XL">XL</button>
+                    <button type="button" class="size-toggle-btn" data-size="XXL">XXL</button>
+                    <button type="button" class="size-toggle-btn" data-size="XXXL">XXXL</button>
+                </div>
+
+                <!-- Custom size entry -->
+                <div class="d-flex gap-2 mb-3 align-items-center">
+                    <input type="text" id="customSizeInput" class="form-control form-control-sm"
+                           style="max-width:160px;" placeholder="Custom (e.g. 38, 40, 42)">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="addCustomSize()">
+                        <i class="fas fa-plus"></i> Add
+                    </button>
+                    <small class="text-muted">For numeric or non-standard sizes</small>
+                </div>
+
+                <!-- Rows: selected size + stock qty -->
+                <div id="sizeVariantsList">
+                    <p class="text-muted small" id="noSizesMsg">No sizes added yet. Click the size buttons above or enter a custom size.</p>
+                </div>
+
+                <!-- hidden field carries JSON to backend -->
+                <input type="hidden" id="sizesJson" name="sizes_json">
+            </div>
+
+            <!-- Product Images -->
+            <div class="form-card">
+                <div class="form-section-title">
+                    <i class="fas fa-images"></i> Product Images
+                </div>
+                <div class="mb-3">
+                    <label for="productImages" class="form-label">Upload Images</label>
+                    <input type="file" class="form-control" id="productImages" accept="image/*" multiple>
+                    <small class="text-muted">You can upload multiple images. First image will be the primary image.</small>
+                </div>
+                <div id="imagePreviewContainer" class="image-preview-container"></div>
+            </div>
+
+            <!-- Submit Buttons -->
+            <div class="form-card">
+                <div class="d-flex gap-2 justify-content-end">
+                    <a href="products.html" class="btn btn-outline-secondary">
+                        <i class="fas fa-times"></i> Cancel
+                    </a>
+                    <button type="submit" class="btn btn-primary" id="submitBtn">
+                        <i class="fas fa-save"></i> <span id="submitBtnText">Save Product</span>
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Request Category Modal -->
+    <div class="modal fade" id="requestCategoryModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h6 class="modal-title"><i class="fas fa-paper-plane me-2"></i>Request New Category</h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted small mb-3">Admin will review your request and create the category. You'll be able to use it once approved.</p>
+                    <div class="mb-3">
+                        <label class="form-label">Category Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="reqCategoryName" placeholder="e.g., Handloom Sarees">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Should it go under a parent? <span class="text-muted">(optional)</span></label>
+                        <input type="text" class="form-control" id="reqParentName" placeholder="e.g., Sarees — leave blank if top-level">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Note for Admin <span class="text-muted">(optional)</span></label>
+                        <textarea class="form-control" id="reqNote" rows="2" placeholder="Why you need this category..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary btn-sm" id="submitRequestBtn" onclick="submitCategoryRequest()">
+                        <i class="fas fa-paper-plane"></i> Send Request
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Custom JavaScript -->
+    <script src="../assets/js/main.js"></script>
+    <script src="../assets/js/shop-add-product.js"></script>
+
+    <script>
+        // Mobile Sidebar Toggle
+        const menuToggle = document.getElementById('menuToggle');
+        const sidebar = document.getElementById('sidebar');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+        menuToggle.addEventListener('click', function() {
+            sidebar.classList.toggle('active');
+            sidebarOverlay.classList.toggle('active');
+        });
+
+        sidebarOverlay.addEventListener('click', function() {
+            sidebar.classList.remove('active');
+            sidebarOverlay.classList.remove('active');
+        });
+
+        // Auto-calculate discount percentage
+        document.getElementById('originalPrice').addEventListener('input', calculateDiscount);
+        document.getElementById('price').addEventListener('input', calculateDiscount);
+
+        function calculateDiscount() {
+            const original = parseFloat(document.getElementById('originalPrice').value) || 0;
+            const selling = parseFloat(document.getElementById('price').value) || 0;
+
+            if (original > 0 && selling > 0 && selling < original) {
+                const discount = ((original - selling) / original * 100).toFixed(2);
+                document.getElementById('discount').value = discount;
+            } else {
+                document.getElementById('discount').value = '0';
+            }
+        }
+
+        // Logout function
+        function logout() {
+            if (confirm('Are you sure you want to logout?')) {
+                fetch('../api/logout.php', {
+                    method: 'POST'
+                }).then(response => response.json())
+                .then(result => {
+                    window.location.href = '../pages/login.html';
+                }).catch(error => {
+                    console.error('Logout error:', error);
+                    window.location.href = '../pages/login.html';
+                });
+            }
+        }
+    </script>
+</body>
+</html>
