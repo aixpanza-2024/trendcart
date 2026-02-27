@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Terms and Conditions - TrenCart">
+    <title>Terms & Conditions - TrenCart</title>
+
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="../assets/css/theme.css">
+    <link rel="stylesheet" href="../assets/css/style.css">
+
+    <style>
+        .terms-hero {
+            background: var(--primary-black);
+            color: var(--white-primary);
+            padding: 3rem 0 2.5rem;
+            text-align: center;
+        }
+
+        .terms-hero h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .terms-hero p {
+            color: rgba(255,255,255,0.7);
+            font-size: 0.95rem;
+            margin: 0;
+        }
+
+        .terms-body {
+            padding: 3rem 0 4rem;
+        }
+
+        .terms-nav {
+            position: sticky;
+            top: 80px;
+        }
+
+        .terms-nav .nav-link {
+            color: var(--text-secondary);
+            font-size: 0.87rem;
+            padding: 0.35rem 0.75rem;
+            border-left: 2px solid var(--grey-border);
+            border-radius: 0;
+            transition: all 0.25s ease;
+        }
+
+        .terms-nav .nav-link:hover,
+        .terms-nav .nav-link.active {
+            color: var(--primary-black);
+            border-left-color: var(--primary-black);
+            background: transparent;
+        }
+
+        .terms-section {
+            margin-bottom: 2.5rem;
+            scroll-margin-top: 90px;
+        }
+
+        .terms-section h2 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--grey-border);
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+
+        .terms-section h2 .section-num {
+            background: var(--primary-black);
+            color: var(--white-primary);
+            font-size: 0.75rem;
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .terms-section p,
+        .terms-section li {
+            color: var(--text-secondary);
+            line-height: 1.8;
+            font-size: 0.95rem;
+        }
+
+        .terms-section ul {
+            padding-left: 1.2rem;
+        }
+
+        .terms-section ul li {
+            margin-bottom: 0.4rem;
+        }
+
+        .highlight-box {
+            background: #f8f9fa;
+            border-left: 4px solid var(--primary-black);
+            padding: 1rem 1.25rem;
+            border-radius: 0 6px 6px 0;
+            margin: 1rem 0;
+        }
+
+        .highlight-box p {
+            margin: 0;
+            font-size: 0.9rem;
+        }
+
+        .last-updated {
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+            background: var(--white-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 0.6rem 1rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            margin-bottom: 2rem;
+        }
+
+        @media (max-width: 768px) {
+            .terms-nav {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+        <div class="container-fluid px-4">
+            <a class="navbar-brand" href="../index.html">
+                <img src="../assets/images/trencartlogo.png" alt="TrenCart" style="height: 36px;">
+            </a>
+            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-2">
+                    <li class="nav-item">
+                        <a class="nav-link" href="shops.html">Shops</a>
+                    </li>
+                </ul>
+                <form class="navbar-search-form d-flex" onsubmit="navProductSearch(event)">
+                    <div class="input-group">
+                        <input type="text" class="form-control nav-search-input" id="navSearchInput"
+                               placeholder="Search products..." autocomplete="off">
+                        <button class="nav-search-btn" type="submit">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </form>
+                <ul class="navbar-nav align-items-center ms-2">
+                    <li class="nav-item">
+                        <a class="nav-link" href="products.html">Products</a>
+                    </li>
+                    <li class="nav-item auth-buttons">
+                        <a class="nav-link" href="login.html">
+                            <i class="fas fa-user me-1"></i>Login
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link nav-cart-link" href="cart.html">
+                            <i class="fas fa-shopping-bag cart-icon"></i>
+                            <span class="cart-badge">0</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero -->
+    <div class="terms-hero">
+        <div class="container">
+            <h1><i class="fas fa-file-contract me-2"></i>Terms &amp; Conditions</h1>
+            <p>Please read these terms carefully before using TrenCart</p>
+        </div>
+    </div>
+
+    <!-- Content -->
+    <section class="terms-body">
+        <div class="container">
+            <div class="row">
+
+                <!-- Sticky Side Nav -->
+                <div class="col-lg-3 d-none d-lg-block">
+                    <nav class="terms-nav" id="termsNav">
+                        <div class="nav flex-column">
+                            <a class="nav-link" href="#acceptance">1. Acceptance</a>
+                            <a class="nav-link" href="#platform">2. Platform Use</a>
+                            <a class="nav-link" href="#accounts">3. Accounts</a>
+                            <a class="nav-link" href="#products">4. Products &amp; Orders</a>
+                            <a class="nav-link" href="#pricing">5. Pricing &amp; Payment</a>
+                            <a class="nav-link" href="#shipping">6. Shipping &amp; Delivery</a>
+                            <a class="nav-link" href="#returns">7. Returns &amp; Refunds</a>
+                            <a class="nav-link" href="#sellers">8. Shop Sellers</a>
+                            <a class="nav-link" href="#ip">9. Intellectual Property</a>
+                            <a class="nav-link" href="#liability">10. Liability</a>
+                            <a class="nav-link" href="#privacy">11. Privacy</a>
+                            <a class="nav-link" href="#governing">12. Governing Law</a>
+                            <a class="nav-link" href="#contact">13. Contact</a>
+                        </div>
+                    </nav>
+                </div>
+
+                <!-- Main Content -->
+                <div class="col-lg-9">
+
+                    <div class="last-updated">
+                        <i class="fas fa-calendar-alt"></i>
+                        Last updated: February 2026
+                    </div>
+
+                    <div class="highlight-box mb-4">
+                        <p>
+                            Welcome to <strong>TrenCart</strong>. By accessing or using our platform at
+                            <strong>trencart.com</strong>, you agree to be bound by these Terms &amp; Conditions.
+                            If you do not agree, please do not use our services.
+                        </p>
+                    </div>
+
+                    <!-- 1 -->
+                    <div class="terms-section" id="acceptance">
+                        <h2><span class="section-num">1</span> Acceptance of Terms</h2>
+                        <p>
+                            By registering an account, browsing, or making a purchase on TrenCart, you confirm that
+                            you are at least 18 years of age and have the legal capacity to enter into a binding
+                            agreement. If you are using TrenCart on behalf of a business, you represent that you
+                            have the authority to bind that business to these Terms.
+                        </p>
+                        <p>
+                            TrenCart reserves the right to modify these Terms at any time. Continued use of the
+                            platform after any changes constitutes acceptance of the revised Terms. We will update
+                            the "Last updated" date above whenever changes are made.
+                        </p>
+                    </div>
+
+                    <!-- 2 -->
+                    <div class="terms-section" id="platform">
+                        <h2><span class="section-num">2</span> Platform Use</h2>
+                        <p>TrenCart is an online marketplace connecting buyers with dress material and fabric
+                        sellers based primarily in Kerala, India. You agree to use the platform only for
+                        lawful purposes and in a manner that does not infringe the rights of others.</p>
+                        <p>You must not:</p>
+                        <ul>
+                            <li>Use the platform to transmit unsolicited or harmful content</li>
+                            <li>Attempt to gain unauthorised access to any part of the platform or its systems</li>
+                            <li>Scrape, copy, or republish platform content without written permission</li>
+                            <li>Impersonate another person or entity</li>
+                            <li>Use the platform for any fraudulent or illegal transaction</li>
+                        </ul>
+                    </div>
+
+                    <!-- 3 -->
+                    <div class="terms-section" id="accounts">
+                        <h2><span class="section-num">3</span> Accounts &amp; Registration</h2>
+                        <p>
+                            TrenCart uses a one-time password (OTP) sent to your registered email address for
+                            account creation and login. You are responsible for keeping your email account secure.
+                        </p>
+                        <ul>
+                            <li>You must provide accurate and complete registration information</li>
+                            <li>Each email address may be associated with only one account</li>
+                            <li>You are responsible for all activity that occurs under your account</li>
+                            <li>Notify us immediately if you suspect unauthorised access to your account</li>
+                        </ul>
+                        <p>
+                            TrenCart reserves the right to suspend or permanently deactivate any account found to
+                            be in violation of these Terms, without prior notice.
+                        </p>
+                    </div>
+
+                    <!-- 4 -->
+                    <div class="terms-section" id="products">
+                        <h2><span class="section-num">4</span> Products &amp; Orders</h2>
+                        <p>
+                            Products listed on TrenCart are offered by independent shop sellers. TrenCart acts as
+                            a marketplace facilitator and is not the seller of record for any product unless
+                            explicitly stated.
+                        </p>
+                        <ul>
+                            <li>Product images are for illustrative purposes; actual colour may vary due to screen settings</li>
+                            <li>Product descriptions, sizes, and availability are maintained by individual sellers</li>
+                            <li>Placing an order is an offer to purchase; a contract is formed upon seller acceptance</li>
+                            <li>TrenCart reserves the right to cancel orders in cases of pricing errors, stock unavailability, or suspected fraud</li>
+                        </ul>
+                        <div class="highlight-box">
+                            <p>All prices displayed are in Indian Rupees (&#8377;) and include applicable taxes at
+                            the rate of 18% GST unless otherwise stated.</p>
+                        </div>
+                    </div>
+
+                    <!-- 5 -->
+                    <div class="terms-section" id="pricing">
+                        <h2><span class="section-num">5</span> Pricing &amp; Payment</h2>
+                        <p>
+                            TrenCart currently supports <strong>Cash on Delivery (COD)</strong> as the payment
+                            method. Payment is collected at the time of delivery by the delivery partner.
+                        </p>
+                        <ul>
+                            <li>Prices are set by individual shop sellers and may change without notice</li>
+                            <li>The price displayed at the time of order placement is the price charged</li>
+                            <li>Shipping is provided free of charge on all orders</li>
+                            <li>TrenCart charges a platform commission to sellers; this does not affect the price paid by buyers</li>
+                        </ul>
+                    </div>
+
+                    <!-- 6 -->
+                    <div class="terms-section" id="shipping">
+                        <h2><span class="section-num">6</span> Shipping &amp; Delivery</h2>
+                        <p>
+                            TrenCart provides free shipping on all orders. Estimated delivery times will be
+                            communicated after order confirmation. Delivery timelines may vary based on your
+                            location within Kerala and the seller's processing time.
+                        </p>
+                        <ul>
+                            <li>Orders are currently delivered within Kerala only</li>
+                            <li>Delivery times are estimates and not guaranteed</li>
+                            <li>Risk of loss and title pass to you upon delivery</li>
+                            <li>Ensure your shipping address and phone number are accurate at the time of checkout</li>
+                            <li>Failed deliveries due to incorrect address or recipient unavailability may result in the order being returned to the seller</li>
+                        </ul>
+                    </div>
+
+                    <!-- 7 -->
+                    <div class="terms-section" id="returns">
+                        <h2><span class="section-num">7</span> Returns &amp; Refunds</h2>
+                        <p>
+                            We want you to be satisfied with every purchase. Return and refund eligibility is
+                            subject to the individual seller's policy. Generally:
+                        </p>
+                        <ul>
+                            <li>Returns must be initiated within <strong>7 days</strong> of delivery</li>
+                            <li>Items must be unused, unwashed, and in their original condition with tags intact</li>
+                            <li>Items damaged during shipping are eligible for a full replacement or refund</li>
+                            <li>Cut fabric or custom-tailored items are not eligible for return unless defective</li>
+                            <li>Refunds for COD orders will be processed via bank transfer within 5–7 business days of return receipt</li>
+                        </ul>
+                        <p>
+                            To initiate a return, contact us at
+                            <a href="mailto:info@trencart.com">info@trencart.com</a> with your order number and
+                            reason for return.
+                        </p>
+                    </div>
+
+                    <!-- 8 -->
+                    <div class="terms-section" id="sellers">
+                        <h2><span class="section-num">8</span> Shop Sellers</h2>
+                        <p>
+                            Sellers who register on TrenCart as shop owners agree to additional obligations
+                            beyond these general Terms:
+                        </p>
+                        <ul>
+                            <li>Sellers must provide accurate product information, including stock levels and pricing</li>
+                            <li>Sellers are responsible for fulfilling orders in a timely manner</li>
+                            <li>A platform commission (as set in the platform settings) is deducted from each completed order</li>
+                            <li>Sellers must comply with all applicable Indian tax laws including GST</li>
+                            <li>TrenCart reserves the right to remove products or suspend seller accounts that violate these Terms or applicable law</li>
+                            <li>Sellers must not list counterfeit, prohibited, or illegal goods</li>
+                        </ul>
+                    </div>
+
+                    <!-- 9 -->
+                    <div class="terms-section" id="ip">
+                        <h2><span class="section-num">9</span> Intellectual Property</h2>
+                        <p>
+                            All content on TrenCart — including the logo, design, text, graphics, and software —
+                            is the property of TrenCart or its licensors and is protected under applicable
+                            intellectual property laws.
+                        </p>
+                        <ul>
+                            <li>You may not reproduce, distribute, or create derivative works from any platform content without written permission</li>
+                            <li>By uploading product images or content, sellers grant TrenCart a non-exclusive, royalty-free licence to display that content on the platform</li>
+                            <li>TrenCart does not claim ownership of seller-uploaded content</li>
+                        </ul>
+                    </div>
+
+                    <!-- 10 -->
+                    <div class="terms-section" id="liability">
+                        <h2><span class="section-num">10</span> Limitation of Liability</h2>
+                        <p>
+                            To the maximum extent permitted by law, TrenCart and its affiliates shall not be
+                            liable for any indirect, incidental, special, or consequential damages arising out of
+                            your use of the platform, including but not limited to:
+                        </p>
+                        <ul>
+                            <li>Loss of profits or revenue</li>
+                            <li>Data loss or corruption</li>
+                            <li>Damage caused by third-party products purchased through the platform</li>
+                            <li>Temporary unavailability of the platform due to maintenance or technical issues</li>
+                        </ul>
+                        <p>
+                            TrenCart's total liability to you for any claim arising out of or relating to these
+                            Terms shall not exceed the amount you paid for the relevant order.
+                        </p>
+                    </div>
+
+                    <!-- 11 -->
+                    <div class="terms-section" id="privacy">
+                        <h2><span class="section-num">11</span> Privacy</h2>
+                        <p>
+                            Your privacy matters to us. We collect personal information such as your name, email
+                            address, phone number, and delivery address solely for the purpose of providing our
+                            services.
+                        </p>
+                        <ul>
+                            <li>We do not sell or rent your personal information to third parties</li>
+                            <li>Order details are shared with the relevant seller and delivery partner to fulfil your order</li>
+                            <li>We use OTP-based authentication — we do not store passwords</li>
+                            <li>By using TrenCart, you consent to the collection and use of your information as described above</li>
+                        </ul>
+                        <p>
+                            For any privacy-related queries, contact us at
+                            <a href="mailto:info@trencart.com">info@trencart.com</a>.
+                        </p>
+                    </div>
+
+                    <!-- 12 -->
+                    <div class="terms-section" id="governing">
+                        <h2><span class="section-num">12</span> Governing Law</h2>
+                        <p>
+                            These Terms and any disputes arising from them shall be governed by and construed in
+                            accordance with the laws of <strong>India</strong>. Any legal proceedings shall be
+                            subject to the exclusive jurisdiction of the courts located in
+                            <strong>Thiruvananthapuram, Kerala</strong>.
+                        </p>
+                        <p>
+                            If any provision of these Terms is found to be unenforceable, the remaining provisions
+                            shall continue in full force and effect.
+                        </p>
+                    </div>
+
+                    <!-- 13 -->
+                    <div class="terms-section" id="contact">
+                        <h2><span class="section-num">13</span> Contact Us</h2>
+                        <p>If you have any questions about these Terms &amp; Conditions, please reach out:</p>
+                        <ul>
+                            <li><i class="fas fa-envelope me-2"></i> <a href="mailto:info@trencart.com">info@trencart.com</a></li>
+                            <li><i class="fas fa-phone me-2"></i> +91 98765 43210</li>
+                            <li><i class="fas fa-map-marker-alt me-2"></i> Kazhakootam, Thiruvananthapuram, Kerala, India</li>
+                        </ul>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-4 mb-4">
+                    <h5><img src="../assets/images/trencartlogo.png" alt="TrenCart Logo" style="height: 35px; margin-bottom: 10px;"></h5>
+                    <p>Your premier destination for quality dress materials and fabrics.</p>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <h5>Quick Links</h5>
+                    <ul>
+                        <li><a href="../index.html">Home</a></li>
+                        <li><a href="shops.html">All Shops</a></li>
+                        <li><a href="cart.html">Shopping Cart</a></li>
+                        <li><a href="terms.html">Terms &amp; Conditions</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <h5>Contact Us</h5>
+                    <ul>
+                        <li><i class="fas fa-envelope me-2"></i> info@trencart.com</li>
+                        <li><i class="fas fa-phone me-2"></i> +91 98765 43210</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 TrenCart. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap 5 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Custom JavaScript -->
+    <script src="../assets/js/main.js"></script>
+    <script src="../assets/js/cart.js"></script>
+
+    <script>
+        // Highlight active section in side nav on scroll
+        const sections = document.querySelectorAll('.terms-section');
+        const navLinks = document.querySelectorAll('.terms-nav .nav-link');
+
+        window.addEventListener('scroll', function() {
+            let current = '';
+            sections.forEach(section => {
+                if (window.scrollY >= section.offsetTop - 110) {
+                    current = section.getAttribute('id');
+                }
+            });
+            navLinks.forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('href') === '#' + current) {
+                    link.classList.add('active');
+                }
+            });
+        });
+    </script>
+
+</body>
+</html>
