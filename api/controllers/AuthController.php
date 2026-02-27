@@ -82,13 +82,8 @@ class AuthController {
             // Try to send OTP via email
             $email_sent = $this->emailManager->sendOTPEmail($data->email, $data->full_name, $otp, 'registration');
 
-            $message = $email_sent
-                ? "OTP sent successfully to your email"
-                : "Email sending failed, but you can use the OTP shown below (dev mode)";
-
-            $this->sendResponse(200, true, $message, [
-                'email' => $data->email,
-                'otp_for_dev' => $otp,  // Remove in production
+            $this->sendResponse(200, true, "OTP sent successfully to your email", [
+                'email'      => $data->email,
                 'email_sent' => $email_sent
             ]);
         } else {
@@ -254,13 +249,8 @@ class AuthController {
             // Try to send OTP via email
             $email_sent = $this->emailManager->sendOTPEmail($user_data['email'], $user_data['full_name'], $otp, 'login');
 
-            $message = $email_sent
-                ? "OTP sent successfully to your email"
-                : "Email sending failed, but you can use the OTP shown below (dev mode)";
-
-            $this->sendResponse(200, true, $message, [
-                'email' => $user_data['email'],
-                'otp_for_dev' => $otp,  // Remove in production
+            $this->sendResponse(200, true, "OTP sent successfully to your email", [
+                'email'      => $user_data['email'],
                 'email_sent' => $email_sent
             ]);
         } else {

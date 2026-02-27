@@ -81,11 +81,6 @@ async function handleRegistration(e) {
             registrationEmail = email;
             showToast(result.message, 'success');
 
-            // Show OTP on-page (dev mode)
-            if (result.data && result.data.otp_for_dev) {
-                showDevOTP(result.data.otp_for_dev);
-            }
-
             showOTPForm(email);
         } else {
             showToast(result.message, 'error');
@@ -97,18 +92,6 @@ async function handleRegistration(e) {
         showToast('Failed to send OTP. Please try again.', 'error');
         registerBtn.disabled = false;
         registerBtn.innerHTML = originalHTML;
-    }
-}
-
-/**
- * Show dev OTP badge on page
- */
-function showDevOTP(otp) {
-    const badge = document.getElementById('devOtpBadge');
-    const code = document.getElementById('devOtpCode');
-    if (badge && code) {
-        code.textContent = otp;
-        badge.style.display = 'block';
     }
 }
 
@@ -137,10 +120,6 @@ function showRegistrationForm() {
     document.getElementById('step1-indicator').classList.add('active');
     document.getElementById('step1-indicator').classList.remove('completed');
     document.getElementById('step2-indicator').classList.remove('active');
-
-    // Hide dev OTP
-    const badge = document.getElementById('devOtpBadge');
-    if (badge) badge.style.display = 'none';
 
     clearOTPInputs();
 
@@ -281,11 +260,6 @@ async function resendOTP() {
 
         if (result.success) {
             showToast('OTP resent successfully!', 'success');
-
-            if (result.data && result.data.otp_for_dev) {
-                showDevOTP(result.data.otp_for_dev);
-            }
-
             clearOTPInputs();
             document.getElementById('otp1').focus();
         } else {

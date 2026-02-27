@@ -70,11 +70,6 @@ async function handleLogin(e) {
             loginEmail = email;
             showToast(result.message, 'success');
 
-            // Show OTP on screen for dev
-            if (result.data && result.data.otp_for_dev) {
-                showDevOTP(result.data.otp_for_dev);
-            }
-
             // Move to step 2
             goToStep2(email);
         } else {
@@ -87,18 +82,6 @@ async function handleLogin(e) {
         showToast('Failed to send OTP. Please try again.', 'error');
         loginBtn.disabled = false;
         loginBtn.innerHTML = originalHTML;
-    }
-}
-
-/**
- * Show dev OTP badge on the page
- */
-function showDevOTP(otp) {
-    const badge = document.getElementById('devOtpBadge');
-    const code = document.getElementById('devOtpCode');
-    if (badge && code) {
-        code.textContent = otp;
-        badge.style.display = 'block';
     }
 }
 
@@ -298,11 +281,6 @@ async function resendOTP() {
 
         if (result.success) {
             showToast('OTP resent successfully!', 'success');
-
-            if (result.data && result.data.otp_for_dev) {
-                showDevOTP(result.data.otp_for_dev);
-            }
-
             clearOTPInputs();
             document.getElementById('otp1').focus();
         } else {

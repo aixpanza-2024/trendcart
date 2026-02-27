@@ -247,6 +247,30 @@ try {
         if ($admin_row) {
             $emailManager->sendNewOrderAdminEmail($admin_row['email'], $order_data);
         }
+
+        // Shop owner emails — each shop receives only their own items
+        $items_by_shop = [];
+        foreach ($validated_items as $item) {
+            $items_by_shop[$item['shop_id']][] = $item;
+        }
+        $shopInfoStmt = $conn->prepare(
+            "SELECT u.email, s.shop_name FROM shops s
+             INNER JOIN users u ON s.user_id = u.user_id
+             WHERE s.shop_id = :sid LIMIT 1"
+        );
+        foreach ($items_by_shop as $sid => $shop_items) {
+            $shopInfoStmt->bindValue(':sid', $sid, PDO::PARAM_INT);
+            $shopInfoStmt->execute();
+            $shop_row = $shopInfoStmt->fetch(PDO::FETCH_ASSOC);
+            if ($shop_row) {
+                $emailManager->sendShopOrderEmail(
+                    $shop_row['email'],
+                    $shop_row['shop_name'],
+                    $order_data,
+                    $shop_items
+                );
+            }
+        }
     } catch (Exception $emailErr) {
         error_log("Order email error: " . $emailErr->getMessage());
     }

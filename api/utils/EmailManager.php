@@ -254,12 +254,71 @@ class EmailManager {
     }
 
     /**
-     * Check if development mode
-     * @return bool
+     * Send new order notification to a shop owner (only their items)
+     */
+    public function sendShopOrderEmail($to_email, $shop_name, $order_data, $shop_items) {
+        $subject = "TrenCart - New Order #{$order_data['order_number']} for {$shop_name}";
+        $message = $this->getShopOrderTemplate($shop_name, $order_data, $shop_items);
+        $headers = $this->getEmailHeaders();
+
+        if ($this->isDevelopmentMode()) {
+            error_log("Shop Order Email to {$to_email} ({$shop_name}): Order #{$order_data['order_number']}");
+            return true;
+        }
+        return mail($to_email, $subject, $message, $headers);
+    }
+
+    /**
+     * Build new order notification HTML email for a shop owner (only their items)
+     */
+    private function getShopOrderTemplate($shop_name, $d, $shop_items) {
+        $rows = '';
+        $shop_total = 0;
+        foreach ($shop_items as $item) {
+            $size_label = !empty($item['selected_size']) ? " <span style='font-size:11px;background:#eee;padding:1px 5px;border-radius:4px;'>{$item['selected_size']}</span>" : '';
+            $rows .= "<tr>
+                <td style='padding:8px;border-bottom:1px solid #eee;'>{$item['product_name']}{$size_label}</td>
+                <td style='padding:8px;border-bottom:1px solid #eee;text-align:center;'>{$item['quantity']}</td>
+                <td style='padding:8px;border-bottom:1px solid #eee;text-align:right;'>&#8377;" . number_format($item['price'], 2) . "</td>
+                <td style='padding:8px;border-bottom:1px solid #eee;text-align:right;'>&#8377;" . number_format($item['subtotal'], 2) . "</td>
+            </tr>";
+            $shop_total += $item['subtotal'];
+        }
+        $s = $d['shipping_info'];
+        return "<!DOCTYPE html><html><head><meta charset='UTF-8'></head><body style='font-family:Arial,sans-serif;color:#333;margin:0;padding:0;'>
+        <div style='max-width:600px;margin:0 auto;'>
+            <div style='background:#1a1a1a;color:#fff;padding:24px;text-align:center;'>
+                <h1 style='margin:0;font-size:24px;'>TrenCart &mdash; Shop Notification</h1>
+            </div>
+            <div style='padding:30px;background:#f8f9fa;'>
+                <h2 style='color:#1a1a1a;'>&#128230; New Order for {$shop_name}</h2>
+                <p style='font-size:18px;font-weight:bold;'>Order # {$d['order_number']}</p>
+                <p><strong>Customer:</strong> {$s['full_name']} &mdash; {$s['phone']}</p>
+                <p><strong>Deliver to:</strong> {$s['address']}, {$s['city']}, {$s['state']} &mdash; {$s['pincode']}</p>
+                <table style='width:100%;border-collapse:collapse;margin:20px 0;background:#fff;border-radius:8px;overflow:hidden;'>
+                    <thead><tr style='background:#1a1a1a;color:#fff;'>
+                        <th style='padding:10px;text-align:left;'>Product</th>
+                        <th style='padding:10px;text-align:center;'>Qty</th>
+                        <th style='padding:10px;text-align:right;'>Price</th>
+                        <th style='padding:10px;text-align:right;'>Total</th>
+                    </tr></thead>
+                    <tbody>{$rows}</tbody>
+                </table>
+                <p style='font-size:18px;font-weight:bold;text-align:right;'>Your Items Total: &#8377;" . number_format($shop_total, 2) . "</p>
+                <p style='background:#fff3cd;padding:12px;border-radius:6px;'><strong>Payment:</strong> Cash on Delivery &mdash; Collect payment on delivery.</p>
+                <p style='color:#555;font-size:13px;'>Please log in to your <a href='https://trencart.com/shop/orders.html' style='color:#1a1a1a;'>shop panel</a> to confirm and process this order.</p>
+            </div>
+            <div style='text-align:center;color:#999;font-size:12px;padding:20px;'>
+                TrenCart &mdash; Shop Owner Notification
+            </div>
+        </div></body></html>";
+    }
+
+    /**
+     * Check if development mode — set to false for production
      */
     private function isDevelopmentMode() {
-        // Change this in production
-        return true;
+        return false;
     }
 }
 ?>

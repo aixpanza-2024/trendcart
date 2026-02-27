@@ -163,33 +163,6 @@
             box-shadow: 0 0 0 3px rgba(26, 26, 26, 0.12);
         }
 
-        /* Dev OTP badge */
-        .dev-otp-badge {
-            display: none;
-            background: linear-gradient(135deg, #1a1a1a, #2d2d2d);
-            color: #fff;
-            padding: 0.75rem 1rem;
-            border-radius: 8px;
-            text-align: center;
-            margin-bottom: 1rem;
-            font-size: 0.85rem;
-        }
-
-        .dev-otp-badge .otp-code {
-            font-size: 1.5rem;
-            font-weight: 700;
-            letter-spacing: 6px;
-            display: block;
-            margin-top: 0.25rem;
-        }
-
-        .dev-otp-badge .dev-label {
-            font-size: 0.7rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            opacity: 0.7;
-        }
-
         /* Completed email display */
         .completed-email {
             display: flex;
@@ -360,12 +333,6 @@
                                 <div class="step-dot">2</div>
                                 <div class="step-content">
                                     <div class="step-title"><i class="fas fa-shield-alt"></i> Verify OTP</div>
-
-                                    <!-- Dev OTP Display -->
-                                    <div class="dev-otp-badge" id="devOtpBadge">
-                                        <span class="dev-label">Dev Mode - Your OTP</span>
-                                        <span class="otp-code" id="devOtpCode"></span>
-                                    </div>
 
                                     <form id="verifyOtpForm">
                                         <div class="otp-inputs">
