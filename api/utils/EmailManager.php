@@ -27,9 +27,12 @@ class EmailManager {
             return true;
         }
 
-        // Send email using PHP mail function
-        // In production, consider using PHPMailer or SMTP
-        return mail($to_email, $subject, $message, $headers);
+        // Send email — suppress warnings so they don't corrupt JSON output
+        $result = @mail($to_email, $subject, $message, $headers);
+        if (!$result) {
+            error_log("mail() failed for OTP to {$to_email}");
+        }
+        return $result;
     }
 
     /**
@@ -144,7 +147,7 @@ class EmailManager {
             error_log("Order Confirmation Email to {$to_email}: Order #{$order_data['order_number']}");
             return true;
         }
-        return mail($to_email, $subject, $message, $headers);
+        return @mail($to_email, $subject, $message, $headers);
     }
 
     /**
@@ -159,7 +162,7 @@ class EmailManager {
             error_log("Admin Order Email to {$admin_email}: Order #{$order_data['order_number']} - ₹{$order_data['total']}");
             return true;
         }
-        return mail($admin_email, $subject, $message, $headers);
+        return @mail($admin_email, $subject, $message, $headers);
     }
 
     /**
@@ -265,7 +268,7 @@ class EmailManager {
             error_log("Shop Order Email to {$to_email} ({$shop_name}): Order #{$order_data['order_number']}");
             return true;
         }
-        return mail($to_email, $subject, $message, $headers);
+        return @mail($to_email, $subject, $message, $headers);
     }
 
     /**
@@ -315,10 +318,14 @@ class EmailManager {
     }
 
     /**
-     * Check if development mode — set to false for production
+     * Auto-detect development mode based on hostname.
+     * localhost / 127.0.0.1 → dev (log OTP, skip real mail)
+     * Any other host        → production (send real email)
      */
     private function isDevelopmentMode() {
-        return false;
+        $host = $_SERVER['HTTP_HOST'] ?? $_SERVER['SERVER_NAME'] ?? 'localhost';
+        return ($host === 'localhost' || $host === '127.0.0.1'
+                || strpos($host, 'localhost:') === 0);
     }
 }
 ?>
