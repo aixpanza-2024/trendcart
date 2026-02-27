@@ -5,8 +5,13 @@
  */
 
 class EmailManager {
+    // -------------------------------------------------------
+    // IMPORTANT: Change this to a real email account that
+    // exists on your cPanel server (e.g. noreply@yourdomain.com)
+    // The domain MUST match your hosting domain.
+    // -------------------------------------------------------
     private $from_email = "noreply@trencart.com";
-    private $from_name = "TrenCart";
+    private $from_name  = "TrenCart";
 
     /**
      * Send OTP email
@@ -27,8 +32,8 @@ class EmailManager {
             return true;
         }
 
-        // Send email — suppress warnings so they don't corrupt JSON output
-        $result = @mail($to_email, $subject, $message, $headers);
+        // -f sets the envelope sender (required by cPanel sendmail for delivery)
+        $result = @mail($to_email, $subject, $message, $headers, '-f' . $this->from_email);
         if (!$result) {
             error_log("mail() failed for OTP to {$to_email}");
         }
@@ -147,7 +152,7 @@ class EmailManager {
             error_log("Order Confirmation Email to {$to_email}: Order #{$order_data['order_number']}");
             return true;
         }
-        return @mail($to_email, $subject, $message, $headers);
+        return @mail($to_email, $subject, $message, $headers, '-f' . $this->from_email);
     }
 
     /**
@@ -162,7 +167,7 @@ class EmailManager {
             error_log("Admin Order Email to {$admin_email}: Order #{$order_data['order_number']} - ₹{$order_data['total']}");
             return true;
         }
-        return @mail($admin_email, $subject, $message, $headers);
+        return @mail($admin_email, $subject, $message, $headers, '-f' . $this->from_email);
     }
 
     /**
@@ -268,7 +273,7 @@ class EmailManager {
             error_log("Shop Order Email to {$to_email} ({$shop_name}): Order #{$order_data['order_number']}");
             return true;
         }
-        return @mail($to_email, $subject, $message, $headers);
+        return @mail($to_email, $subject, $message, $headers, '-f' . $this->from_email);
     }
 
     /**
@@ -324,8 +329,8 @@ class EmailManager {
      */
     private function isDevelopmentMode() {
         $host = $_SERVER['HTTP_HOST'] ?? $_SERVER['SERVER_NAME'] ?? 'localhost';
-        return ($host === 'localhost' || $host === '127.0.0.1'
-                || strpos($host, 'localhost:') === 0);
+        return $host === 'localhost' || $host === '127.0.0.1'
+                || strpos($host, 'localhost:') === 0;
     }
 }
 ?>
