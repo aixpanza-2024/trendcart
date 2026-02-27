@@ -1,74 +1,168 @@
 <?php
 /**
  * Email Manager
- * Handles email sending functionality
+ * Handles email sending via PHPMailer SMTP
  */
 
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
+
+// Load PHPMailer (installed via composer)
+require_once dirname(__DIR__, 2) . '/vendor/autoload.php';
+
+// Load SMTP credentials (not committed to git)
+require_once dirname(__DIR__) . '/config/email_config.php';
+
 class EmailManager {
-    // -------------------------------------------------------
-    // IMPORTANT: Change this to a real email account that
-    // exists on your cPanel server (e.g. noreply@yourdomain.com)
-    // The domain MUST match your hosting domain.
-    // -------------------------------------------------------
-    private $from_email = "noreply@trencart.com";
-    private $from_name  = "TrenCart";
+
+    /**
+     * Create and configure a PHPMailer instance
+     * @return PHPMailer
+     */
+    private function createMailer() {
+        $mail = new PHPMailer(true);
+
+        $mail->isSMTP();
+        $mail->Host       = SMTP_HOST;
+        $mail->SMTPAuth   = true;
+        $mail->Username   = SMTP_USERNAME;
+        $mail->Password   = SMTP_PASSWORD;
+        $mail->SMTPSecure = SMTP_SECURE === 'tls' ? PHPMailer::ENCRYPTION_STARTTLS : PHPMailer::ENCRYPTION_SMTPS;
+        $mail->Port       = SMTP_PORT;
+
+        $mail->setFrom(SMTP_FROM, SMTP_FROM_NAME);
+        $mail->isHTML(true);
+        $mail->CharSet = 'UTF-8';
+
+        return $mail;
+    }
 
     /**
      * Send OTP email
-     * @param string $to_email
-     * @param string $to_name
-     * @param string $otp
-     * @param string $purpose
-     * @return bool
      */
     public function sendOTPEmail($to_email, $to_name, $otp, $purpose = 'registration') {
-        $subject = $this->getEmailSubject($purpose);
-        $message = $this->getEmailTemplate($to_name, $otp, $purpose);
-        $headers = $this->getEmailHeaders();
-
-        // For development: Log OTP instead of sending email
         if ($this->isDevelopmentMode()) {
             error_log("OTP Email for {$to_email}: {$otp}");
             return true;
         }
 
-        // -f sets the envelope sender (required by cPanel sendmail for delivery)
-        $result = @mail($to_email, $subject, $message, $headers, '-f' . $this->from_email);
-        if (!$result) {
-            error_log("mail() failed for OTP to {$to_email}");
+        try {
+            $mail = $this->createMailer();
+            $mail->addAddress($to_email, $to_name);
+            $mail->Subject = $this->getEmailSubject($purpose);
+            $mail->Body    = $this->getEmailTemplate($to_name, $otp, $purpose);
+            $mail->send();
+            return true;
+        } catch (Exception $e) {
+            error_log("OTP email failed to {$to_email}: " . $e->getMessage());
+            return false;
         }
-        return $result;
     }
 
     /**
-     * Get email subject based on purpose
-     * @param string $purpose
-     * @return string
+     * Send order confirmation email to customer
      */
+    public function sendOrderConfirmationEmail($to_email, $to_name, $order_data) {
+        if ($this->isDevelopmentMode()) {
+            error_log("Order Confirmation Email to {$to_email}: Order #{$order_data['order_number']}");
+            return true;
+        }
+
+        try {
+            $mail = $this->createMailer();
+            $mail->addAddress($to_email, $to_name);
+            $mail->Subject = "TrenCart - Order Confirmed #{$order_data['order_number']}";
+            $mail->Body    = $this->getOrderConfirmationTemplate($to_name, $order_data);
+            $mail->send();
+            return true;
+        } catch (Exception $e) {
+            error_log("Order confirmation email failed: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Send new order notification email to admin
+     */
+    public function sendNewOrderAdminEmail($admin_email, $order_data) {
+        if ($this->isDevelopmentMode()) {
+            error_log("Admin Order Email to {$admin_email}: Order #{$order_data['order_number']} - ₹{$order_data['total']}");
+            return true;
+        }
+
+        try {
+            $mail = $this->createMailer();
+            $mail->addAddress($admin_email);
+            $mail->Subject = "TrenCart - New Order #{$order_data['order_number']}";
+            $mail->Body    = $this->getAdminOrderTemplate($order_data);
+            $mail->send();
+            return true;
+        } catch (Exception $e) {
+            error_log("Admin order email failed: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Send new order notification to a shop owner (only their items)
+     */
+    public function sendShopOrderEmail($to_email, $shop_name, $order_data, $shop_items) {
+        if ($this->isDevelopmentMode()) {
+            error_log("Shop Order Email to {$to_email} ({$shop_name}): Order #{$order_data['order_number']}");
+            return true;
+        }
+
+        try {
+            $mail = $this->createMailer();
+            $mail->addAddress($to_email, $shop_name);
+            $mail->Subject = "TrenCart - New Order #{$order_data['order_number']} for {$shop_name}";
+            $mail->Body    = $this->getShopOrderTemplate($shop_name, $order_data, $shop_items);
+            $mail->send();
+            return true;
+        } catch (Exception $e) {
+            error_log("Shop order email failed: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Auto-detect development mode based on hostname.
+     */
+    private function isDevelopmentMode() {
+        $host = $_SERVER['HTTP_HOST'] ?? $_SERVER['SERVER_NAME'] ?? 'localhost';
+        return $host === 'localhost' || $host === '127.0.0.1'
+                || strpos($host, 'localhost:') === 0;
+    }
+
+    // -------------------------------------------------------
+    // Email subject helpers
+    // -------------------------------------------------------
+
     private function getEmailSubject($purpose) {
         switch($purpose) {
-            case 'registration':
-                return "TrenCart - Verify Your Email";
-            case 'login':
-                return "TrenCart - Your Login OTP";
-            case 'password_reset':
-                return "TrenCart - Password Reset OTP";
-            default:
-                return "TrenCart - Verification Code";
+            case 'registration':    return "TrenCart - Verify Your Email";
+            case 'login':           return "TrenCart - Your Login OTP";
+            case 'password_reset':  return "TrenCart - Password Reset OTP";
+            default:                return "TrenCart - Verification Code";
         }
     }
 
-    /**
-     * Get email template
-     * @param string $name
-     * @param string $otp
-     * @param string $purpose
-     * @return string
-     */
+    private function getGreeting($purpose) {
+        switch($purpose) {
+            case 'registration':   return "Thank you for registering with TrenCart! Please use the following OTP to verify your email address:";
+            case 'login':          return "Your login OTP for TrenCart is:";
+            case 'password_reset': return "You requested to reset your password. Please use the following OTP:";
+            default:               return "Your verification code is:";
+        }
+    }
+
+    // -------------------------------------------------------
+    // Email templates
+    // -------------------------------------------------------
+
     private function getEmailTemplate($name, $otp, $purpose) {
         $greeting = $this->getGreeting($purpose);
-
-        $html = "
+        return "
         <!DOCTYPE html>
         <html>
         <head>
@@ -81,14 +175,11 @@ class EmailManager {
                 .content { background-color: #f8f9fa; padding: 30px; margin: 20px 0; border-radius: 8px; }
                 .otp-box { background-color: white; border: 2px solid #1a1a1a; padding: 20px; text-align: center; font-size: 32px; font-weight: bold; letter-spacing: 8px; margin: 20px 0; border-radius: 8px; }
                 .footer { text-align: center; color: #6c757d; font-size: 12px; padding: 20px; }
-                .button { display: inline-block; background-color: #1a1a1a; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; margin: 20px 0; }
             </style>
         </head>
         <body>
             <div class='container'>
-                <div class='header'>
-                    <h1>TrenCart</h1>
-                </div>
+                <div class='header'><h1>TrenCart</h1></div>
                 <div class='content'>
                     <h2>Hello, {$name}!</h2>
                     <p>{$greeting}</p>
@@ -102,77 +193,9 @@ class EmailManager {
                 </div>
             </div>
         </body>
-        </html>
-        ";
-
-        return $html;
+        </html>";
     }
 
-    /**
-     * Get greeting based on purpose
-     * @param string $purpose
-     * @return string
-     */
-    private function getGreeting($purpose) {
-        switch($purpose) {
-            case 'registration':
-                return "Thank you for registering with TrenCart! Please use the following OTP to verify your email address:";
-            case 'login':
-                return "Your login OTP for TrenCart is:";
-            case 'password_reset':
-                return "You requested to reset your password. Please use the following OTP:";
-            default:
-                return "Your verification code is:";
-        }
-    }
-
-    /**
-     * Get email headers
-     * @return string
-     */
-    private function getEmailHeaders() {
-        $headers  = "MIME-Version: 1.0" . "\r\n";
-        $headers .= "Content-type: text/html; charset=UTF-8" . "\r\n";
-        $headers .= "From: {$this->from_name} <{$this->from_email}>" . "\r\n";
-        $headers .= "Reply-To: {$this->from_email}" . "\r\n";
-        $headers .= "X-Mailer: PHP/" . phpversion();
-
-        return $headers;
-    }
-
-    /**
-     * Send order confirmation email to customer
-     */
-    public function sendOrderConfirmationEmail($to_email, $to_name, $order_data) {
-        $subject = "TrenCart - Order Confirmed #{$order_data['order_number']}";
-        $message = $this->getOrderConfirmationTemplate($to_name, $order_data);
-        $headers = $this->getEmailHeaders();
-
-        if ($this->isDevelopmentMode()) {
-            error_log("Order Confirmation Email to {$to_email}: Order #{$order_data['order_number']}");
-            return true;
-        }
-        return @mail($to_email, $subject, $message, $headers, '-f' . $this->from_email);
-    }
-
-    /**
-     * Send new order notification email to admin
-     */
-    public function sendNewOrderAdminEmail($admin_email, $order_data) {
-        $subject = "TrenCart - New Order #{$order_data['order_number']}";
-        $message = $this->getAdminOrderTemplate($order_data);
-        $headers = $this->getEmailHeaders();
-
-        if ($this->isDevelopmentMode()) {
-            error_log("Admin Order Email to {$admin_email}: Order #{$order_data['order_number']} - ₹{$order_data['total']}");
-            return true;
-        }
-        return @mail($admin_email, $subject, $message, $headers, '-f' . $this->from_email);
-    }
-
-    /**
-     * Build order confirmation HTML email for customer
-     */
     private function getOrderConfirmationTemplate($name, $d) {
         $rows = '';
         foreach ($d['items'] as $item) {
@@ -183,7 +206,7 @@ class EmailManager {
                 <td style='padding:8px;border-bottom:1px solid #eee;text-align:right;'>&#8377;" . number_format($item['subtotal'], 2) . "</td>
             </tr>";
         }
-        $shipping_info = $d['shipping_info'];
+        $s = $d['shipping_info'];
         return "<!DOCTYPE html><html><head><meta charset='UTF-8'></head><body style='font-family:Arial,sans-serif;color:#333;margin:0;padding:0;'>
         <div style='max-width:600px;margin:0 auto;'>
             <div style='background:#1a1a1a;color:#fff;padding:24px;text-align:center;'>
@@ -210,8 +233,8 @@ class EmailManager {
                 </table>
                 <div style='background:#fff;padding:16px;border-radius:8px;margin-bottom:20px;'>
                     <strong>Delivery Address:</strong><br>
-                    {$shipping_info['full_name']}, {$shipping_info['phone']}<br>
-                    {$shipping_info['address']}, {$shipping_info['city']}, {$shipping_info['state']} - {$shipping_info['pincode']}
+                    {$s['full_name']}, {$s['phone']}<br>
+                    {$s['address']}, {$s['city']}, {$s['state']} - {$s['pincode']}
                 </div>
                 <p style='background:#fff3cd;padding:12px;border-radius:6px;'><strong>Payment:</strong> Cash on Delivery &mdash; Pay when you receive your order.</p>
             </div>
@@ -221,9 +244,6 @@ class EmailManager {
         </div></body></html>";
     }
 
-    /**
-     * Build new order notification HTML email for admin
-     */
     private function getAdminOrderTemplate($d) {
         $rows = '';
         foreach ($d['items'] as $item) {
@@ -233,7 +253,7 @@ class EmailManager {
                 <td style='padding:8px;border-bottom:1px solid #eee;text-align:right;'>&#8377;" . number_format($item['subtotal'], 2) . "</td>
             </tr>";
         }
-        $shipping_info = $d['shipping_info'];
+        $s = $d['shipping_info'];
         return "<!DOCTYPE html><html><head><meta charset='UTF-8'></head><body style='font-family:Arial,sans-serif;color:#333;margin:0;padding:0;'>
         <div style='max-width:600px;margin:0 auto;'>
             <div style='background:#1a1a1a;color:#fff;padding:24px;text-align:center;'>
@@ -242,8 +262,8 @@ class EmailManager {
             <div style='padding:30px;background:#f8f9fa;'>
                 <h2>&#128222; New Order Received</h2>
                 <p style='font-size:18px;font-weight:bold;'>Order # {$d['order_number']}</p>
-                <p><strong>Customer:</strong> {$shipping_info['full_name']} ({$shipping_info['phone']})</p>
-                <p><strong>Delivery:</strong> {$shipping_info['address']}, {$shipping_info['city']}, {$shipping_info['state']} - {$shipping_info['pincode']}</p>
+                <p><strong>Customer:</strong> {$s['full_name']} ({$s['phone']})</p>
+                <p><strong>Delivery:</strong> {$s['address']}, {$s['city']}, {$s['state']} - {$s['pincode']}</p>
                 <table style='width:100%;border-collapse:collapse;margin:20px 0;background:#fff;'>
                     <thead><tr style='background:#1a1a1a;color:#fff;'>
                         <th style='padding:10px;text-align:left;'>Product</th>
@@ -261,24 +281,6 @@ class EmailManager {
         </div></body></html>";
     }
 
-    /**
-     * Send new order notification to a shop owner (only their items)
-     */
-    public function sendShopOrderEmail($to_email, $shop_name, $order_data, $shop_items) {
-        $subject = "TrenCart - New Order #{$order_data['order_number']} for {$shop_name}";
-        $message = $this->getShopOrderTemplate($shop_name, $order_data, $shop_items);
-        $headers = $this->getEmailHeaders();
-
-        if ($this->isDevelopmentMode()) {
-            error_log("Shop Order Email to {$to_email} ({$shop_name}): Order #{$order_data['order_number']}");
-            return true;
-        }
-        return @mail($to_email, $subject, $message, $headers, '-f' . $this->from_email);
-    }
-
-    /**
-     * Build new order notification HTML email for a shop owner (only their items)
-     */
     private function getShopOrderTemplate($shop_name, $d, $shop_items) {
         $rows = '';
         $shop_total = 0;
@@ -320,17 +322,6 @@ class EmailManager {
                 TrenCart &mdash; Shop Owner Notification
             </div>
         </div></body></html>";
-    }
-
-    /**
-     * Auto-detect development mode based on hostname.
-     * localhost / 127.0.0.1 → dev (log OTP, skip real mail)
-     * Any other host        → production (send real email)
-     */
-    private function isDevelopmentMode() {
-        $host = $_SERVER['HTTP_HOST'] ?? $_SERVER['SERVER_NAME'] ?? 'localhost';
-        return $host === 'localhost' || $host === '127.0.0.1'
-                || strpos($host, 'localhost:') === 0;
     }
 }
 ?>

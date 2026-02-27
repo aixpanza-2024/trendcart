@@ -1,0 +1,12 @@
+# Composer dependencies (install on server via: composer install)
+/vendor/
+
+# SMTP credentials — fill in api/config/email_config.php on the server
+api/config/email_config.php
+
+# Diagnostic / test scripts — never commit these
+test-mail.php
+
+# OS files
+.DS_Store
+Thumbs.db
