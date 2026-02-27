@@ -1,0 +1,5 @@
+---
+deployment:
+  tasks:
+    - export DEPLOYPATH=/home/notechin/public_html/trencart.com
+    - /bin/cp -R . $DEPLOYPATH
