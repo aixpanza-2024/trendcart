@@ -296,16 +296,14 @@ if (window.location.pathname.includes('cart.html')) {
 /* ===================================
    QUICK ADD TO CART (with animation)
    =================================== */
-function quickAddToCart(button, productId, productName, productPrice, productImage, shopName) {
+function quickAddToCart(button, productId, productName, productPrice, productImage, shopName, size) {
     // Add loading state to button
     const originalHTML = button.innerHTML;
     button.disabled = true;
     button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Adding...';
 
-    // Simulate API delay (remove when integrating with backend)
     setTimeout(() => {
-        // size = null for quick-add (no size selection prompt available here)
-        addToCart(productId, productName, productPrice, productImage, shopName, null);
+        addToCart(productId, productName, productPrice, productImage, shopName, size || null);
 
         // Reset button
         button.disabled = false;

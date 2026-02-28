@@ -183,22 +183,35 @@ function buildProductCard(p) {
     const safeName = p.product_name.replace(/'/g, "\\'");
     const safeShop = (p.shop_name || '').replace(/'/g, "\\'");
     const safeImg  = img.replace(/'/g, "\\'");
+    const pid      = p.product_id;
 
-    // If product has size variants, user must select a size on the detail page first
-    const hasSizes = p.size && p.size.trim() !== '';
+    // Build inline size selector — first size is selected by default
+    const sizes    = (p.size && p.size.trim()) ? p.size.split(',').map(s => s.trim()).filter(Boolean) : [];
+    const hasSizes = sizes.length > 0;
+
+    const sizeRow = hasSizes
+        ? `<div class="card-size-row mb-2">
+               ${sizes.map((s, i) => `<button type="button"
+                   class="card-size-btn${i === 0 ? ' active' : ''}"
+                   onclick="cardSelectSize(this)"
+                   data-size="${s}">${s}</button>`).join('')}
+           </div>`
+        : '';
+
     const cartBtn = hasSizes
-        ? `<a href="product-detail.html?id=${p.product_id}" class="btn btn-outline-dark btn-sm w-100">
-               <i class="fas fa-ruler-combined"></i> Select Size
-           </a>`
+        ? `<button class="btn btn-primary btn-sm w-100"
+               onclick="cardAddToCart('${pid}','${safeName}',${p.price},'${safeImg}','${safeShop}',this)">
+               <i class="fas fa-shopping-cart"></i> Add to Cart
+           </button>`
         : `<button class="btn btn-primary btn-sm w-100"
-               onclick="quickAddToCart(this, '${p.product_id}', '${safeName}', ${p.price}, '${safeImg}', '${safeShop}')">
+               onclick="quickAddToCart(this,'${pid}','${safeName}',${p.price},'${safeImg}','${safeShop}')">
                <i class="fas fa-shopping-cart"></i> Add to Cart
            </button>`;
 
     return `
         <div class="col-md-6 col-lg-4">
-            <div class="product-card">
-                <a href="product-detail.html?id=${p.product_id}" class="d-block">
+            <div class="product-card" data-pid="${pid}">
+                <a href="product-detail.html?id=${pid}" class="d-block">
                     <div class="product-img-wrap">
                         <img src="${img}" alt="${p.product_name}"
                              onerror="this.src='https://placehold.co/400x180/1a1a1a/ffffff?text=Product'">
@@ -207,7 +220,7 @@ function buildProductCard(p) {
                 </a>
                 <div class="card-body py-2 px-3">
                     <h6 class="card-title mb-1">
-                        <a href="product-detail.html?id=${p.product_id}" class="text-decoration-none text-dark">
+                        <a href="product-detail.html?id=${pid}" class="text-decoration-none text-dark">
                             ${p.product_name}
                         </a>
                     </h6>
@@ -215,10 +228,25 @@ function buildProductCard(p) {
                     <div class="card-price mb-2">
                         ₹${parseFloat(p.price).toLocaleString()}${originalPrice}
                     </div>
+                    ${sizeRow}
                     ${cartBtn}
                 </div>
             </div>
         </div>`;
+}
+
+/* ── Card size selector helpers ─────────────────────────────────── */
+function cardSelectSize(btn) {
+    // Deactivate siblings within the same card
+    btn.closest('.card-size-row').querySelectorAll('.card-size-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+}
+
+function cardAddToCart(productId, productName, productPrice, productImage, shopName, addBtn) {
+    const card        = addBtn.closest('.product-card');
+    const activeSize  = card ? card.querySelector('.card-size-btn.active') : null;
+    const size        = activeSize ? activeSize.dataset.size : null;
+    quickAddToCart(addBtn, productId, productName, productPrice, productImage, shopName, size);
 }
 
 async function loadCategories(activeCategoryId) {

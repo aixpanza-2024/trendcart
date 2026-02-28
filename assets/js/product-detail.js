@@ -255,13 +255,13 @@ function selectSize(btn) {
     const errEl = document.getElementById('sizeError');
     if (errEl) errEl.classList.add('d-none');
 
-    // Update displayed price if price adjustment exists
-    const adj = parseFloat(btn.dataset.priceAdj || 0);
-    if (adj !== 0 && currentProduct) {
-        const base = parseFloat(currentProduct.price);
+    // Always update displayed price when size changes (including reset to base when adj=0)
+    if (currentProduct) {
+        const adj       = parseFloat(btn.dataset.priceAdj || 0);
+        const base      = parseFloat(currentProduct.price);
         const effective = base + adj;
-        const orig = parseFloat(currentProduct.original_price || 0);
-        const discount = parseFloat(currentProduct.discount_percentage || 0);
+        const orig      = parseFloat(currentProduct.original_price || 0);
+        const discount  = parseFloat(currentProduct.discount_percentage || 0);
         let priceHTML = `<span class="product-detail-price">₹${effective.toLocaleString()}</span>`;
         if (orig > base) {
             priceHTML += `<span class="product-detail-original ms-2">₹${orig.toLocaleString()}</span>`;
