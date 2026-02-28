@@ -74,6 +74,7 @@ try {
         $pStmt->bindValue(':pid', $product_id, PDO::PARAM_INT);
         $pStmt->execute();
         $product = $pStmt->fetch(PDO::FETCH_ASSOC);
+        $pStmt->closeCursor();
 
         if (!$product) continue; // skip inactive / not found
 
@@ -88,6 +89,7 @@ try {
             $adjStmt->bindValue(':size', $selected_size);
             $adjStmt->execute();
             $adjRow = $adjStmt->fetch(PDO::FETCH_ASSOC);
+            $adjStmt->closeCursor();
             if ($adjRow) {
                 $effective_price += (float)$adjRow['price_adjustment'];
             }
@@ -121,7 +123,9 @@ try {
         $chk = $conn->prepare("SELECT order_id FROM orders WHERE order_number = :on LIMIT 1");
         $chk->bindValue(':on', $order_number);
         $chk->execute();
-    } while ($chk->fetch());
+        $chkExists = $chk->fetch();
+        $chk->closeCursor();
+    } while ($chkExists);
 
     $conn->beginTransaction();
 
