@@ -17,10 +17,17 @@ try {
     $sort        = isset($_GET['sort'])        ? trim($_GET['sort'])          : 'featured';
     $search      = isset($_GET['search'])      ? trim($_GET['search'])        : '';
 
+    // Check whether `size` column exists in products table (may be absent on older DBs)
+    $size_expr = "'' AS size";
+    try {
+        $conn->query("SELECT `size` FROM `products` LIMIT 0");
+        $size_expr = 'p.size';
+    } catch (\PDOException $e) { /* column absent – fall through to empty string */ }
+
     $sql = "SELECT p.product_id, p.product_name, p.price, p.original_price,
                    p.discount_percentage, p.product_description,
                    p.category_id, p.created_at, p.orders_count,
-                   p.size,
+                   $size_expr,
                    s.shop_id, s.shop_name,
                    c.category_name,
                    (SELECT image_url FROM product_images
