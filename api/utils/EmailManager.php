@@ -5,7 +5,6 @@
  */
 
 use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\Exception;
 
 // Load PHPMailer (installed via composer)
 require_once dirname(__DIR__, 2) . '/vendor/autoload.php';
@@ -49,11 +48,12 @@ class EmailManager {
         try {
             $mail = $this->createMailer();
             $mail->addAddress($to_email, $to_name);
-            $mail->Subject = $this->getEmailSubject($purpose);
-            $mail->Body    = $this->getEmailTemplate($to_name, $otp, $purpose);
+            $mail->Subject  = $this->getEmailSubject($purpose);
+            $mail->Body     = $this->getEmailTemplate($to_name, $otp, $purpose);
+            $mail->AltBody  = "Hello {$to_name},\n\n" . $this->getGreeting($purpose) . "\n\nYour OTP: {$otp}\n\nThis OTP expires in 10 minutes.\n\nIf you did not request this, please ignore this email.\n\nTrenCart";
             $mail->send();
             return true;
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             error_log("OTP email failed to {$to_email}: " . $e->getMessage());
             return false;
         }
@@ -71,11 +71,12 @@ class EmailManager {
         try {
             $mail = $this->createMailer();
             $mail->addAddress($to_email, $to_name);
-            $mail->Subject = "TrenCart - Order Confirmed #{$order_data['order_number']}";
-            $mail->Body    = $this->getOrderConfirmationTemplate($to_name, $order_data);
+            $mail->Subject  = "TrenCart - Order Confirmed #{$order_data['order_number']}";
+            $mail->Body     = $this->getOrderConfirmationTemplate($to_name, $order_data);
+            $mail->AltBody  = "Hi {$to_name}, your order #{$order_data['order_number']} has been placed successfully.\nTotal: Rs." . number_format($order_data['total'], 2) . "\nPayment: Cash on Delivery.\n\nTrenCart";
             $mail->send();
             return true;
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             error_log("Order confirmation email failed: " . $e->getMessage());
             return false;
         }
@@ -86,18 +87,19 @@ class EmailManager {
      */
     public function sendNewOrderAdminEmail($admin_email, $order_data) {
         if ($this->isDevelopmentMode()) {
-            error_log("Admin Order Email to {$admin_email}: Order #{$order_data['order_number']} - ₹{$order_data['total']}");
+            error_log("Admin Order Email to {$admin_email}: Order #{$order_data['order_number']} - Rs.{$order_data['total']}");
             return true;
         }
 
         try {
             $mail = $this->createMailer();
             $mail->addAddress($admin_email);
-            $mail->Subject = "TrenCart - New Order #{$order_data['order_number']}";
-            $mail->Body    = $this->getAdminOrderTemplate($order_data);
+            $mail->Subject  = "TrenCart - New Order #{$order_data['order_number']}";
+            $mail->Body     = $this->getAdminOrderTemplate($order_data);
+            $mail->AltBody  = "New order #{$order_data['order_number']} received.\nTotal: Rs." . number_format($order_data['total'], 2) . "\nPayment: Cash on Delivery.\n\nTrenCart Admin";
             $mail->send();
             return true;
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             error_log("Admin order email failed: " . $e->getMessage());
             return false;
         }
@@ -115,11 +117,12 @@ class EmailManager {
         try {
             $mail = $this->createMailer();
             $mail->addAddress($to_email, $shop_name);
-            $mail->Subject = "TrenCart - New Order #{$order_data['order_number']} for {$shop_name}";
-            $mail->Body    = $this->getShopOrderTemplate($shop_name, $order_data, $shop_items);
+            $mail->Subject  = "TrenCart - New Order #{$order_data['order_number']} for {$shop_name}";
+            $mail->Body     = $this->getShopOrderTemplate($shop_name, $order_data, $shop_items);
+            $mail->AltBody  = "Hi {$shop_name}, you have a new order #{$order_data['order_number']}.\nPlease log in to your shop panel to process it.\n\nTrenCart";
             $mail->send();
             return true;
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             error_log("Shop order email failed: " . $e->getMessage());
             return false;
         }
@@ -130,8 +133,10 @@ class EmailManager {
      */
     private function isDevelopmentMode() {
         $host = $_SERVER['HTTP_HOST'] ?? $_SERVER['SERVER_NAME'] ?? 'localhost';
-        return $host === 'localhost' || $host === '127.0.0.1'
-                || strpos($host, 'localhost:') === 0;
+        return $host === 'localhost'
+            || $host === '127.0.0.1'
+            || $host === '::1'
+            || strpos($host, 'localhost:') === 0;
     }
 
     // -------------------------------------------------------
@@ -188,7 +193,7 @@ class EmailManager {
                     <p>If you didn't request this code, please ignore this email.</p>
                 </div>
                 <div class='footer'>
-                    <p>&copy; 2024 TrenCart. All rights reserved.</p>
+                    <p>&copy; 2026 TrenCart. All rights reserved.</p>
                     <p>This is an automated email. Please do not reply to this message.</p>
                 </div>
             </div>
@@ -199,8 +204,11 @@ class EmailManager {
     private function getOrderConfirmationTemplate($name, $d) {
         $rows = '';
         foreach ($d['items'] as $item) {
+            $size_label = !empty($item['selected_size'])
+                ? " <span style='font-size:11px;background:#eee;padding:1px 6px;border-radius:4px;'>{$item['selected_size']}</span>"
+                : '';
             $rows .= "<tr>
-                <td style='padding:8px;border-bottom:1px solid #eee;'>{$item['product_name']}</td>
+                <td style='padding:8px;border-bottom:1px solid #eee;'>{$item['product_name']}{$size_label}</td>
                 <td style='padding:8px;border-bottom:1px solid #eee;text-align:center;'>{$item['quantity']}</td>
                 <td style='padding:8px;border-bottom:1px solid #eee;text-align:right;'>&#8377;" . number_format($item['price'], 2) . "</td>
                 <td style='padding:8px;border-bottom:1px solid #eee;text-align:right;'>&#8377;" . number_format($item['subtotal'], 2) . "</td>
@@ -239,7 +247,7 @@ class EmailManager {
                 <p style='background:#fff3cd;padding:12px;border-radius:6px;'><strong>Payment:</strong> Cash on Delivery &mdash; Pay when you receive your order.</p>
             </div>
             <div style='text-align:center;color:#999;font-size:12px;padding:20px;'>
-                &copy; 2024 TrenCart. All rights reserved.
+                &copy; 2026 TrenCart. All rights reserved.
             </div>
         </div></body></html>";
     }
@@ -247,8 +255,11 @@ class EmailManager {
     private function getAdminOrderTemplate($d) {
         $rows = '';
         foreach ($d['items'] as $item) {
+            $size_label = !empty($item['selected_size'])
+                ? " <span style='font-size:11px;background:#eee;padding:1px 6px;border-radius:4px;'>{$item['selected_size']}</span>"
+                : '';
             $rows .= "<tr>
-                <td style='padding:8px;border-bottom:1px solid #eee;'>{$item['product_name']}</td>
+                <td style='padding:8px;border-bottom:1px solid #eee;'>{$item['product_name']}{$size_label}</td>
                 <td style='padding:8px;border-bottom:1px solid #eee;text-align:center;'>{$item['quantity']}</td>
                 <td style='padding:8px;border-bottom:1px solid #eee;text-align:right;'>&#8377;" . number_format($item['subtotal'], 2) . "</td>
             </tr>";

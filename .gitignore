@@ -1,5 +1,5 @@
-# Composer dependencies (install on server via: composer install)
-/vendor/
+# Composer vendor committed directly (no SSH/terminal on server)
+# /vendor/
 
 # SMTP credentials — fill in api/config/email_config.php on the server
 api/config/email_config.php
