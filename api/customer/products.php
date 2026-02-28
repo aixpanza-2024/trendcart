@@ -20,6 +20,7 @@ try {
     $sql = "SELECT p.product_id, p.product_name, p.price, p.original_price,
                    p.discount_percentage, p.product_description,
                    p.category_id, p.created_at, p.orders_count,
+                   p.size,
                    s.shop_id, s.shop_name,
                    c.category_name,
                    (SELECT image_url FROM product_images

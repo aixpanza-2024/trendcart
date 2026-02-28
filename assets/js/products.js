@@ -184,6 +184,17 @@ function buildProductCard(p) {
     const safeShop = (p.shop_name || '').replace(/'/g, "\\'");
     const safeImg  = img.replace(/'/g, "\\'");
 
+    // If product has size variants, user must select a size on the detail page first
+    const hasSizes = p.size && p.size.trim() !== '';
+    const cartBtn = hasSizes
+        ? `<a href="product-detail.html?id=${p.product_id}" class="btn btn-outline-dark btn-sm w-100">
+               <i class="fas fa-ruler-combined"></i> Select Size
+           </a>`
+        : `<button class="btn btn-primary btn-sm w-100"
+               onclick="quickAddToCart(this, '${p.product_id}', '${safeName}', ${p.price}, '${safeImg}', '${safeShop}')">
+               <i class="fas fa-shopping-cart"></i> Add to Cart
+           </button>`;
+
     return `
         <div class="col-md-6 col-lg-4">
             <div class="product-card">
@@ -204,10 +215,7 @@ function buildProductCard(p) {
                     <div class="card-price mb-2">
                         ₹${parseFloat(p.price).toLocaleString()}${originalPrice}
                     </div>
-                    <button class="btn btn-primary btn-sm w-100"
-                        onclick="quickAddToCart(this, '${p.product_id}', '${safeName}', ${p.price}, '${safeImg}', '${safeShop}')">
-                        <i class="fas fa-shopping-cart"></i> Add to Cart
-                    </button>
+                    ${cartBtn}
                 </div>
             </div>
         </div>`;
