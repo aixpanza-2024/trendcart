@@ -54,6 +54,22 @@ function playAdminOrderSound() {
     }
 }
 
+function _requestAdminNotifPermission() {
+    if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission();
+    }
+}
+
+function _showAdminBrowserNotification(count) {
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+    const n = new Notification(`New Order${count > 1 ? 's' : ''} Received!`, {
+        body: `${count} new pending order${count > 1 ? 's' : ''} — check the admin panel.`,
+        icon: '../assets/images/trencartlogo.png',
+        requireInteraction: true
+    });
+    n.onclick = () => { window.focus(); n.close(); };
+}
+
 function startAdminOrderNotifications() {
     pollAdminNewOrders();
     setInterval(pollAdminNewOrders, 30000);
@@ -77,6 +93,7 @@ async function pollAdminNewOrders() {
         if (newOnes.length) {
             newOnes.forEach(id => _adminKnownOrderIds.add(id));
             playAdminOrderSound();
+            _showAdminBrowserNotification(newOnes.length);
             adminToast(
                 `<i class="fas fa-bell me-2"></i>${newOnes.length} new order${newOnes.length > 1 ? 's' : ''} received!`,
                 'success'
@@ -191,6 +208,7 @@ async function checkAdminAuth() {
         // Load sidebar badge counts + start new-order notifications
         loadSidebarBadges();
         startAdminOrderNotifications();
+        _requestAdminNotifPermission();
     } catch (e) {
         console.error('Auth check failed:', e);
         window.location.href = '../pages/login.html';

@@ -32,6 +32,7 @@ document.addEventListener('DOMContentLoaded', function () {
     checkShopAuth();
     loadOrders();
     startOrderNotifications();
+    _requestNotifPermission();
 
     document.getElementById('searchOrder').addEventListener('keyup', function (e) {
         if (e.key === 'Enter') loadOrders();
@@ -212,9 +213,30 @@ function esc(str) {
 /* ===================================
    NEW ORDER NOTIFICATIONS
    Polls every 30s for pending orders.
-   Plays a sound + shows toast when
-   a new one arrives.
+   Plays a sound + shows toast + fires
+   a browser system notification when
+   a new one arrives (works even when
+   the tab is in the background).
    =================================== */
+
+// Ask for browser notification permission once (needs user gesture, so we
+// call this from DOMContentLoaded — the page-load navigation counts).
+function _requestNotifPermission() {
+    if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission();
+    }
+}
+
+function _showBrowserNotification(count) {
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+    const n = new Notification(`New Order${count > 1 ? 's' : ''} Received!`, {
+        body: `You have ${count} new pending order${count > 1 ? 's' : ''}.`,
+        icon: '../assets/images/trencartlogo.png',
+        requireInteraction: true  // stays on screen until dismissed
+    });
+    n.onclick = () => { window.focus(); n.close(); };
+}
+
 function startOrderNotifications() {
     // First snapshot (silent — no notification for already-existing orders)
     pollNewOrders();
@@ -240,6 +262,7 @@ async function pollNewOrders() {
         if (newOnes.length) {
             newOnes.forEach(id => _knownOrderIds.add(id));
             playOrderSound();
+            _showBrowserNotification(newOnes.length);
             _shopToast(`<i class="fas fa-bell me-2"></i>${newOnes.length} new order${newOnes.length > 1 ? 's' : ''} received!`);
             loadOrders(); // refresh table
         }
