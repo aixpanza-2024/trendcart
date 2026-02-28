@@ -61,6 +61,7 @@ try {
             oi.order_item_id,
             oi.order_id,
             oi.item_status,
+            oi.selected_size,
             oi.quantity,
             oi.price,
             oi.subtotal,

@@ -82,40 +82,79 @@ async function loadOrders() {
 
 function renderOrders(orders) {
     const tbody = document.getElementById('ordersTable');
-    document.getElementById('orderCount').textContent = orders.length;
 
     if (!orders.length) {
+        document.getElementById('orderCount').textContent = '0';
         tbody.innerHTML = '<tr><td colspan="8" class="text-center text-grey py-5"><i class="fas fa-shopping-bag fa-3x mb-3 d-block"></i>No orders found</td></tr>';
         return;
     }
 
-    tbody.innerHTML = orders.map(o => {
-        const img = o.product_image
-            ? `<img src="${o.product_image}" class="product-thumb me-2" alt="">`
-            : `<div class="product-thumb-placeholder me-2"><i class="fas fa-image text-grey"></i></div>`;
+    // Group items by order_id, preserving date order
+    const grouped = {};
+    const orderKeys = [];
+    orders.forEach(item => {
+        if (!grouped[item.order_id]) {
+            grouped[item.order_id] = {
+                order_number:  item.order_number,
+                order_date:    item.order_date,
+                customer_name: item.customer_name,
+                items: []
+            };
+            orderKeys.push(item.order_id);
+        }
+        grouped[item.order_id].items.push(item);
+    });
 
-        const date = new Date(o.order_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-        const actions = nextActions(o.item_status);
+    document.getElementById('orderCount').textContent = orderKeys.length;
 
-        return `<tr>
-            <td>
-                <div class="d-flex align-items-center">
-                    ${img}
-                    <span style="font-size:13px; max-width:140px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${esc(o.product_name)}">${esc(o.product_name)}</span>
-                </div>
+    let html = '';
+    orderKeys.forEach(orderId => {
+        const order = grouped[orderId];
+        const date  = new Date(order.order_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+        const count = order.items.length;
+
+        // Order header row spanning all columns
+        html += `<tr style="background:#f0f4f8;">
+            <td colspan="8" style="padding:8px 14px;border-top:2px solid #dee2e6;">
+                <strong>#${esc(order.order_number)}</strong>
+                &nbsp;&mdash;&nbsp;${esc(order.customer_name)}
+                &nbsp;&mdash;&nbsp;<small class="text-muted">${date}</small>
+                &nbsp;&mdash;&nbsp;<small class="text-muted">${count} item${count > 1 ? 's' : ''}</small>
             </td>
-            <td><small class="text-muted">#${esc(o.order_number)}</small></td>
-            <td>${esc(o.customer_name)}</td>
-            <td>${o.quantity}</td>
-            <td>₹${parseFloat(o.subtotal).toLocaleString('en-IN')}</td>
-            <td><small>${date}</small></td>
-            <td><span class="order-badge badge-${o.item_status}">${capitalize(o.item_status)}</span></td>
-            <td>${actions ? `<select class="form-select form-select-sm" style="min-width:120px" onchange="updateStatus(${o.order_item_id}, this.value, this)">
-                <option value="">Change...</option>
-                ${actions}
-            </select>` : '<span class="text-muted small">—</span>'}</td>
         </tr>`;
-    }).join('');
+
+        // One row per item under this order
+        order.items.forEach(item => {
+            const rawImg  = item.product_image ? item.product_image.replace(/^\//, '') : null;
+            const imgSrc  = rawImg ? '../' + rawImg : null;
+            const img     = imgSrc
+                ? `<img src="${imgSrc}" class="product-thumb me-2" alt="" onerror="this.style.display='none'">`
+                : `<div class="product-thumb-placeholder me-2"><i class="fas fa-image text-grey"></i></div>`;
+            const sizeTag = item.selected_size
+                ? `<span class="badge bg-light text-dark border ms-1" style="font-size:10px;">${esc(item.selected_size)}</span>`
+                : '';
+            const actions = nextActions(item.item_status);
+
+            html += `<tr>
+                <td colspan="3">
+                    <div class="d-flex align-items-center ps-3">
+                        ${img}
+                        <span style="font-size:13px;max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${esc(item.product_name)}">${esc(item.product_name)}${sizeTag}</span>
+                    </div>
+                </td>
+                <td>${item.quantity}</td>
+                <td>₹${parseFloat(item.subtotal).toLocaleString('en-IN')}</td>
+                <td></td>
+                <td><span class="order-badge badge-${item.item_status}">${capitalize(item.item_status)}</span></td>
+                <td>${actions ? `<select class="form-select form-select-sm" style="min-width:120px" onchange="updateStatus(${item.order_item_id}, this.value, this)">
+                    <option value="">Change...</option>
+                    ${actions}
+                </select>` : '<span class="text-muted small">—</span>'}</td>
+            </tr>`;
+        });
+    });
+
+    tbody.innerHTML = html;
 }
 
 function nextActions(status) {

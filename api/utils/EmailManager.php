@@ -283,7 +283,12 @@ class EmailManager {
                     </tr></thead>
                     <tbody>{$rows}</tbody>
                 </table>
-                <p style='font-size:20px;font-weight:bold;'>Order Total: &#8377;" . number_format($d['total'], 2) . "</p>
+                <table style='width:100%;margin:0 0 20px;'>
+                    <tr><td>Subtotal</td><td style='text-align:right;'>&#8377;" . number_format($d['subtotal'], 2) . "</td></tr>
+                    <tr><td>GST (18%)</td><td style='text-align:right;'>&#8377;" . number_format($d['tax'], 2) . "</td></tr>
+                    <tr><td>Shipping</td><td style='text-align:right;'>" . ($d['shipping'] == 0 ? 'FREE' : '&#8377;' . number_format($d['shipping'], 2)) . "</td></tr>
+                    <tr style='font-size:18px;font-weight:bold;border-top:2px solid #333;'><td>Total</td><td style='text-align:right;'>&#8377;" . number_format($d['total'], 2) . "</td></tr>
+                </table>
                 <p><strong>Payment:</strong> Cash on Delivery</p>
             </div>
             <div style='text-align:center;color:#999;font-size:12px;padding:20px;'>
