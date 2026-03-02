@@ -150,7 +150,6 @@ async function loadProductData(id) {
             document.getElementById('lowStockThreshold').value = product.low_stock_threshold || '';
 
             document.getElementById('color').value = product.color || '';
-            document.getElementById('size').value = product.size || '';
             document.getElementById('material').value = product.material || '';
             document.getElementById('fabricType').value = product.fabric_type || '';
             document.getElementById('pattern').value = product.pattern || '';
