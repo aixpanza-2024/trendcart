@@ -179,10 +179,10 @@ function nextActions(status) {
         pending:    ['confirmed'],
         confirmed:  ['processing', 'cancelled'],
         processing: ['shipped', 'cancelled'],
-        shipped:    ['delivered'],
+        shipped:    [],
     };
     const opts = flow[status];
-    if (!opts) return '';
+    if (!opts || !opts.length) return '';
     return opts.map(s => `<option value="${s}">${capitalize(s)}</option>`).join('');
 }
 
