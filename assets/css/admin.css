@@ -461,5 +461,6 @@
 
 /* --- Revenue Colors --- */
 .revenue-card { background: linear-gradient(135deg, #1a1a1a, #2d2d2d); color: white; }
+.revenue-card .stat-value { color: white; }
 .revenue-card .stat-label { color: rgba(255,255,255,0.7); }
 .revenue-card .stat-icon { background: rgba(255,255,255,0.15); color: white; }

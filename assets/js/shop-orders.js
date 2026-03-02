@@ -96,9 +96,15 @@ function renderOrders(orders) {
     orders.forEach(item => {
         if (!grouped[item.order_id]) {
             grouped[item.order_id] = {
-                order_number:  item.order_number,
-                order_date:    item.order_date,
-                customer_name: item.customer_name,
+                order_number:      item.order_number,
+                order_date:        item.order_date,
+                customer_name:     item.customer_name,
+                customer_phone:    item.customer_phone,
+                shipping_address:  item.shipping_address,
+                shipping_city:     item.shipping_city,
+                shipping_state:    item.shipping_state,
+                shipping_pincode:  item.shipping_pincode,
+                shipping_phone:    item.shipping_phone,
                 items: []
             };
             orderKeys.push(item.order_id);
@@ -115,12 +121,22 @@ function renderOrders(orders) {
         const count = order.items.length;
 
         // Order header row spanning all columns
+        const addrParts = [order.shipping_address, order.shipping_city, order.shipping_state, order.shipping_pincode].filter(Boolean);
+        const addrLine  = addrParts.length ? `<span class="text-muted" style="font-size:12px;"><i class="fas fa-map-marker-alt me-1"></i>${esc(addrParts.join(', '))}</span>` : '';
+        const phoneLine = (order.shipping_phone || order.customer_phone)
+            ? `<span class="text-muted ms-3" style="font-size:12px;"><i class="fas fa-phone me-1"></i>${esc(order.shipping_phone || order.customer_phone)}</span>`
+            : '';
+
         html += `<tr style="background:#f0f4f8;">
             <td colspan="8" style="padding:8px 14px;border-top:2px solid #dee2e6;">
-                <strong>#${esc(order.order_number)}</strong>
-                &nbsp;&mdash;&nbsp;${esc(order.customer_name)}
-                &nbsp;&mdash;&nbsp;<small class="text-muted">${date}</small>
-                &nbsp;&mdash;&nbsp;<small class="text-muted">${count} item${count > 1 ? 's' : ''}</small>
+                <div class="d-flex flex-wrap align-items-center gap-2">
+                    <strong>#${esc(order.order_number)}</strong>
+                    <span class="text-muted">&mdash;</span>
+                    ${esc(order.customer_name)}
+                    <small class="text-muted">${date}</small>
+                    <small class="text-muted">${count} item${count > 1 ? 's' : ''}</small>
+                </div>
+                ${addrLine || phoneLine ? `<div class="mt-1">${addrLine}${phoneLine}</div>` : ''}
             </td>
         </tr>`;
 

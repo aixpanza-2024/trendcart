@@ -54,7 +54,7 @@ try {
         SELECT o.order_id, o.order_number, o.order_date, o.total_amount,
                o.order_status, o.payment_status, o.payment_method,
                u.full_name as customer_name, u.email as customer_email, u.phone as customer_phone,
-               o.shipping_city,
+               o.shipping_address, o.shipping_city, o.shipping_state, o.shipping_pincode, o.shipping_phone,
                GROUP_CONCAT(DISTINCT s.shop_name SEPARATOR ', ') as shop_names
         FROM orders o
         LEFT JOIN users u ON o.customer_id = u.user_id
