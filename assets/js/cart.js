@@ -29,38 +29,90 @@ function addToCart(productId, productName, productPrice, productImage, shopName,
     }
 
     const cartKey = makeCartKey(productId, size);
+    const cart    = getCart();
 
-    // Get current cart
-    let cart = getCart();
+    // If cart has items from a different shop, ask user to confirm clearing
+    const existingShop = cart.length > 0 ? cart[0].shop : null;
+    if (existingShop && shopName && existingShop !== shopName) {
+        _showShopConflictModal(existingShop, shopName, function () {
+            localStorage.removeItem('cart');
+            _doAddToCart([], cartKey, productId, productName, productPrice, productImage, shopName, size);
+        });
+        return;
+    }
 
-    // Check if same product+size already in cart
+    _doAddToCart(cart, cartKey, productId, productName, productPrice, productImage, shopName, size);
+}
+
+/* Internal: actually insert/increment the item and save */
+function _doAddToCart(cart, cartKey, productId, productName, productPrice, productImage, shopName, size) {
     const existingItemIndex = cart.findIndex(item => item.cartKey === cartKey);
 
     if (existingItemIndex > -1) {
-        // Increment quantity if item exists
         cart[existingItemIndex].quantity += 1;
         showToast('Item quantity updated in cart', 'success');
     } else {
-        // Add new item to cart
-        const newItem = {
+        cart.push({
             cartKey,
-            id: productId,
-            size: size || null,
-            name: productName,
-            price: parseFloat(productPrice),
-            image: productImage,
-            shop: shopName,
+            id:       productId,
+            size:     size || null,
+            name:     productName,
+            price:    parseFloat(productPrice),
+            image:    productImage,
+            shop:     shopName,
             quantity: 1
-        };
-        cart.push(newItem);
+        });
         showToast('Item added to cart successfully', 'success');
     }
 
-    // Save cart to localStorage
     saveCart(cart);
-
-    // Update cart badge
     updateCartBadge();
+}
+
+/* Show Bootstrap modal warning about shop conflict */
+function _showShopConflictModal(existingShop, newShop, onConfirm) {
+    const old = document.getElementById('_shopConflictModal');
+    if (old) old.remove();
+
+    const el = document.createElement('div');
+    el.id        = '_shopConflictModal';
+    el.className = 'modal fade';
+    el.setAttribute('tabindex', '-1');
+    el.innerHTML = `
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header border-0 pb-0">
+                    <h6 class="modal-title fw-bold">
+                        <i class="fas fa-store me-2 text-warning"></i>Items from a different shop
+                    </h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body pt-2">
+                    <p class="mb-1">Your cart has items from <strong>${existingShop}</strong>.</p>
+                    <p class="mb-0 text-muted small">
+                        Adding from <strong>${newShop}</strong> will clear your current cart.
+                        Do you want to continue?
+                    </p>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-dark btn-sm" id="_shopConflictConfirm">
+                        <i class="fas fa-check me-1"></i> Continue
+                    </button>
+                </div>
+            </div>
+        </div>`;
+    document.body.appendChild(el);
+
+    const modal = new bootstrap.Modal(el);
+    modal.show();
+
+    document.getElementById('_shopConflictConfirm').addEventListener('click', function () {
+        modal.hide();
+        onConfirm();
+    });
+
+    el.addEventListener('hidden.bs.modal', () => el.remove());
 }
 
 /* ===================================
