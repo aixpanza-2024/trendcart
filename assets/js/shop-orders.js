@@ -121,12 +121,14 @@ function renderOrders(orders) {
         const count = order.items.length;
 
         // Order header row spanning all columns
+        const phone = order.shipping_phone || order.customer_phone;
         html += `<tr style="background:#f0f4f8;">
             <td colspan="8" style="padding:8px 14px;border-top:2px solid #dee2e6;">
                 <strong>#${esc(order.order_number)}</strong>
                 &nbsp;&mdash;&nbsp;${esc(order.customer_name)}
                 &nbsp;&mdash;&nbsp;<small class="text-muted">${date}</small>
                 &nbsp;&mdash;&nbsp;<small class="text-muted">${count} item${count > 1 ? 's' : ''}</small>
+                ${phone ? `&nbsp;&mdash;&nbsp;<small class="text-muted"><i class="fas fa-phone me-1"></i>${esc(phone)}</small>` : ''}
             </td>
         </tr>`;
 

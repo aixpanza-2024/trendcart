@@ -49,6 +49,7 @@ function renderOrders(orders) {
             <td>
                 <div>${o.customer_name || '-'}</div>
                 <small class="text-muted hide-mobile">${o.customer_phone || o.shipping_phone || ''}</small>
+                ${(o.shipping_address || o.shipping_city) ? `<small class="text-muted d-block hide-mobile">${[o.shipping_address, o.shipping_city, o.shipping_state, o.shipping_pincode].filter(Boolean).join(', ')}</small>` : ''}
             </td>
             <td class="hide-mobile"><small>${o.shop_names || '-'}</small></td>
             <td><strong>${formatINR(o.total_amount)}</strong></td>
