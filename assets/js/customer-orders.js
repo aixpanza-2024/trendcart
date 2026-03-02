@@ -169,18 +169,25 @@ async function viewOrderDetails(orderId, orderNum) {
                 ratingDisplay = `<div class="mt-1 small text-grey">${stars} Your rating</div>`;
             }
 
+            const sizeTag = item.selected_size
+                ? `<span class="badge bg-light text-dark border ms-1" style="font-size:11px;">${item.selected_size}</span>`
+                : '';
+            const lineTotal = item.subtotal
+                ? parseFloat(item.subtotal).toLocaleString()
+                : (item.quantity * parseFloat(item.price)).toLocaleString();
+
             return `
                 <div class="d-flex align-items-start gap-3 border-bottom pb-3 mb-3">
                     <img src="${img}" style="width:60px;height:60px;object-fit:cover;border-radius:8px;"
                          onerror="this.src='https://placehold.co/60x60/1a1a1a/ffffff?text=Item'">
                     <div class="flex-grow-1">
-                        <p class="fw-bold mb-0">${item.product_name}</p>
+                        <p class="fw-bold mb-0">${item.product_name} ${sizeTag}</p>
                         <p class="text-grey small mb-0"><i class="fas fa-store"></i> ${item.shop_name}</p>
                         <p class="text-grey small mb-0">Qty: ${item.quantity} &times; ₹${parseFloat(item.price).toLocaleString()}</p>
                         ${ratingDisplay}
                     </div>
                     <div class="text-end">
-                        <strong>₹${(item.quantity * parseFloat(item.price)).toLocaleString()}</strong><br>
+                        <strong>₹${lineTotal}</strong><br>
                         <span class="badge bg-${sc} small">${item.item_status}</span>
                     </div>
                 </div>`;

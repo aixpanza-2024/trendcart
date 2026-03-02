@@ -41,7 +41,8 @@ try {
     if (isset($_GET['order_id'])) {
         $orderId = (int)$_GET['order_id'];
 
-        $itemSql = "SELECT oi.order_item_id, oi.quantity, oi.price, oi.item_status,
+        $itemSql = "SELECT oi.order_item_id, oi.quantity, oi.price, oi.subtotal,
+                           oi.selected_size, oi.item_status,
                            p.product_name, p.product_id,
                            s.shop_name,
                            (SELECT image_url FROM product_images
