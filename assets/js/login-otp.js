@@ -138,9 +138,6 @@ function goBackToStep1() {
     document.getElementById('emailFormContent').style.display = 'block';
     document.getElementById('emailCompleted').style.display = 'none';
 
-    // Hide dev OTP
-    document.getElementById('devOtpBadge').style.display = 'none';
-
     // Clear OTP inputs
     clearOTPInputs();
 
