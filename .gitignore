@@ -7,6 +7,16 @@ api/config/email_config.php
 # Diagnostic / test scripts — never commit these
 test-mail.php
 
+# User uploads — images uploaded by shops/admins at runtime
+# Directories are preserved via .gitkeep files for fresh clones
+uploads/products/*
+!uploads/products/.gitkeep
+uploads/shops/*
+!uploads/shops/.gitkeep
+
+# Claude Code local settings
+.claude/settings.local.json
+
 # OS files
 .DS_Store
 Thumbs.db
