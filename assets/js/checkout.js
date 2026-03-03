@@ -38,7 +38,6 @@ async function loadCheckoutData() {
 
     // Update totals
     document.getElementById('orderSubtotal').textContent = formatCurrency(totals.subtotal);
-    document.getElementById('orderTax').textContent      = formatCurrency(totals.tax);
     document.getElementById('orderShipping').innerHTML = '<s class="text-grey me-1">₹50</s><span class="text-success fw-bold">FREE</span>';
     document.getElementById('orderTotal').textContent    = formatCurrency(totals.total);
 

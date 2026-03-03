@@ -197,13 +197,11 @@ function calculateCartTotals() {
         subtotal += item.price * item.quantity;
     });
 
-    const tax = subtotal * 0.18; // 18% GST
     const shipping = 0; // Free shipping always (was ₹50)
-    const total = subtotal + tax + shipping;
+    const total = subtotal + shipping;
 
     return {
         subtotal: subtotal,
-        tax: tax,
         shipping: shipping,
         total: total,
         itemCount: cart.reduce((sum, item) => sum + item.quantity, 0)
@@ -286,13 +284,11 @@ function updateCartSummary() {
     const totals = calculateCartTotals();
 
     const subtotalEl = document.getElementById('cartSubtotal');
-    const taxEl = document.getElementById('cartTax');
     const shippingEl = document.getElementById('cartShipping');
     const totalEl = document.getElementById('cartTotal');
     const checkoutBtn = document.getElementById('checkoutBtn');
 
     if (subtotalEl) subtotalEl.textContent = formatCurrency(totals.subtotal);
-    if (taxEl) taxEl.textContent = formatCurrency(totals.tax);
     if (shippingEl) {
         shippingEl.innerHTML = '<s class="text-grey me-1">₹50</s><span class="text-success fw-bold">FREE</span>';
     }
