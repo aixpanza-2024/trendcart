@@ -16,7 +16,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 // Start session
-session_start();
+require_once __DIR__ . '/../config/session.php';
 
 // Include required files
 require_once '../config/database.php';

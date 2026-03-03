@@ -303,7 +303,17 @@ class AuthController {
      * Create user session
      */
     private function createUserSession($user_id, $user_type = null) {
-        session_start();
+        $lifetime = 10 * 365 * 24 * 60 * 60; // ~10 years (effectively permanent)
+        ini_set('session.gc_maxlifetime', $lifetime);
+        if (session_status() === PHP_SESSION_NONE) {
+            session_set_cookie_params([
+                'lifetime' => $lifetime,
+                'path'     => '/',
+                'httponly' => true,
+                'samesite' => 'Lax',
+            ]);
+            session_start();
+        }
         session_regenerate_id(true);
 
         $_SESSION['user_id'] = $user_id;
@@ -335,7 +345,8 @@ class AuthController {
      * Logout user
      */
     public function logout() {
-        session_start();
+        ini_set('session.gc_maxlifetime', 10 * 365 * 24 * 60 * 60);
+        if (session_status() === PHP_SESSION_NONE) { session_start(); }
         session_unset();
         session_destroy();
 
@@ -346,7 +357,8 @@ class AuthController {
      * Check if user is logged in
      */
     public function checkAuth() {
-        session_start();
+        ini_set('session.gc_maxlifetime', 10 * 365 * 24 * 60 * 60);
+        if (session_status() === PHP_SESSION_NONE) { session_start(); }
 
         if (isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true) {
             $user_data = $this->user->getUserWithProfile($_SESSION['user_id']);

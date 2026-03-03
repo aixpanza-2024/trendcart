@@ -6,7 +6,7 @@
  */
 
 header('Content-Type: application/json');
-session_start();
+require_once __DIR__ . '/../config/session.php';
 
 if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true || $_SESSION['user_type'] !== 'customer') {
     http_response_code(401);

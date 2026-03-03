@@ -4,7 +4,7 @@
  */
 
 header('Content-Type: application/json');
-session_start();
+require_once __DIR__ . '/../config/session.php';
 require_once '../config/database.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(200); exit(); }

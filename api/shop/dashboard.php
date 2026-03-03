@@ -10,7 +10,7 @@ header('Access-Control-Allow-Methods: GET');
 header('Access-Control-Allow-Headers: Content-Type');
 
 // Start session
-session_start();
+require_once __DIR__ . '/../config/session.php';
 
 // Include required files
 require_once '../config/database.php';
