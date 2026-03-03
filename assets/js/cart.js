@@ -15,7 +15,7 @@ function makeCartKey(productId, size) {
 /* ===================================
    ADD TO CART
    =================================== */
-function addToCart(productId, productName, productPrice, productImage, shopName, size) {
+function addToCart(productId, productName, productPrice, productImage, shopName, size, qty = 1) {
     // Check if user is logged in
     const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
 
@@ -36,20 +36,20 @@ function addToCart(productId, productName, productPrice, productImage, shopName,
     if (existingShop && shopName && existingShop !== shopName) {
         _showShopConflictModal(existingShop, shopName, function () {
             localStorage.removeItem('cart');
-            _doAddToCart([], cartKey, productId, productName, productPrice, productImage, shopName, size);
+            _doAddToCart([], cartKey, productId, productName, productPrice, productImage, shopName, size, qty);
         });
         return;
     }
 
-    _doAddToCart(cart, cartKey, productId, productName, productPrice, productImage, shopName, size);
+    _doAddToCart(cart, cartKey, productId, productName, productPrice, productImage, shopName, size, qty);
 }
 
 /* Internal: actually insert/increment the item and save */
-function _doAddToCart(cart, cartKey, productId, productName, productPrice, productImage, shopName, size) {
+function _doAddToCart(cart, cartKey, productId, productName, productPrice, productImage, shopName, size, qty = 1) {
     const existingItemIndex = cart.findIndex(item => item.cartKey === cartKey);
 
     if (existingItemIndex > -1) {
-        cart[existingItemIndex].quantity += 1;
+        cart[existingItemIndex].quantity += qty;
         showToast('Item quantity updated in cart', 'success');
     } else {
         cart.push({
@@ -60,7 +60,7 @@ function _doAddToCart(cart, cartKey, productId, productName, productPrice, produ
             price:    parseFloat(productPrice),
             image:    productImage,
             shop:     shopName,
-            quantity: 1
+            quantity: qty
         });
         showToast('Item added to cart successfully', 'success');
     }
@@ -344,14 +344,14 @@ if (window.location.pathname.includes('cart.html')) {
 /* ===================================
    QUICK ADD TO CART (with animation)
    =================================== */
-function quickAddToCart(button, productId, productName, productPrice, productImage, shopName, size) {
+function quickAddToCart(button, productId, productName, productPrice, productImage, shopName, size, qty = 1) {
     // Add loading state to button
     const originalHTML = button.innerHTML;
     button.disabled = true;
     button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Adding...';
 
     setTimeout(() => {
-        addToCart(productId, productName, productPrice, productImage, shopName, size || null);
+        addToCart(productId, productName, productPrice, productImage, shopName, size || null, qty);
 
         // Reset button
         button.disabled = false;

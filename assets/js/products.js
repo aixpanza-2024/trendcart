@@ -185,18 +185,27 @@ function buildProductCard(p) {
     const safeImg  = img.replace(/'/g, "\\'");
     const pid      = p.product_id;
 
-    // Build inline size selector — first size is selected by default
+    // Build inline size selector — NO default; user must pick a size (mandatory)
     const sizes    = (p.size && p.size.trim()) ? p.size.split(',').map(s => s.trim()).filter(Boolean) : [];
     const hasSizes = sizes.length > 0;
 
     const sizeRow = hasSizes
         ? `<div class="card-size-row mb-2">
-               ${sizes.map((s, i) => `<button type="button"
-                   class="card-size-btn${i === 0 ? ' active' : ''}"
+               <span class="card-size-label">Size:</span>
+               ${sizes.map(s => `<button type="button"
+                   class="card-size-btn"
                    onclick="cardSelectSize(this)"
                    data-size="${s}">${s}</button>`).join('')}
            </div>`
         : '';
+
+    const qtyRow = `
+        <div class="card-qty-row mb-2">
+            <button type="button" class="card-qty-btn" onclick="cardChangeQty(this,-1)"><i class="fas fa-minus"></i></button>
+            <span class="card-qty-display">1</span>
+            <button type="button" class="card-qty-btn" onclick="cardChangeQty(this,1)"><i class="fas fa-plus"></i></button>
+            <span class="card-qty-amount">₹${parseFloat(p.price).toLocaleString('en-IN')}</span>
+        </div>`;
 
     const cartBtn = hasSizes
         ? `<button class="btn btn-primary btn-sm w-100"
@@ -204,13 +213,13 @@ function buildProductCard(p) {
                <i class="fas fa-shopping-cart"></i> Add to Cart
            </button>`
         : `<button class="btn btn-primary btn-sm w-100"
-               onclick="quickAddToCart(this,'${pid}','${safeName}',${p.price},'${safeImg}','${safeShop}')">
+               onclick="cardAddToCartNoSize('${pid}','${safeName}',${p.price},'${safeImg}','${safeShop}',this)">
                <i class="fas fa-shopping-cart"></i> Add to Cart
            </button>`;
 
     return `
         <div class="col-md-6 col-lg-4">
-            <div class="product-card" data-pid="${pid}">
+            <div class="product-card" data-pid="${pid}" data-price="${parseFloat(p.price)}">
                 <a href="product-detail.html?id=${pid}" class="d-block">
                     <div class="product-img-wrap">
                         <img src="${img}" alt="${p.product_name}"
@@ -229,6 +238,7 @@ function buildProductCard(p) {
                         ₹${parseFloat(p.price).toLocaleString()}${originalPrice}
                     </div>
                     ${sizeRow}
+                    ${qtyRow}
                     ${cartBtn}
                 </div>
             </div>
@@ -237,16 +247,39 @@ function buildProductCard(p) {
 
 /* ── Card size selector helpers ─────────────────────────────────── */
 function cardSelectSize(btn) {
-    // Deactivate siblings within the same card
     btn.closest('.card-size-row').querySelectorAll('.card-size-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
 }
 
+function cardChangeQty(btn, delta) {
+    const row     = btn.closest('.card-qty-row');
+    const display = row.querySelector('.card-qty-display');
+    const amount  = row.querySelector('.card-qty-amount');
+    const card    = btn.closest('.product-card');
+    const price   = parseFloat(card ? card.dataset.price : 0) || 0;
+
+    let qty = Math.max(1, Math.min(99, parseInt(display.textContent) + delta));
+    display.textContent = qty;
+    if (amount && price) amount.textContent = '₹' + (price * qty).toLocaleString('en-IN');
+}
+
 function cardAddToCart(productId, productName, productPrice, productImage, shopName, addBtn) {
-    const card        = addBtn.closest('.product-card');
-    const activeSize  = card ? card.querySelector('.card-size-btn.active') : null;
-    const size        = activeSize ? activeSize.dataset.size : null;
-    quickAddToCart(addBtn, productId, productName, productPrice, productImage, shopName, size);
+    const card       = addBtn.closest('.product-card');
+    const activeSize = card ? card.querySelector('.card-size-btn.active') : null;
+    const size       = activeSize ? activeSize.dataset.size : null;
+
+    if (!size) { showToast('Please select a size first', 'error'); return; }
+
+    const qtyEl = card ? card.querySelector('.card-qty-display') : null;
+    const qty   = qtyEl ? (parseInt(qtyEl.textContent) || 1) : 1;
+    quickAddToCart(addBtn, productId, productName, productPrice, productImage, shopName, size, qty);
+}
+
+function cardAddToCartNoSize(productId, productName, productPrice, productImage, shopName, addBtn) {
+    const card  = addBtn.closest('.product-card');
+    const qtyEl = card ? card.querySelector('.card-qty-display') : null;
+    const qty   = qtyEl ? (parseInt(qtyEl.textContent) || 1) : 1;
+    quickAddToCart(addBtn, productId, productName, productPrice, productImage, shopName, null, qty);
 }
 
 async function loadCategories(activeCategoryId) {

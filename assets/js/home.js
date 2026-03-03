@@ -61,19 +61,61 @@ function buildArrivalCard(p) {
         ? `<span class="na-badge-cat">${p.category_name}</span>`
         : '';
 
+    const safeName = p.product_name.replace(/'/g, "\\'");
+    const safeShop = (p.shop_name || '').replace(/'/g, "\\'");
+    const safeImg  = img.replace(/'/g, "\\'");
+    const pid      = p.product_id;
+    const price    = parseFloat(p.price) || 0;
+
+    // Size selector — first size pre-selected by default
+    const sizes    = (p.size && p.size.trim()) ? p.size.split(',').map(s => s.trim()).filter(Boolean) : [];
+    const hasSizes = sizes.length > 0;
+
+    const sizeRow = hasSizes
+        ? `<div class="card-size-row mb-2">
+               <span class="card-size-label">Size:</span>
+               ${sizes.map((s, i) => `<button type="button"
+                   class="card-size-btn${i === 0 ? ' active' : ''}"
+                   onclick="cardSelectSize(this)"
+                   data-size="${s}">${s}</button>`).join('')}
+           </div>`
+        : '';
+
+    const cartBtn = hasSizes
+        ? `<button class="btn btn-primary btn-sm w-100 mt-1"
+               onclick="naAddToCart('${pid}','${safeName}',${price},'${safeImg}','${safeShop}',this)">
+               <i class="fas fa-cart-plus"></i> Add to Cart
+           </button>`
+        : `<button class="btn btn-primary btn-sm w-100 mt-1"
+               onclick="quickAddToCart(this,'${pid}','${safeName}',${price},'${safeImg}','${safeShop}')">
+               <i class="fas fa-cart-plus"></i> Add to Cart
+           </button>`;
+
     return `
-        <a href="pages/products.html?shop_id=${p.shop_id}" class="na-card">
-            <div class="na-img-wrap">
-                <img src="${img}" alt="${p.product_name}"
-                     onerror="this.src='https://placehold.co/300x400/333/fff?text=${encodeURIComponent(p.product_name)}'">
-                <span class="na-badge-new">New</span>
-                ${catBadge}
-            </div>
+        <div class="na-card" data-pid="${pid}">
+            <a href="pages/products.html?shop_id=${p.shop_id}" class="d-block">
+                <div class="na-img-wrap">
+                    <img src="${img}" alt="${p.product_name}"
+                         onerror="this.src='https://placehold.co/300x400/333/fff?text=${encodeURIComponent(p.product_name)}'">
+                    <span class="na-badge-new">New</span>
+                    ${catBadge}
+                </div>
+            </a>
             <div class="na-info">
                 <div class="na-name">${p.product_name}</div>
                 <div class="na-shop"><i class="fas fa-store"></i>${p.shop_name}</div>
+                <div class="na-price">₹${price.toLocaleString('en-IN')}</div>
+                ${sizeRow}
+                ${cartBtn}
             </div>
-        </a>`;
+        </div>`;
+}
+
+function naAddToCart(productId, productName, productPrice, productImage, shopName, btn) {
+    const card       = btn.closest('.na-card');
+    const activeSize = card ? card.querySelector('.card-size-btn.active') : null;
+    const size       = activeSize ? activeSize.dataset.size : null;
+    quickAddToCart(btn, productId, productName, productPrice, productImage, shopName, size);
 }
 
 function buildShopCard(shop, showStats) {
