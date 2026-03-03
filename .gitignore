@@ -17,6 +17,10 @@ uploads/shops/*
 # Claude Code local settings
 .claude/settings.local.json
 
+# Archive files
+*.zip
+*.tar.gz
+
 # OS files
 .DS_Store
 Thumbs.db
