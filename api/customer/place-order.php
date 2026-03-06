@@ -113,9 +113,9 @@ try {
         exit;
     }
 
-    $tax_amount      = round($subtotal * 0.18, 2);
+    $tax_amount      = 0.00;
     $shipping_amount = 0.00; // Free shipping always
-    $total_amount    = round($subtotal + $tax_amount + $shipping_amount, 2);
+    $total_amount    = round($subtotal + $shipping_amount, 2);
 
     // Generate unique order number: TC + YYYYMMDD + 4-digit random
     do {
@@ -128,6 +128,52 @@ try {
     } while ($chkExists);
 
     $conn->beginTransaction();
+
+    // Lock rows and validate stock (FOR UPDATE prevents race conditions)
+    $sizeStockStmt = $conn->prepare(
+        "SELECT stock_quantity FROM product_sizes
+         WHERE product_id = :pid AND size_label = :size FOR UPDATE"
+    );
+    $prodStockStmt = $conn->prepare(
+        "SELECT stock_quantity FROM products WHERE product_id = :pid FOR UPDATE"
+    );
+
+    foreach ($validated_items as $item) {
+        if ($item['selected_size']) {
+            $sizeStockStmt->bindValue(':pid',  $item['product_id'],   PDO::PARAM_INT);
+            $sizeStockStmt->bindValue(':size', $item['selected_size']);
+            $sizeStockStmt->execute();
+            $stockRow = $sizeStockStmt->fetch(PDO::FETCH_ASSOC);
+            $sizeStockStmt->closeCursor();
+            $available = $stockRow ? (int)$stockRow['stock_quantity'] : 0;
+            if ($available < $item['quantity']) {
+                $conn->rollBack();
+                echo json_encode([
+                    'success' => false,
+                    'message' => $available > 0
+                        ? "{$item['product_name']} (Size: {$item['selected_size']}) only has {$available} left in stock."
+                        : "{$item['product_name']} (Size: {$item['selected_size']}) is out of stock.",
+                ]);
+                exit;
+            }
+        } else {
+            $prodStockStmt->bindValue(':pid', $item['product_id'], PDO::PARAM_INT);
+            $prodStockStmt->execute();
+            $stockRow = $prodStockStmt->fetch(PDO::FETCH_ASSOC);
+            $prodStockStmt->closeCursor();
+            $available = $stockRow ? (int)$stockRow['stock_quantity'] : 0;
+            if ($available < $item['quantity']) {
+                $conn->rollBack();
+                echo json_encode([
+                    'success' => false,
+                    'message' => $available > 0
+                        ? "{$item['product_name']} only has {$available} left in stock."
+                        : "{$item['product_name']} is out of stock.",
+                ]);
+                exit;
+            }
+        }
+    }
 
     // Insert order
     $oStmt = $conn->prepare(
@@ -185,6 +231,37 @@ try {
         $ocStmt->bindValue(':qty', $item['quantity'], PDO::PARAM_INT);
         $ocStmt->bindValue(':pid', $item['product_id'], PDO::PARAM_INT);
         $ocStmt->execute();
+
+        // Decrement stock
+        if ($item['selected_size']) {
+            $decSize = $conn->prepare(
+                "UPDATE product_sizes
+                 SET stock_quantity = GREATEST(0, stock_quantity - :qty)
+                 WHERE product_id = :pid AND size_label = :size"
+            );
+            $decSize->bindValue(':qty',  $item['quantity'],     PDO::PARAM_INT);
+            $decSize->bindValue(':pid',  $item['product_id'],   PDO::PARAM_INT);
+            $decSize->bindValue(':size', $item['selected_size']);
+            $decSize->execute();
+            // Sync products.stock_quantity = sum of remaining size stocks
+            $syncStock = $conn->prepare(
+                "UPDATE products
+                 SET stock_quantity = (SELECT COALESCE(SUM(stock_quantity),0) FROM product_sizes WHERE product_id = :pid)
+                 WHERE product_id = :pid2"
+            );
+            $syncStock->bindValue(':pid',  $item['product_id'], PDO::PARAM_INT);
+            $syncStock->bindValue(':pid2', $item['product_id'], PDO::PARAM_INT);
+            $syncStock->execute();
+        } else {
+            $decProd = $conn->prepare(
+                "UPDATE products
+                 SET stock_quantity = GREATEST(0, stock_quantity - :qty)
+                 WHERE product_id = :pid"
+            );
+            $decProd->bindValue(':qty', $item['quantity'],   PDO::PARAM_INT);
+            $decProd->bindValue(':pid', $item['product_id'], PDO::PARAM_INT);
+            $decProd->execute();
+        }
     }
 
     $conn->commit();

@@ -197,9 +197,23 @@ function renderProduct(p) {
 
         // Compute effective price (base + price_adjustment for selected size)
         let effectivePrice = price;
+        let maxStock = 99;
         if (hasSizes && selectedSize) {
             const sv = p.sizes.find(s => s.size_label === selectedSize);
-            if (sv) effectivePrice = price + parseFloat(sv.price_adjustment || 0);
+            if (sv) {
+                effectivePrice = price + parseFloat(sv.price_adjustment || 0);
+                maxStock = parseInt(sv.stock_quantity) || 0;
+            }
+        }
+
+        // Guard: ensure requested qty doesn't exceed available stock
+        if (maxStock <= 0) {
+            showToast('This item is out of stock', 'error');
+            return;
+        }
+        if (currentQty > maxStock) {
+            showToast(`Only ${maxStock} left in stock${selectedSize ? ' for size ' + selectedSize : ''}`, 'error');
+            return;
         }
 
         addToCart(
@@ -208,7 +222,8 @@ function renderProduct(p) {
             effectivePrice,
             primaryImg,
             p.shop_name,
-            hasSizes ? selectedSize : null
+            hasSizes ? selectedSize : null,
+            currentQty
         );
 
         // Visual feedback
@@ -236,7 +251,14 @@ function renderProduct(p) {
    QUANTITY CONTROLS
    ================================================================ */
 function changeQty(delta) {
-    currentQty = Math.max(1, currentQty + delta);
+    let maxQty = 99;
+    if (selectedSize && currentProduct && currentProduct.sizes) {
+        const sv = currentProduct.sizes.find(s => s.size_label === selectedSize);
+        if (sv) maxQty = Math.max(0, parseInt(sv.stock_quantity) || 0);
+    } else if (!selectedSize && currentProduct && !currentProduct.sizes?.length) {
+        maxQty = Math.max(0, parseInt(currentProduct.stock_quantity) || 99);
+    }
+    currentQty = Math.min(maxQty, Math.max(1, currentQty + delta));
     document.getElementById('qtyDisplay').textContent = currentQty;
 }
 
@@ -250,6 +272,8 @@ function selectSize(btn) {
     });
     btn.classList.add('active');
     selectedSize = btn.dataset.size;
+    currentQty = 1;
+    document.getElementById('qtyDisplay').textContent = 1;
 
     // Hide error hint
     const errEl = document.getElementById('sizeError');
