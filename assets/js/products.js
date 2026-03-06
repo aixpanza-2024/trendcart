@@ -185,6 +185,15 @@ function buildProductCard(p) {
     const safeImg  = img.replace(/'/g, "\\'");
     const pid      = p.product_id;
 
+    // Build per-size stock map from API field (e.g. "S:5,M:10,L:0")
+    const sizesStockMap = {};
+    if (p.sizes_stock) {
+        p.sizes_stock.split(',').forEach(pair => {
+            const idx = pair.lastIndexOf(':');
+            if (idx > -1) sizesStockMap[pair.substring(0, idx).trim()] = parseInt(pair.substring(idx + 1)) || 0;
+        });
+    }
+
     // Build inline size selector — NO default; user must pick a size (mandatory)
     const sizes    = (p.size && p.size.trim()) ? p.size.split(',').map(s => s.trim()).filter(Boolean) : [];
     const hasSizes = sizes.length > 0;
@@ -192,10 +201,14 @@ function buildProductCard(p) {
     const sizeRow = hasSizes
         ? `<div class="card-size-row mb-2">
                <span class="card-size-label">Size:</span>
-               ${sizes.map(s => `<button type="button"
-                   class="card-size-btn"
-                   onclick="cardSelectSize(this)"
-                   data-size="${s}">${s}</button>`).join('')}
+               ${sizes.map(s => {
+                   const stock = sizesStockMap.hasOwnProperty(s) ? sizesStockMap[s] : 99;
+                   const oos   = stock <= 0;
+                   return `<button type="button"
+                       class="card-size-btn${oos ? ' oos' : ''}"
+                       ${oos ? 'disabled title="Out of stock"' : `onclick="cardSelectSize(this)"`}
+                       data-size="${s}" data-stock="${oos ? 0 : stock}">${s}</button>`;
+               }).join('')}
            </div>`
         : '';
 
@@ -245,20 +258,29 @@ function buildProductCard(p) {
         </div>`;
 }
 
-/* ── Card size selector helpers ─────────────────────────────────── */
+/* ── Card size / qty helpers ─────────────────────────────────────── */
 function cardSelectSize(btn) {
     btn.closest('.card-size-row').querySelectorAll('.card-size-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
+    // Reset qty to 1 when size changes
+    const card    = btn.closest('.product-card, .na-card');
+    const display = card ? card.querySelector('.card-qty-display') : null;
+    const amount  = card ? card.querySelector('.card-qty-amount')  : null;
+    const price   = parseFloat(card ? card.dataset.price : 0) || 0;
+    if (display) display.textContent = '1';
+    if (amount && price) amount.textContent = '₹' + price.toLocaleString('en-IN');
 }
 
 function cardChangeQty(btn, delta) {
-    const row     = btn.closest('.card-qty-row');
-    const display = row.querySelector('.card-qty-display');
-    const amount  = row.querySelector('.card-qty-amount');
-    const card    = btn.closest('.product-card');
-    const price   = parseFloat(card ? card.dataset.price : 0) || 0;
+    const row        = btn.closest('.card-qty-row');
+    const display    = row.querySelector('.card-qty-display');
+    const amount     = row.querySelector('.card-qty-amount');
+    const card       = btn.closest('.product-card, .na-card');
+    const price      = parseFloat(card ? card.dataset.price : 0) || 0;
+    const activeSize = card ? card.querySelector('.card-size-btn.active') : null;
+    const maxStock   = activeSize ? (parseInt(activeSize.dataset.stock) || 99) : 99;
 
-    let qty = Math.max(1, Math.min(99, parseInt(display.textContent) + delta));
+    let qty = Math.max(1, Math.min(maxStock, parseInt(display.textContent) + delta));
     display.textContent = qty;
     if (amount && price) amount.textContent = '₹' + (price * qty).toLocaleString('en-IN');
 }
@@ -270,8 +292,14 @@ function cardAddToCart(productId, productName, productPrice, productImage, shopN
 
     if (!size) { showToast('Please select a size first', 'error'); return; }
 
-    const qtyEl = card ? card.querySelector('.card-qty-display') : null;
-    const qty   = qtyEl ? (parseInt(qtyEl.textContent) || 1) : 1;
+    const maxStock = parseInt(activeSize.dataset.stock) || 0;
+    const qtyEl    = card ? card.querySelector('.card-qty-display') : null;
+    const qty      = qtyEl ? (parseInt(qtyEl.textContent) || 1) : 1;
+
+    if (maxStock > 0 && qty > maxStock) {
+        showToast(`Only ${maxStock} left in stock for size ${size}`, 'error');
+        return;
+    }
     quickAddToCart(addBtn, productId, productName, productPrice, productImage, shopName, size, qty);
 }
 

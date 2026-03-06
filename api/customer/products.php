@@ -24,10 +24,17 @@ try {
         $size_expr = 'p.size';
     } catch (\PDOException $e) { /* column absent – fall through to empty string */ }
 
+    // Per-size stock from product_sizes table (if it exists)
+    $sizes_stock_expr = "NULL AS sizes_stock";
+    try {
+        $conn->query("SELECT 1 FROM `product_sizes` LIMIT 0");
+        $sizes_stock_expr = "(SELECT GROUP_CONCAT(CONCAT(ps.size_label,':',ps.stock_quantity) ORDER BY ps.display_order SEPARATOR ',') FROM product_sizes ps WHERE ps.product_id = p.product_id) AS sizes_stock";
+    } catch (\PDOException $e) { /* table absent */ }
+
     $sql = "SELECT p.product_id, p.product_name, p.price, p.original_price,
                    p.discount_percentage, p.product_description,
                    p.category_id, p.created_at, p.orders_count,
-                   $size_expr,
+                   $size_expr, $sizes_stock_expr,
                    s.shop_id, s.shop_name,
                    c.category_name,
                    (SELECT image_url FROM product_images

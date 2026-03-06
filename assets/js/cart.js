@@ -290,7 +290,7 @@ function updateCartSummary() {
 
     if (subtotalEl) subtotalEl.textContent = formatCurrency(totals.subtotal);
     if (shippingEl) {
-        shippingEl.innerHTML = '<s class="text-grey me-1">₹50</s><span class="text-success fw-bold">FREE</span>';
+        shippingEl.innerHTML = '<s class="text-grey me-1">₹40</s><span class="text-success fw-bold">FREE</span>';
     }
     if (totalEl) totalEl.textContent = formatCurrency(totals.total);
 

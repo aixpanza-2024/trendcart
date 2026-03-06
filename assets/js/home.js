@@ -67,17 +67,32 @@ function buildArrivalCard(p) {
     const pid      = p.product_id;
     const price    = parseFloat(p.price) || 0;
 
-    // Size selector — first size pre-selected by default
+    // Per-size stock map from API
+    const sizesStockMap = {};
+    if (p.sizes_stock) {
+        p.sizes_stock.split(',').forEach(pair => {
+            const idx = pair.lastIndexOf(':');
+            if (idx > -1) sizesStockMap[pair.substring(0, idx).trim()] = parseInt(pair.substring(idx + 1)) || 0;
+        });
+    }
+
+    // Size selector — first available (non-OOS) size pre-selected by default
     const sizes    = (p.size && p.size.trim()) ? p.size.split(',').map(s => s.trim()).filter(Boolean) : [];
     const hasSizes = sizes.length > 0;
+    let firstAvailableSet = false;
 
     const sizeRow = hasSizes
         ? `<div class="card-size-row mb-2">
                <span class="card-size-label">Size:</span>
-               ${sizes.map((s, i) => `<button type="button"
-                   class="card-size-btn${i === 0 ? ' active' : ''}"
-                   onclick="cardSelectSize(this)"
-                   data-size="${s}">${s}</button>`).join('')}
+               ${sizes.map(s => {
+                   const stock = sizesStockMap.hasOwnProperty(s) ? sizesStockMap[s] : 99;
+                   const oos   = stock <= 0;
+                   const isDefault = !oos && !firstAvailableSet ? (firstAvailableSet = true, true) : false;
+                   return `<button type="button"
+                       class="card-size-btn${oos ? ' oos' : isDefault ? ' active' : ''}"
+                       ${oos ? 'disabled title="Out of stock"' : `onclick="cardSelectSize(this)"`}
+                       data-size="${s}" data-stock="${oos ? 0 : stock}">${s}</button>`;
+               }).join('')}
            </div>`
         : '';
 

@@ -774,6 +774,13 @@ a {
     background: #1a1a1a;
     color: #fff;
 }
+.card-size-btn.oos {
+    border-color: #e0e0e0;
+    background: #f8f9fa;
+    color: #bbb;
+    cursor: not-allowed;
+    text-decoration: line-through;
+}
 
 /* Quantity control row on product cards */
 .card-qty-row {

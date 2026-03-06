@@ -120,9 +120,18 @@ function displayProducts(products) {
         const stock = parseInt(product.stock_quantity) || 0;
         const threshold = parseInt(product.low_stock_threshold) || 10;
 
-        // Stock badge: red = out-of-stock, orange = low stock, grey = normal
+        // Stock badge: per-size if sizes exist, otherwise overall
         let stockBadge;
-        if (stock <= 0) {
+        if (product.sizes_stock && product.sizes_stock.trim()) {
+            stockBadge = product.sizes_stock.split(',').map(pair => {
+                const idx   = pair.lastIndexOf(':');
+                const size  = idx > -1 ? pair.substring(0, idx).trim() : pair.trim();
+                const qty   = idx > -1 ? (parseInt(pair.substring(idx + 1)) || 0) : 0;
+                const cls   = qty <= 0 ? 'bg-danger' : qty <= 5 ? 'bg-warning text-dark' : 'bg-secondary';
+                const label = qty <= 0 ? 'OOS' : qty;
+                return `<span class="badge ${cls} me-1">${size}: ${label}</span>`;
+            }).join('');
+        } else if (stock <= 0) {
             stockBadge = `<span class="badge bg-danger">Out of Stock</span>`;
         } else if (stock <= threshold) {
             stockBadge = `<span class="badge bg-warning text-dark">Low Stock: ${stock}</span>`;

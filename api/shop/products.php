@@ -85,10 +85,18 @@ try {
 
     $where_clause = implode(' AND ', $where_conditions);
 
+    // Per-size stock subquery (safe fallback if product_sizes table absent)
+    $sizes_stock_expr = "NULL AS sizes_stock";
+    try {
+        $conn->query("SELECT 1 FROM `product_sizes` LIMIT 0");
+        $sizes_stock_expr = "(SELECT GROUP_CONCAT(CONCAT(ps.size_label,':',ps.stock_quantity) ORDER BY ps.display_order SEPARATOR ',') FROM product_sizes ps WHERE ps.product_id = p.product_id) AS sizes_stock";
+    } catch (\PDOException $e) { /* table absent */ }
+
     // Get products with primary image
     $query = "SELECT
                 p.*,
                 c.category_name,
+                $sizes_stock_expr,
                 (SELECT image_url FROM product_images WHERE product_id = p.product_id AND is_primary = 1 LIMIT 1) as primary_image
               FROM products p
               LEFT JOIN categories c ON p.category_id = c.category_id
