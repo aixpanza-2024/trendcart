@@ -129,6 +129,75 @@
         </div>
     </div>
 
+    <!-- Edit Shop Modal -->
+    <div class="modal fade admin-modal" id="editShopModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h6 class="modal-title"><i class="fas fa-edit me-2"></i>Edit Shop Details</h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="editShopId">
+                    <h6 class="text-muted mb-3"><i class="fas fa-user me-1"></i> Owner Info</h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-4">
+                            <label class="form-label">Owner Full Name *</label>
+                            <input type="text" class="form-control" id="editOwnerName">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Owner Email</label>
+                            <input type="email" class="form-control" id="editOwnerEmail" readonly style="background:#f8f9fa;">
+                            <div class="form-text">Email cannot be changed (used for login)</div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Owner Phone *</label>
+                            <input type="tel" class="form-control" id="editOwnerPhone">
+                        </div>
+                    </div>
+                    <hr>
+                    <h6 class="text-muted mb-3"><i class="fas fa-store me-1"></i> Shop Details</h6>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Shop Name *</label>
+                            <input type="text" class="form-control" id="editShopName">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Shop City</label>
+                            <input type="text" class="form-control" id="editShopCity">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Status</label>
+                            <select class="form-select" id="editShopStatus">
+                                <option value="open">Open</option>
+                                <option value="closed">Closed</option>
+                                <option value="suspended">Suspended</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Shop Phone</label>
+                            <input type="tel" class="form-control" id="editShopPhone">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Shop Email</label>
+                            <input type="email" class="form-control" id="editShopEmail">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Description</label>
+                            <textarea class="form-control" id="editShopDescription" rows="3"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary btn-sm" id="saveShopBtn" onclick="saveShop()">
+                        <i class="fas fa-save me-1"></i>Save Changes
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Upload Logo Modal -->
     <div class="modal fade admin-modal" id="uploadLogoModal" tabindex="-1">
         <div class="modal-dialog modal-sm">

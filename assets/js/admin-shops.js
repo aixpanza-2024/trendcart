@@ -57,6 +57,7 @@ function renderShops(shops) {
                         <i class="fas fa-cog"></i>
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="#" onclick="openEditModal(${JSON.stringify(s).replace(/"/g, '&quot;')})"><i class="fas fa-edit me-2"></i>Edit Details</a></li>
                         <li><a class="dropdown-item" href="#" onclick="openLogoModal(${s.shop_id}, '${s.shop_name.replace(/'/g, "\\'")}', '${s.shop_logo || ''}')"><i class="fas fa-image me-2"></i>Upload Logo</a></li>
                         <li><hr class="dropdown-divider"></li>
                         ${s.shop_status !== 'suspended' ?
@@ -143,6 +144,69 @@ async function updateShopStatus(shopId, status) {
     } catch (e) {
         adminToast('Failed to update shop status', 'error');
     }
+}
+
+/* --- Edit Shop --- */
+function openEditModal(shop) {
+    if (typeof shop === 'string') shop = JSON.parse(shop);
+    document.getElementById('editShopId').value          = shop.shop_id;
+    document.getElementById('editOwnerName').value       = shop.owner_name   || '';
+    document.getElementById('editOwnerEmail').value      = shop.email        || '';
+    document.getElementById('editOwnerPhone').value      = shop.phone        || '';
+    document.getElementById('editShopName').value        = shop.shop_name    || '';
+    document.getElementById('editShopCity').value        = shop.shop_city    || '';
+    document.getElementById('editShopPhone').value       = shop.shop_phone   || '';
+    document.getElementById('editShopEmail').value       = shop.shop_email   || '';
+    document.getElementById('editShopDescription').value = shop.shop_description || '';
+    document.getElementById('editShopStatus').value      = shop.shop_status  || 'open';
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('editShopModal')).show();
+}
+
+async function saveShop() {
+    const btn  = document.getElementById('saveShopBtn');
+    const orig = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Saving...';
+
+    const data = {
+        shop_id:          document.getElementById('editShopId').value,
+        owner_name:       document.getElementById('editOwnerName').value.trim(),
+        owner_phone:      document.getElementById('editOwnerPhone').value.trim(),
+        shop_name:        document.getElementById('editShopName').value.trim(),
+        shop_city:        document.getElementById('editShopCity').value.trim(),
+        shop_phone:       document.getElementById('editShopPhone').value.trim(),
+        shop_email:       document.getElementById('editShopEmail').value.trim(),
+        shop_description: document.getElementById('editShopDescription').value.trim(),
+        shop_status:      document.getElementById('editShopStatus').value
+    };
+
+    if (!data.owner_name || !data.shop_name) {
+        adminToast('Owner name and shop name are required', 'error');
+        btn.disabled = false;
+        btn.innerHTML = orig;
+        return;
+    }
+
+    try {
+        const result = await adminAPI('../api/admin/update-shop.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+
+        if (result.success) {
+            adminToast('Shop updated successfully!', 'success');
+            bootstrap.Modal.getInstance(document.getElementById('editShopModal')).hide();
+            loadShops();
+        } else {
+            adminToast(result.message || 'Failed to update shop', 'error');
+        }
+    } catch (e) {
+        adminToast('Failed to update shop', 'error');
+    }
+
+    btn.disabled = false;
+    btn.innerHTML = orig;
 }
 
 /* --- Logo Upload --- */
