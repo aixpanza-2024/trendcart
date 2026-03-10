@@ -70,6 +70,8 @@ function renderShops(shops) {
                         ${s.shop_status === 'closed' ?
                             `<li><a class="dropdown-item" href="#" onclick="updateShopStatus(${s.shop_id}, 'open')"><i class="fas fa-door-open me-2"></i>Mark Open</a></li>` : ''
                         }
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item text-danger" href="#" onclick="deleteShop(${s.shop_id}, '${s.shop_name.replace(/'/g, "\\'")}')"><i class="fas fa-trash me-2"></i>Delete Shop</a></li>
                     </ul>
                 </div>
             </td>
@@ -143,6 +145,28 @@ async function updateShopStatus(shopId, status) {
         }
     } catch (e) {
         adminToast('Failed to update shop status', 'error');
+    }
+}
+
+/* --- Delete Shop --- */
+async function deleteShop(shopId, shopName) {
+    if (!confirm(`DELETE "${shopName}"?\n\nThis will permanently delete the shop, all its products, images, and order history. This cannot be undone.`)) return;
+
+    try {
+        const result = await adminAPI('../api/admin/delete-shop.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ shop_id: shopId })
+        });
+
+        if (result.success) {
+            adminToast('Shop deleted successfully', 'success');
+            loadShops();
+        } else {
+            adminToast(result.message || 'Failed to delete shop', 'error');
+        }
+    } catch (e) {
+        adminToast('Failed to delete shop', 'error');
     }
 }
 
