@@ -334,10 +334,12 @@ function validateForm() {
         showToast('Please enter a valid price', 'error');
         return false;
     }
-    const stock = document.getElementById('stockQuantity').value;
-    if (stock === '' || parseInt(stock) < 0) {
-        showToast('Please enter a valid stock quantity', 'error');
-        return false;
+    if (sizeVariants.length === 0) {
+        const stock = document.getElementById('stockQuantity').value;
+        if (stock === '' || parseInt(stock) < 0) {
+            showToast('Please enter a valid stock quantity', 'error');
+            return false;
+        }
     }
     return true;
 }
@@ -420,7 +422,7 @@ function addSizeVariant(label) {
 
     sizeVariants.push({
         size_label: label,
-        stock_quantity: 0,
+        stock_quantity: 1,
         price_adjustment: 0,
         display_order: sizeVariants.length
     });
@@ -459,10 +461,21 @@ function renderSizeVariants() {
     const list   = document.getElementById('sizeVariantsList');
     const noMsg  = document.getElementById('noSizesMsg');
 
+    const stockInput = document.getElementById('stockQuantity');
+    const stockLabel = document.querySelector('label[for="stockQuantity"]');
+    const stockHint  = document.getElementById('stockHint');
     if (sizeVariants.length === 0) {
         list.innerHTML = '<p class="text-muted small" id="noSizesMsg">No sizes added yet. Click the size buttons above or enter a custom size.</p>';
+        stockInput.required = true;
+        stockInput.placeholder = '0';
+        if (stockLabel) stockLabel.classList.add('required-field');
+        if (stockHint) stockHint.style.display = 'none';
         return;
     }
+    stockInput.required = false;
+    stockInput.placeholder = 'Auto (sum of sizes)';
+    if (stockLabel) stockLabel.classList.remove('required-field');
+    if (stockHint) stockHint.style.display = 'block';
 
     list.innerHTML = `
         <div class="row g-1 mb-1 px-2">
