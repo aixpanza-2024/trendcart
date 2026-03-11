@@ -67,7 +67,7 @@ try {
 
     // Get POST data
     $product_name = $_POST['product_name'] ?? '';
-    $product_code = $_POST['product_code'] ?? null;
+    $product_code = !empty($_POST['product_code']) ? trim($_POST['product_code']) : null;
     $product_description = $_POST['product_description'] ?? null;
     $category_id = $_POST['category_id'] ?? null;
     $product_status = $_POST['product_status'] ?? 'active';
