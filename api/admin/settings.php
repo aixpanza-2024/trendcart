@@ -46,7 +46,9 @@ try {
         }
 
         $stmt = $conn->prepare(
-            "UPDATE platform_settings SET setting_value = :val, updated_by = :uid WHERE setting_key = :key"
+            "INSERT INTO platform_settings (setting_key, setting_value, updated_by)
+             VALUES (:key, :val, :uid)
+             ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value), updated_by = VALUES(updated_by)"
         );
 
         foreach ($updates as $item) {

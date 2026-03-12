@@ -23,6 +23,7 @@ try {
         SELECT p.product_id, p.product_name, p.price, p.original_price,
                p.discount_percentage, p.product_description, p.orders_count,
                p.created_at, p.is_featured,
+               p.color, p.material, p.fabric_type, p.pattern,
                s.shop_id, s.shop_name, s.shop_description, s.shop_logo,
                s.shop_city, s.rating_average, s.total_ratings, s.total_products,
                c.category_name

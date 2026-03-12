@@ -131,6 +131,32 @@ function renderProduct(p) {
         descBlock.style.removeProperty('display');
     }
 
+    // ── Product details (color, material, etc.) ───────────────────
+    const detailRows = [
+        { label: 'Color',        value: p.color },
+        { label: 'Material',     value: p.material },
+        { label: 'Fabric Type',  value: p.fabric_type },
+        { label: 'Pattern',      value: p.pattern },
+    ].filter(r => r.value && r.value.trim());
+
+    if (detailRows.length) {
+        const specsBlock = document.getElementById('productSpecsBlock');
+        if (specsBlock) {
+            specsBlock.innerHTML = `
+                <h6 class="fw-semibold mb-2">Product Details</h6>
+                <table class="table table-sm table-borderless mb-0" style="font-size:.9rem;">
+                    <tbody>
+                        ${detailRows.map(r => `
+                        <tr>
+                            <td class="text-grey ps-0" style="width:40%">${r.label}</td>
+                            <td class="fw-medium">${r.value}</td>
+                        </tr>`).join('')}
+                    </tbody>
+                </table>`;
+            specsBlock.style.removeProperty('display');
+        }
+    }
+
     // ── Shop info ────────────────────────────────────────────────
     const shopLogoHTML = p.shop_logo
         ? `<img src="${imgUrl(p.shop_logo)}" alt="${p.shop_name}" class="shop-logo"
