@@ -21,7 +21,37 @@ document.addEventListener('DOMContentLoaded', function() {
     initAnimations();
     checkAuthStatus();
     injectMobileNav(); // injects bottom tab bar + mobile search; calls updateCartBadge internally
+    _injectPanelBar();  // show "Back to Panel" for admin/shop users
 });
+
+/* Show a top bar for admin/shop users visiting the main website */
+async function _injectPanelBar() {
+    try {
+        const res  = await fetch('../api/check-auth.php');
+        const data = await res.json();
+        if (!data.success || !data.data || !data.data.logged_in) return;
+        const userType = data.data.user && data.data.user.user_type;
+        if (userType !== 'admin' && userType !== 'shop') return;
+
+        const panelUrl   = userType === 'admin' ? '../admin/dashboard.html' : '../shop/dashboard.html';
+        const label      = userType === 'admin' ? 'Admin Panel' : 'Shop Panel';
+        const iconClass  = userType === 'admin' ? 'fa-user-shield' : 'fa-store';
+
+        const bar = document.createElement('div');
+        bar.id = 'panelBar';
+        bar.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;background:#212529;color:#fff;text-align:center;padding:7px 16px;font-size:13px;display:flex;align-items:center;justify-content:center;gap:12px;';
+        bar.innerHTML = `
+            <i class="fas ${iconClass}"></i>
+            <span>You are browsing as <strong>${label.replace(' Panel','')}</strong></span>
+            <a href="${panelUrl}" style="color:#ffc107;font-weight:600;text-decoration:none;">
+                <i class="fas fa-arrow-left me-1"></i>Back to ${label}
+            </a>`;
+        document.body.prepend(bar);
+
+        // Push page content down so bar doesn't overlap navbar
+        document.body.style.paddingTop = (parseInt(document.body.style.paddingTop || 0) + bar.offsetHeight) + 'px';
+    } catch (e) { /* non-critical */ }
+}
 
 /* ===================================
    NAVBAR FUNCTIONALITY
