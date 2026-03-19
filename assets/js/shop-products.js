@@ -148,6 +148,7 @@ function displayProducts(products) {
                     <div class="col">
                         <h6 class="mb-1">${product.product_name}</h6>
                         <p class="text-grey mb-1 small">${product.product_code || 'N/A'}</p>
+                        ${product.color ? `<p class="text-grey mb-1 small"><i class="fas fa-palette me-1"></i>${product.color}</p>` : ''}
                         <div class="d-flex gap-2 flex-wrap">
                             <span class="product-status-badge ${statusClass}">
                                 ${formatStatus(statusClass)}
