@@ -133,8 +133,13 @@ function renderProduct(p) {
     }
 
     // ── Product details (color, material, etc.) ───────────────────
+    // Use colors array if available, fall back to legacy color text field
+    const colorValue = (p.colors && p.colors.length > 0)
+        ? p.colors.map(c => c.color_name).join(', ')
+        : (p.color || null);
+
     const detailRows = [
-        { label: 'Color',        value: p.color },
+        { label: 'Color',        value: colorValue },
         { label: 'Material',     value: p.material },
         { label: 'Fabric Type',  value: p.fabric_type },
         { label: 'Pattern',      value: p.pattern },
