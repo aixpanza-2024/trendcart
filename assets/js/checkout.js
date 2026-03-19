@@ -27,6 +27,7 @@ async function loadCheckoutData() {
                 <div>
                     <strong>${item.name}</strong>
                     ${item.size ? `<span class="badge bg-light text-dark border ms-1" style="font-size:11px;">${item.size}</span>` : ''}
+                    ${item.color ? `<span class="badge bg-light text-dark border ms-1" style="font-size:11px;"><i class="fas fa-palette me-1"></i>${item.color}</span>` : ''}
                     <div class="text-grey small">${item.shop || ''}</div>
                 </div>
                 <div class="text-end">
@@ -103,7 +104,7 @@ async function placeOrder() {
     const cart = getCart();
     const payload = {
         shipping,
-        items:          cart.map(i => ({ id: i.id, quantity: i.quantity, size: i.size || null })),
+        items:          cart.map(i => ({ id: i.id, quantity: i.quantity, size: i.size || null, color: i.color || null })),
         payment_method: 'cod',
     };
 
