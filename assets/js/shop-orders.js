@@ -148,7 +148,10 @@ function renderOrders(orders) {
                 <td colspan="3">
                     <div class="d-flex align-items-center ps-3">
                         ${img}
-                        <span style="font-size:13px;max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${esc(item.product_name)}">${esc(item.product_name)}${colorTag}${sizeTag}</span>
+                        <div>
+                            <div style="font-size:13px;max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${esc(item.product_name)}">${esc(item.product_name)}</div>
+                            ${(colorTag || sizeTag) ? `<div class="mt-1">${colorTag}${sizeTag}</div>` : ''}
+                        </div>
                     </div>
                 </td>
                 <td>${item.quantity}</td>
