@@ -54,7 +54,7 @@ try {
             COALESCE(SUM(CASE WHEN o.order_date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY) THEN oi.subtotal ELSE 0 END), 0) as monthly_sales,
             COALESCE((SELECT SUM(payable_amount - paid_amount) FROM shop_payments WHERE shop_id = s.shop_id AND payment_status != 'paid'), 0) as total_pending
         FROM shops s
-        LEFT JOIN order_item oi ON s.shop_id = oi.shop_id
+        LEFT JOIN order_items oi ON s.shop_id = oi.shop_id
         LEFT JOIN orders o ON oi.order_id = o.order_id
         GROUP BY s.shop_id
         ORDER BY s.total_sales DESC

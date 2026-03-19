@@ -52,7 +52,7 @@ try {
     $iSql = "SELECT oi.order_item_id, oi.order_id, oi.product_name, oi.quantity,
                     oi.price, oi.subtotal, oi.item_status, oi.created_at,
                     o.order_number, o.order_date, o.shipping_name, o.shipping_city
-             FROM order_item oi
+             FROM order_items oi
              INNER JOIN orders o ON oi.order_id = o.order_id
              WHERE oi.shop_id = :shop_id
                AND o.order_status NOT IN ('cancelled','refunded')";
@@ -97,7 +97,7 @@ try {
         "SELECT COALESCE(SUM(oi.subtotal), 0) AS gross_sales,
                 COUNT(DISTINCT oi.order_id)   AS total_orders,
                 COUNT(oi.order_item_id)        AS total_items
-         FROM order_item oi
+         FROM order_items oi
          INNER JOIN orders o ON oi.order_id = o.order_id
          WHERE oi.shop_id = :sid
            AND oi.item_status = 'delivered'"

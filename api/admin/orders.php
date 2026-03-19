@@ -58,7 +58,7 @@ try {
                GROUP_CONCAT(DISTINCT s.shop_name SEPARATOR ', ') as shop_names
         FROM orders o
         LEFT JOIN users u ON o.customer_id = u.user_id
-        LEFT JOIN order_item oi ON o.order_id = oi.order_id
+        LEFT JOIN order_items oi ON o.order_id = oi.order_id
         LEFT JOIN shops s ON oi.shop_id = s.shop_id
         WHERE $where_clause
         GROUP BY o.order_id
@@ -78,7 +78,7 @@ try {
             SELECT oi.order_id, oi.product_name, oi.quantity, oi.price, oi.subtotal,
                    oi.selected_size, oi.selected_color, oi.item_status,
                    s.shop_name
-            FROM order_item oi
+            FROM order_items oi
             LEFT JOIN shops s ON oi.shop_id = s.shop_id
             WHERE oi.order_id IN ($placeholders)
             ORDER BY oi.order_item_id ASC

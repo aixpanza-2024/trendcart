@@ -85,7 +85,7 @@ try {
                 COALESCE(s.rating_average, 0) as rating_average
               FROM shops s
               LEFT JOIN products p ON s.shop_id = p.shop_id
-              LEFT JOIN order_item oi ON s.shop_id = oi.shop_id
+              LEFT JOIN order_items oi ON s.shop_id = oi.shop_id
               WHERE s.shop_id = :shop_id
               GROUP BY s.shop_id";
 
@@ -104,10 +104,10 @@ try {
                 oi.subtotal as item_total,
                 COUNT(oi2.order_item_id) as items_count,
                 o.order_date
-              FROM order_item oi
+              FROM order_items oi
               INNER JOIN orders o ON oi.order_id = o.order_id
               INNER JOIN users u ON o.customer_id = u.user_id
-              LEFT JOIN order_item oi2 ON o.order_id = oi2.order_id AND oi2.shop_id = :shop_id
+              LEFT JOIN order_items oi2 ON o.order_id = oi2.order_id AND oi2.shop_id = :shop_id
               WHERE oi.shop_id = :shop_id_2
               GROUP BY oi.order_item_id
               ORDER BY o.order_date DESC

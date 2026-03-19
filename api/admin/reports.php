@@ -33,7 +33,7 @@ try {
                    GROUP_CONCAT(DISTINCT s.shop_name ORDER BY s.shop_name SEPARATOR ', ') AS shops
             FROM orders o
             LEFT JOIN users u ON o.customer_id = u.user_id
-            LEFT JOIN order_item oi ON o.order_id = oi.order_id
+            LEFT JOIN order_items oi ON o.order_id = oi.order_id
             LEFT JOIN shops s ON oi.shop_id = s.shop_id
             WHERE 1=1";
 

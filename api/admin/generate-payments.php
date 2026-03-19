@@ -68,7 +68,7 @@ try {
             s.shop_id,
             COALESCE(SUM(oi.subtotal), 0) AS period_sales
         FROM shops s
-        LEFT JOIN order_item oi ON s.shop_id = oi.shop_id
+        LEFT JOIN order_items oi ON s.shop_id = oi.shop_id
             AND oi.item_status = 'delivered'
         LEFT JOIN orders o ON oi.order_id = o.order_id
             AND DATE(o.order_date) >= :start

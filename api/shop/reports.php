@@ -46,7 +46,7 @@ try {
                    SUM(oi.subtotal)        AS shop_subtotal,
                    COUNT(oi.order_item_id) AS item_count
             FROM orders o
-            INNER JOIN order_item oi ON o.order_id = oi.order_id AND oi.shop_id = :shop_id
+            INNER JOIN order_items oi ON o.order_id = oi.order_id AND oi.shop_id = :shop_id
             WHERE 1=1";
 
     $params = [':shop_id' => $shop_id];

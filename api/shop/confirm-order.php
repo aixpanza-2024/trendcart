@@ -82,7 +82,7 @@ try {
     $shop_id = $shop['shop_id'];
 
     // Verify that this order item belongs to this shop
-    $query = "SELECT * FROM order_item WHERE order_item_id = :order_item_id AND shop_id = :shop_id";
+    $query = "SELECT * FROM order_items WHERE order_item_id = :order_item_id AND shop_id = :shop_id";
     $stmt = $conn->prepare($query);
     $stmt->bindParam(':order_item_id', $order_item_id);
     $stmt->bindParam(':shop_id', $shop_id);
@@ -99,7 +99,7 @@ try {
     }
 
     // Update order item status to confirmed
-    $query = "UPDATE order_item
+    $query = "UPDATE order_items
               SET item_status = 'confirmed', confirmed_by_shop_at = NOW()
               WHERE order_item_id = :order_item_id";
     $stmt = $conn->prepare($query);
@@ -121,7 +121,7 @@ try {
 
     // Check if all items in the order are confirmed
     $query = "SELECT COUNT(*) as pending_count
-              FROM order_item
+              FROM order_items
               WHERE order_id = :order_id AND item_status = 'pending'";
     $stmt = $conn->prepare($query);
     $stmt->bindParam(':order_id', $order_item['order_id']);

@@ -79,7 +79,7 @@ try {
             p.product_name,
             p.product_id,
             pi.image_url as product_image
-        FROM order_item oi
+        FROM order_items oi
         INNER JOIN orders o ON oi.order_id = o.order_id
         INNER JOIN users u ON o.customer_id = u.user_id
         INNER JOIN products p ON oi.product_id = p.product_id
