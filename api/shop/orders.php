@@ -62,6 +62,7 @@ try {
             oi.order_id,
             oi.item_status,
             oi.selected_size,
+            oi.selected_color,
             oi.quantity,
             oi.price,
             oi.subtotal,
