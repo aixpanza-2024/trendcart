@@ -70,6 +70,33 @@ try {
     $stmt->execute();
     $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+    // Attach order items (with color + size) to each order
+    if (!empty($orders)) {
+        $orderIds = array_column($orders, 'order_id');
+        $placeholders = implode(',', array_fill(0, count($orderIds), '?'));
+        $itemStmt = $conn->prepare("
+            SELECT oi.order_id, oi.product_name, oi.quantity, oi.price, oi.subtotal,
+                   oi.selected_size, oi.selected_color, oi.item_status,
+                   s.shop_name
+            FROM order_items oi
+            LEFT JOIN shops s ON oi.shop_id = s.shop_id
+            WHERE oi.order_id IN ($placeholders)
+            ORDER BY oi.order_item_id ASC
+        ");
+        $itemStmt->execute($orderIds);
+        $allItems = $itemStmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Group items by order_id
+        $itemsByOrder = [];
+        foreach ($allItems as $item) {
+            $itemsByOrder[$item['order_id']][] = $item;
+        }
+        foreach ($orders as &$order) {
+            $order['items'] = $itemsByOrder[$order['order_id']] ?? [];
+        }
+        unset($order);
+    }
+
     echo json_encode(['success' => true, 'data' => $orders]);
 
 } catch (Exception $e) {

@@ -42,9 +42,17 @@ function renderOrders(orders) {
         return;
     }
 
-    tbody.innerHTML = orders.map(o => `
-        <tr>
-            <td><strong>#${o.order_number}</strong></td>
+    const rows = [];
+    orders.forEach(o => {
+        const items = o.items || [];
+        const hasItems = items.length > 0;
+
+        rows.push(`
+        <tr style="cursor:${hasItems ? 'pointer' : 'default'}" onclick="${hasItems ? `toggleOrderItems('items-${o.order_id}')` : ''}">
+            <td>
+                <strong>#${o.order_number}</strong>
+                ${hasItems ? `<i class="fas fa-chevron-down ms-1 text-muted" style="font-size:10px;" id="icon-${o.order_id}"></i>` : ''}
+            </td>
             <td>${formatDate(o.order_date)}</td>
             <td>
                 <div>${o.customer_name || '-'}</div>
@@ -55,13 +63,51 @@ function renderOrders(orders) {
             <td><strong>${formatINR(o.total_amount)}</strong></td>
             <td>${statusBadge(o.payment_status)}</td>
             <td>${statusBadge(o.order_status)}</td>
-            <td>
+            <td onclick="event.stopPropagation()">
                 <button class="btn btn-sm btn-outline-dark btn-action" onclick="openStatusModal(${o.order_id}, '${o.order_number}', '${o.order_status}')" title="Update Status">
                     <i class="fas fa-edit"></i>
                 </button>
             </td>
-        </tr>
-    `).join('');
+        </tr>`);
+
+        if (hasItems) {
+            const itemsHTML = items.map(item => {
+                const colorBadge = item.selected_color
+                    ? `<span class="badge bg-light text-dark border me-1" style="font-size:10px;"><i class="fas fa-palette me-1"></i>${item.selected_color}</span>`
+                    : '';
+                const sizeBadge = item.selected_size
+                    ? `<span class="badge bg-light text-dark border me-1" style="font-size:10px;"><i class="fas fa-ruler-combined me-1"></i>${item.selected_size}</span>`
+                    : '';
+                return `<div class="d-flex align-items-center gap-2 py-1 border-bottom">
+                    <div class="flex-grow-1">
+                        <span style="font-size:13px;font-weight:500;">${item.product_name}</span>
+                        <div class="mt-1">${colorBadge}${sizeBadge}</div>
+                    </div>
+                    <div class="text-muted" style="font-size:12px;">x${item.quantity}</div>
+                    <div style="font-size:12px;font-weight:600;">${formatINR(item.subtotal)}</div>
+                </div>`;
+            }).join('');
+
+            rows.push(`
+        <tr id="items-${o.order_id}" style="display:none;background:#f9f9f9;">
+            <td colspan="8" class="px-4 py-2">
+                ${itemsHTML}
+            </td>
+        </tr>`);
+        }
+    });
+
+    tbody.innerHTML = rows.join('');
+}
+
+function toggleOrderItems(id) {
+    const row = document.getElementById(id);
+    if (!row) return;
+    const orderId = id.replace('items-', '');
+    const icon = document.getElementById('icon-' + orderId);
+    const isHidden = row.style.display === 'none';
+    row.style.display = isHidden ? 'table-row' : 'none';
+    if (icon) icon.style.transform = isHidden ? 'rotate(180deg)' : '';
 }
 
 function openStatusModal(orderId, orderNumber, currentStatus) {
