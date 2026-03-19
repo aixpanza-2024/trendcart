@@ -11,6 +11,9 @@ let allCategories = []; // cache for cascade logic
 // Size variants: array of { size_label, stock_quantity, price_adjustment, display_order }
 let sizeVariants = [];
 
+// Color variants: array of { color_name, display_order }
+let colorVariants = [];
+
 document.addEventListener('DOMContentLoaded', function () {
     checkShopAuthentication();
     loadCategories();
@@ -18,6 +21,7 @@ document.addEventListener('DOMContentLoaded', function () {
     setupImageUpload();
     setupFormSubmit();
     setupSizeToggles();
+    setupColorToggles();
 });
 
 /* --- Auth --- */
@@ -149,7 +153,6 @@ async function loadProductData(id) {
             document.getElementById('stockQuantity').value = product.stock_quantity || '';
             document.getElementById('lowStockThreshold').value = product.low_stock_threshold || '';
 
-            document.getElementById('color').value = product.color || '';
             document.getElementById('material').value = product.material || '';
             document.getElementById('fabricType').value = product.fabric_type || '';
             document.getElementById('pattern').value = product.pattern || '';
@@ -157,7 +160,8 @@ async function loadProductData(id) {
             document.getElementById('length').value = product.length || '';
             document.getElementById('width').value = product.width || '';
 
-            // Load sizes
+            // Load colors and sizes
+            loadColorsFromData(product.colors || []);
             loadSizesFromData(product.sizes || []);
 
             if (product.images && product.images.length > 0) {
@@ -280,7 +284,8 @@ function setupFormSubmit() {
         formData.append('stock_quantity', document.getElementById('stockQuantity').value);
         formData.append('low_stock_threshold', document.getElementById('lowStockThreshold').value || '10');
 
-        formData.append('color', document.getElementById('color').value.trim());
+        syncColorsJson();
+        formData.append('colors_json', document.getElementById('colorsJson').value || '[]');
         formData.append('material', document.getElementById('material').value.trim());
         formData.append('fabric_type', document.getElementById('fabricType').value.trim());
         formData.append('pattern', document.getElementById('pattern').value.trim());
@@ -542,6 +547,90 @@ function loadSizesFromData(sizes) {
 
     renderSizeVariants();
     syncSizesJson();
+}
+
+/* ============================================================
+   COLOR VARIANTS
+   ============================================================ */
+function setupColorToggles() {
+    document.querySelectorAll('.color-toggle-btn').forEach(btn => {
+        btn.addEventListener('click', function () {
+            const name = this.dataset.color;
+            if (colorVariants.find(c => c.color_name.toLowerCase() === name.toLowerCase())) {
+                removeColor(name);
+            } else {
+                addColorVariant(name);
+            }
+        });
+    });
+}
+
+function addColorVariant(name) {
+    name = name.trim();
+    if (!name) return;
+    if (colorVariants.find(c => c.color_name.toLowerCase() === name.toLowerCase())) {
+        showToast(`"${name}" is already added`, 'warning');
+        return;
+    }
+    colorVariants.push({ color_name: name, display_order: colorVariants.length });
+    const btn = document.querySelector(`.color-toggle-btn[data-color="${name}"]`);
+    if (btn) btn.classList.add('selected');
+    renderColorTags();
+    syncColorsJson();
+}
+
+function addCustomColor() {
+    const input = document.getElementById('customColorInput');
+    const val = input.value.trim();
+    if (!val) return;
+    addColorVariant(val);
+    input.value = '';
+}
+
+function removeColor(name) {
+    colorVariants = colorVariants.filter(c => c.color_name !== name);
+    colorVariants.forEach((c, i) => c.display_order = i);
+    const btn = document.querySelector(`.color-toggle-btn[data-color="${name}"]`);
+    if (btn) btn.classList.remove('selected');
+    renderColorTags();
+    syncColorsJson();
+}
+
+function renderColorTags() {
+    const list = document.getElementById('colorTagsList');
+    if (!list) return;
+    if (colorVariants.length === 0) {
+        list.innerHTML = '<small class="text-muted">No colors added yet</small>';
+        return;
+    }
+    list.innerHTML = colorVariants.map(c => `
+        <span class="color-tag">
+            ${c.color_name}
+            <button type="button" class="remove-color" onclick="removeColor('${c.color_name}')" title="Remove">×</button>
+        </span>
+    `).join('');
+}
+
+function syncColorsJson() {
+    const input = document.getElementById('colorsJson');
+    if (input) input.value = JSON.stringify(colorVariants);
+}
+
+function loadColorsFromData(colors) {
+    colorVariants = [];
+    document.querySelectorAll('.color-toggle-btn').forEach(b => b.classList.remove('selected'));
+    if (!colors || !colors.length) {
+        renderColorTags();
+        syncColorsJson();
+        return;
+    }
+    colors.forEach((c, i) => {
+        colorVariants.push({ color_name: c.color_name, display_order: i });
+        const btn = document.querySelector(`.color-toggle-btn[data-color="${c.color_name}"]`);
+        if (btn) btn.classList.add('selected');
+    });
+    renderColorTags();
+    syncColorsJson();
 }
 
 // showToast is provided globally by main.js

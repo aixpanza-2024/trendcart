@@ -78,7 +78,7 @@ try {
     $stock_quantity = $_POST['stock_quantity'] ?? 0;
     $low_stock_threshold = $_POST['low_stock_threshold'] ?? 10;
 
-    $color = $_POST['color'] ?? null;
+    $colors_json = $_POST['colors_json'] ?? '[]';
     $material = $_POST['material'] ?? null;
     $sizes_json = $_POST['sizes_json'] ?? '[]';
     $fabric_type = $_POST['fabric_type'] ?? null;
@@ -98,6 +98,11 @@ try {
 
     // Begin transaction
     $conn->beginTransaction();
+
+    // Parse colors
+    $colors = json_decode($colors_json, true);
+    if (!is_array($colors)) $colors = [];
+    $color_summary = implode(',', array_map(fn($c) => $c['color_name'], $colors));
 
     // Parse sizes
     $sizes = json_decode($sizes_json, true);
@@ -135,7 +140,7 @@ try {
     $stmt->bindParam(':discount_percentage', $discount_percentage);
     $stmt->bindParam(':stock_quantity', $total_stock);
     $stmt->bindParam(':low_stock_threshold', $low_stock_threshold);
-    $stmt->bindParam(':color', $color);
+    $stmt->bindParam(':color', $color_summary);
     $stmt->bindParam(':size', $size_summary);
     $stmt->bindParam(':material', $material);
     $stmt->bindParam(':fabric_type', $fabric_type);
@@ -164,6 +169,20 @@ try {
             $sizeStmt->bindValue(':price_adj',   round((float)($sv['price_adjustment'] ?? 0), 2));
             $sizeStmt->bindValue(':disp_order',  $idx, PDO::PARAM_INT);
             $sizeStmt->execute();
+        }
+    }
+
+    // Insert color variants
+    if (!empty($colors)) {
+        $colorStmt = $conn->prepare(
+            "INSERT INTO product_colors (product_id, color_name, display_order)
+             VALUES (:product_id, :color_name, :disp_order)"
+        );
+        foreach ($colors as $idx => $cv) {
+            $colorStmt->bindValue(':product_id',  $product_id, PDO::PARAM_INT);
+            $colorStmt->bindValue(':color_name',  trim($cv['color_name']));
+            $colorStmt->bindValue(':disp_order',  $idx, PDO::PARAM_INT);
+            $colorStmt->execute();
         }
     }
 

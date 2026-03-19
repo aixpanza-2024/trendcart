@@ -11,6 +11,7 @@
 let currentProduct = null;
 let currentQty     = 1;
 let selectedSize   = null;   // currently selected size label (null = none)
+let selectedColor  = null;   // currently selected color name (null = none)
 
 document.addEventListener('DOMContentLoaded', function () {
     const params    = new URLSearchParams(window.location.search);
@@ -184,6 +185,24 @@ function renderProduct(p) {
     // ── View shop button ─────────────────────────────────────────
     document.getElementById('viewShopBtn').href = `products.html?shop_id=${p.shop_id}`;
 
+    // ── Color selector ───────────────────────────────────────────
+    selectedColor = null;
+    const colorBlock = document.getElementById('colorSelectBlock');
+    const colorBtns  = document.getElementById('colorButtons');
+
+    if (p.colors && p.colors.length > 0) {
+        colorBlock.style.display = '';
+        colorBtns.innerHTML = p.colors.map(c => `
+            <button type="button"
+                class="color-option-btn"
+                data-color="${c.color_name}"
+                onclick="selectColor(this)">
+                ${c.color_name}
+            </button>`).join('');
+    } else {
+        colorBlock.style.display = 'none';
+    }
+
     // ── Size selector ────────────────────────────────────────────
     selectedSize = null;
     const sizeBlock = document.getElementById('sizeSelectBlock');
@@ -211,7 +230,16 @@ function renderProduct(p) {
 
     // ── Add to cart button ───────────────────────────────────────
     document.getElementById('addToCartBtn').onclick = function () {
-        const hasSizes = p.sizes && p.sizes.length > 0;
+        const hasSizes  = p.sizes  && p.sizes.length > 0;
+        const hasColors = p.colors && p.colors.length > 0;
+
+        // Color required if this product has color variants
+        if (hasColors && !selectedColor) {
+            document.getElementById('colorError').classList.remove('d-none');
+            document.getElementById('colorSelectBlock').scrollIntoView({ behavior: 'smooth', block: 'center' });
+            showToast('Please select a color first', 'error');
+            return;
+        }
 
         // Size required if this product has size variants
         if (hasSizes && !selectedSize) {
@@ -249,6 +277,7 @@ function renderProduct(p) {
             primaryImg,
             p.shop_name,
             hasSizes ? selectedSize : null,
+            hasColors ? selectedColor : null,
             currentQty
         );
 
@@ -286,6 +315,17 @@ function changeQty(delta) {
     }
     currentQty = Math.min(maxQty, Math.max(1, currentQty + delta));
     document.getElementById('qtyDisplay').textContent = currentQty;
+}
+
+/* ================================================================
+   COLOR SELECTION
+   ================================================================ */
+function selectColor(btn) {
+    document.querySelectorAll('.color-option-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    selectedColor = btn.dataset.color;
+    const errEl = document.getElementById('colorError');
+    if (errEl) errEl.classList.add('d-none');
 }
 
 /* ================================================================

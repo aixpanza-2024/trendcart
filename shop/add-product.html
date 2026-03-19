@@ -193,6 +193,45 @@
             color: red;
         }
 
+        /* ── Color picker ─────────────────────────────────────── */
+        .color-toggle-btn {
+            border: 2px solid #dee2e6;
+            border-radius: 6px;
+            padding: 6px 14px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            background: #fff;
+            transition: all 0.15s;
+            user-select: none;
+        }
+        .color-toggle-btn.selected {
+            background: var(--primary-black, #1a1a1a);
+            color: #fff;
+            border-color: var(--primary-black, #1a1a1a);
+        }
+        .color-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 20px;
+            padding: 4px 12px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+        .color-tag .remove-color {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+            color: #888;
+            font-size: 14px;
+            line-height: 1;
+        }
+        .color-tag .remove-color:hover { color: #dc3545; }
+
         /* ── Size variant builder ─────────────────────────────── */
         .size-toggle-btn {
             border: 2px solid #dee2e6;
@@ -392,9 +431,33 @@
                     <i class="fas fa-tags"></i> Product Details
                 </div>
                 <div class="row g-3">
-                    <div class="col-md-4">
-                        <label for="color" class="form-label">Color</label>
-                        <input type="text" class="form-control" id="color" placeholder="e.g., Red, Blue">
+                    <div class="col-12">
+                        <label class="form-label">Available Colors</label>
+                        <input type="hidden" id="colorsJson" name="colors_json" value="[]">
+                        <div class="mb-2 d-flex flex-wrap gap-2">
+                            <button type="button" class="color-toggle-btn" data-color="Black">Black</button>
+                            <button type="button" class="color-toggle-btn" data-color="White">White</button>
+                            <button type="button" class="color-toggle-btn" data-color="Red">Red</button>
+                            <button type="button" class="color-toggle-btn" data-color="Blue">Blue</button>
+                            <button type="button" class="color-toggle-btn" data-color="Navy">Navy</button>
+                            <button type="button" class="color-toggle-btn" data-color="Green">Green</button>
+                            <button type="button" class="color-toggle-btn" data-color="Yellow">Yellow</button>
+                            <button type="button" class="color-toggle-btn" data-color="Pink">Pink</button>
+                            <button type="button" class="color-toggle-btn" data-color="Purple">Purple</button>
+                            <button type="button" class="color-toggle-btn" data-color="Orange">Orange</button>
+                            <button type="button" class="color-toggle-btn" data-color="Brown">Brown</button>
+                            <button type="button" class="color-toggle-btn" data-color="Grey">Grey</button>
+                            <button type="button" class="color-toggle-btn" data-color="Maroon">Maroon</button>
+                            <button type="button" class="color-toggle-btn" data-color="Cream">Cream</button>
+                            <button type="button" class="color-toggle-btn" data-color="Beige">Beige</button>
+                            <button type="button" class="color-toggle-btn" data-color="Rust">Rust</button>
+                            <button type="button" class="color-toggle-btn" data-color="Teal">Teal</button>
+                        </div>
+                        <div class="d-flex gap-2 mb-2">
+                            <input type="text" id="customColorInput" class="form-control form-control-sm" style="max-width:180px;" placeholder="Custom color (e.g. Indigo)">
+                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="addCustomColor()">Add</button>
+                        </div>
+                        <div id="colorTagsList" class="d-flex flex-wrap gap-2 mt-1"></div>
                     </div>
                     <div class="col-md-4">
                         <label for="material" class="form-label">Material</label>

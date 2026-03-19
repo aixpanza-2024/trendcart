@@ -136,6 +136,9 @@ function renderOrders(orders) {
             const img     = imgSrc
                 ? `<img src="${imgSrc}" class="product-thumb me-2" alt="" onerror="this.style.display='none'">`
                 : `<div class="product-thumb-placeholder me-2"><i class="fas fa-image text-grey"></i></div>`;
+            const colorTag = item.selected_color
+                ? `<span class="badge bg-light text-dark border ms-1" style="font-size:10px;"><i class="fas fa-palette me-1"></i>${esc(item.selected_color)}</span>`
+                : '';
             const sizeTag = item.selected_size
                 ? `<span class="badge bg-light text-dark border ms-1" style="font-size:10px;">${esc(item.selected_size)}</span>`
                 : '';
@@ -145,7 +148,7 @@ function renderOrders(orders) {
                 <td colspan="3">
                     <div class="d-flex align-items-center ps-3">
                         ${img}
-                        <span style="font-size:13px;max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${esc(item.product_name)}">${esc(item.product_name)}${sizeTag}</span>
+                        <span style="font-size:13px;max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${esc(item.product_name)}">${esc(item.product_name)}${colorTag}${sizeTag}</span>
                     </div>
                 </td>
                 <td>${item.quantity}</td>

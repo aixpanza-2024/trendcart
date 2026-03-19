@@ -71,6 +71,21 @@ try {
         $product['sizes'] = [];
     }
 
+    // Color variants (graceful: returns [] if table not yet created)
+    try {
+        $clStmt = $conn->prepare("
+            SELECT color_name, display_order
+            FROM product_colors
+            WHERE product_id = :id
+            ORDER BY display_order ASC, color_id ASC
+        ");
+        $clStmt->bindValue(':id', $product_id, PDO::PARAM_INT);
+        $clStmt->execute();
+        $product['colors'] = $clStmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (Exception $clEx) {
+        $product['colors'] = [];
+    }
+
     // Latest approved reviews (up to 10)
     $revStmt = $conn->prepare("
         SELECT pr.rating, pr.review_text, pr.created_at,

@@ -198,6 +198,26 @@
             cursor: not-allowed;
             background: #f5f5f5;
         }
+        /* ── Color option buttons ────────────────────────── */
+        .color-option-btn {
+            min-width: 64px;
+            padding: 7px 16px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            background: #fff;
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .color-option-btn:hover {
+            border-color: var(--primary-black);
+        }
+        .color-option-btn.active {
+            background: var(--primary-black, #1a1a1a);
+            color: #fff;
+            border-color: var(--primary-black, #1a1a1a);
+        }
     </style>
 </head>
 <body>
@@ -305,6 +325,17 @@
 
                 <!-- Shop info -->
                 <div class="mb-4" id="productShopBlock"></div>
+
+                <!-- Color Selector (shown only when product has color variants) -->
+                <div class="mb-3" id="colorSelectBlock" style="display:none;">
+                    <label class="fw-semibold small mb-2 d-block">
+                        Select Color <span class="text-danger">*</span>
+                    </label>
+                    <div class="d-flex flex-wrap gap-2" id="colorButtons"></div>
+                    <div class="text-danger small mt-1 d-none" id="colorError">
+                        <i class="fas fa-exclamation-circle me-1"></i>Please select a color to continue
+                    </div>
+                </div>
 
                 <!-- Size Selector (shown only when product has size variants) -->
                 <div class="mb-3" id="sizeSelectBlock" style="display:none;">

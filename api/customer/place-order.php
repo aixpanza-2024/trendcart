@@ -65,9 +65,10 @@ try {
     );
 
     foreach ($cart_items as $item) {
-        $product_id    = (int)($item['id'] ?? 0);
-        $quantity      = max(1, (int)($item['quantity'] ?? 1));
-        $selected_size = isset($item['size']) && $item['size'] !== null ? trim($item['size']) : null;
+        $product_id     = (int)($item['id'] ?? 0);
+        $quantity       = max(1, (int)($item['quantity'] ?? 1));
+        $selected_size  = isset($item['size'])  && $item['size']  !== null ? trim($item['size'])  : null;
+        $selected_color = isset($item['color']) && $item['color'] !== null ? trim($item['color']) : null;
 
         if ($product_id <= 0) continue;
 
@@ -101,10 +102,11 @@ try {
             'product_id'    => $product['product_id'],
             'product_name'  => $product['product_name'],
             'shop_id'       => $product['shop_id'],
-            'selected_size' => $selected_size,
-            'quantity'      => $quantity,
-            'price'         => $effective_price,
-            'subtotal'      => $line_total,
+            'selected_size'  => $selected_size,
+            'selected_color' => $selected_color,
+            'quantity'       => $quantity,
+            'price'          => $effective_price,
+            'subtotal'       => $line_total,
         ];
     }
 
@@ -209,19 +211,20 @@ try {
     // Insert order items
     $iStmt = $conn->prepare(
         "INSERT INTO order_items
-            (order_id, shop_id, product_id, product_name, selected_size, quantity, price, subtotal)
+            (order_id, shop_id, product_id, product_name, selected_size, selected_color, quantity, price, subtotal)
          VALUES
-            (:order_id, :shop_id, :product_id, :product_name, :selected_size, :quantity, :price, :subtotal)"
+            (:order_id, :shop_id, :product_id, :product_name, :selected_size, :selected_color, :quantity, :price, :subtotal)"
     );
     $ocStmt = $conn->prepare(
         "UPDATE products SET orders_count = orders_count + :qty WHERE product_id = :pid"
     );
     foreach ($validated_items as $item) {
-        $iStmt->bindValue(':order_id',      $order_id,                  PDO::PARAM_INT);
-        $iStmt->bindValue(':shop_id',       $item['shop_id'],           PDO::PARAM_INT);
-        $iStmt->bindValue(':product_id',    $item['product_id'],        PDO::PARAM_INT);
-        $iStmt->bindValue(':product_name',  $item['product_name']);
-        $iStmt->bindValue(':selected_size', $item['selected_size']);
+        $iStmt->bindValue(':order_id',       $order_id,                  PDO::PARAM_INT);
+        $iStmt->bindValue(':shop_id',        $item['shop_id'],           PDO::PARAM_INT);
+        $iStmt->bindValue(':product_id',     $item['product_id'],        PDO::PARAM_INT);
+        $iStmt->bindValue(':product_name',   $item['product_name']);
+        $iStmt->bindValue(':selected_size',  $item['selected_size']);
+        $iStmt->bindValue(':selected_color', $item['selected_color']);
         $iStmt->bindValue(':quantity',      $item['quantity'],           PDO::PARAM_INT);
         $iStmt->bindValue(':price',         $item['price']);
         $iStmt->bindValue(':subtotal',      $item['subtotal']);

@@ -5,17 +5,17 @@
 
 /* ===================================
    CART KEY HELPER
-   Each cart slot is uniquely identified by productId + size.
-   Same product in different sizes = different cart entries.
+   Each cart slot is uniquely identified by productId + size + color.
+   Same product in different sizes or colors = different cart entries.
    =================================== */
-function makeCartKey(productId, size) {
-    return String(productId) + '__' + (size || '');
+function makeCartKey(productId, size, color) {
+    return String(productId) + '__' + (size || '') + '__' + (color || '');
 }
 
 /* ===================================
    ADD TO CART
    =================================== */
-function addToCart(productId, productName, productPrice, productImage, shopName, size, qty = 1) {
+function addToCart(productId, productName, productPrice, productImage, shopName, size, color, qty = 1) {
     // Check if user is logged in
     const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
 
@@ -28,7 +28,7 @@ function addToCart(productId, productName, productPrice, productImage, shopName,
         return;
     }
 
-    const cartKey = makeCartKey(productId, size);
+    const cartKey = makeCartKey(productId, size, color);
     const cart    = getCart();
 
     // If cart has items from a different shop, ask user to confirm clearing
@@ -36,16 +36,16 @@ function addToCart(productId, productName, productPrice, productImage, shopName,
     if (existingShop && shopName && existingShop !== shopName) {
         _showShopConflictModal(existingShop, shopName, function () {
             localStorage.removeItem('cart');
-            _doAddToCart([], cartKey, productId, productName, productPrice, productImage, shopName, size, qty);
+            _doAddToCart([], cartKey, productId, productName, productPrice, productImage, shopName, size, color, qty);
         });
         return;
     }
 
-    _doAddToCart(cart, cartKey, productId, productName, productPrice, productImage, shopName, size, qty);
+    _doAddToCart(cart, cartKey, productId, productName, productPrice, productImage, shopName, size, color, qty);
 }
 
 /* Internal: actually insert/increment the item and save */
-function _doAddToCart(cart, cartKey, productId, productName, productPrice, productImage, shopName, size, qty = 1) {
+function _doAddToCart(cart, cartKey, productId, productName, productPrice, productImage, shopName, size, color, qty = 1) {
     const existingItemIndex = cart.findIndex(item => item.cartKey === cartKey);
 
     if (existingItemIndex > -1) {
@@ -55,7 +55,8 @@ function _doAddToCart(cart, cartKey, productId, productName, productPrice, produ
         cart.push({
             cartKey,
             id:       productId,
-            size:     size || null,
+            size:     size  || null,
+            color:    color || null,
             name:     productName,
             price:    parseFloat(productPrice),
             image:    productImage,
@@ -236,9 +237,12 @@ function renderCartItems() {
     // Render each cart item as a grid card
     cart.forEach(item => {
         // Ensure cartKey exists even for legacy items
-        const key = item.cartKey || makeCartKey(item.id, item.size);
+        const key = item.cartKey || makeCartKey(item.id, item.size, item.color);
         const sizeTag = item.size
             ? `<span class="badge bg-light text-dark border me-1"><i class="fas fa-ruler-combined me-1"></i>${item.size}</span>`
+            : '';
+        const colorTag = item.color
+            ? `<span class="badge bg-light text-dark border me-1"><i class="fas fa-palette me-1"></i>${item.color}</span>`
             : '';
         const itemHTML = `
             <div class="col-12 col-md-6">
@@ -248,7 +252,7 @@ function renderCartItems() {
                         <div class="cart-item-details">
                             <h5 class="cart-item-title">${item.name}</h5>
                             <p class="cart-item-shop mb-1"><i class="fas fa-store"></i> ${item.shop}</p>
-                            ${sizeTag}
+                            ${colorTag}${sizeTag}
                             <p class="cart-item-price fw-bold mb-0 mt-1">${formatCurrency(item.price)}</p>
                         </div>
                     </div>
@@ -351,7 +355,7 @@ function quickAddToCart(button, productId, productName, productPrice, productIma
     button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Adding...';
 
     setTimeout(() => {
-        addToCart(productId, productName, productPrice, productImage, shopName, size || null, qty);
+        addToCart(productId, productName, productPrice, productImage, shopName, size || null, null, qty);
 
         // Reset button
         button.disabled = false;

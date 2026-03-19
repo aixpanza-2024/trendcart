@@ -112,6 +112,16 @@ try {
     $szStmt->execute();
     $product['sizes'] = $szStmt->fetchAll(PDO::FETCH_ASSOC);
 
+    // Get color variants
+    $clQuery = "SELECT color_id, color_name, display_order
+                FROM product_colors
+                WHERE product_id = :product_id
+                ORDER BY display_order ASC, color_id ASC";
+    $clStmt = $conn->prepare($clQuery);
+    $clStmt->bindValue(':product_id', $product_id, PDO::PARAM_INT);
+    $clStmt->execute();
+    $product['colors'] = $clStmt->fetchAll(PDO::FETCH_ASSOC);
+
     http_response_code(200);
     echo json_encode([
         'success' => true,
