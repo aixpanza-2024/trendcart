@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reviews - Admin - TrenCart</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../assets/css/theme.css">
+    <link rel="stylesheet" href="../assets/css/admin.css">
+</head>
+<body class="admin-body">
+
+    <nav class="admin-sidebar" id="sidebar"></nav>
+    <div class="admin-overlay" id="overlay"></div>
+
+    <div class="admin-main">
+        <div class="admin-topbar">
+            <div class="d-flex align-items-center gap-3">
+                <button class="menu-toggle" id="menuToggle"><i class="fas fa-bars"></i></button>
+                <h5 class="page-title">Product Reviews</h5>
+            </div>
+        </div>
+
+        <div class="admin-content">
+
+            <!-- Filters -->
+            <div class="admin-filter-bar">
+                <div class="row g-2">
+                    <div class="col-md-5">
+                        <input type="text" class="form-control form-control-sm" id="searchReview"
+                               placeholder="Search product, customer or review text...">
+                    </div>
+                    <div class="col-md-3">
+                        <select class="form-select form-select-sm" id="filterStatus">
+                            <option value="">All Reviews</option>
+                            <option value="approved">Visible</option>
+                            <option value="hidden">Hidden</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <button class="btn btn-sm btn-dark w-100" onclick="loadReviews(1)">
+                            <i class="fas fa-search"></i> Search
+                        </button>
+                    </div>
+                    <div class="col-md-2">
+                        <button class="btn btn-sm btn-outline-secondary w-100" onclick="clearFilters()">
+                            <i class="fas fa-times"></i> Clear
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Summary Stats -->
+            <div class="row g-3 mb-4">
+                <div class="col-6 col-md-3">
+                    <div class="admin-stat-card stat-accent-blue">
+                        <div class="stat-value" id="statTotal">-</div>
+                        <div class="stat-label">Total Reviews</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="admin-stat-card stat-accent-green">
+                        <div class="stat-value" id="statApproved">-</div>
+                        <div class="stat-label">Visible</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="admin-stat-card stat-accent-red">
+                        <div class="stat-value" id="statHidden">-</div>
+                        <div class="stat-label">Hidden</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="admin-stat-card stat-accent-yellow">
+                        <div class="stat-value" id="statAvgRating">-</div>
+                        <div class="stat-label">Avg Rating</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reviews Table -->
+            <div class="admin-card">
+                <div class="admin-card-header d-flex justify-content-between align-items-center">
+                    <span>Reviews <span class="text-muted fw-normal" id="resultCount"></span></span>
+                </div>
+                <div class="admin-card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table admin-table mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Customer</th>
+                                    <th style="width:100px;">Rating</th>
+                                    <th>Review</th>
+                                    <th style="width:90px;">Status</th>
+                                    <th style="width:80px;">Date</th>
+                                    <th style="width:130px;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="reviewsTable">
+                                <tr><td colspan="7" class="text-center text-muted py-4">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pagination -->
+            <div id="pagination" class="d-flex justify-content-center gap-2 mt-3"></div>
+
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../assets/js/admin-common.js"></script>
+    <script>
+    let currentPage = 1;
+
+    document.addEventListener('DOMContentLoaded', () => loadReviews(1));
+
+    document.getElementById('searchReview').addEventListener('keydown', e => {
+        if (e.key === 'Enter') loadReviews(1);
+    });
+
+    async function loadReviews(page = 1) {
+        currentPage = page;
+        const search = document.getElementById('searchReview').value.trim();
+        const status = document.getElementById('filterStatus').value;
+
+        const params = new URLSearchParams({ page, search, status });
+
+        try {
+            const res  = await fetch(`../api/admin/reviews.php?${params}`);
+            const data = await res.json();
+
+            if (!data.success) { showError(data.message); return; }
+
+            renderSummary(data.summary);
+            renderTable(data.data);
+            renderPagination(data.page, data.pages);
+            document.getElementById('resultCount').textContent = `(${data.total})`;
+        } catch (e) {
+            showError('Failed to load reviews');
+        }
+    }
+
+    function renderSummary(s) {
+        if (!s) return;
+        document.getElementById('statTotal').textContent    = s.total    || 0;
+        document.getElementById('statApproved').textContent = s.approved || 0;
+        document.getElementById('statHidden').textContent   = s.hidden   || 0;
+        document.getElementById('statAvgRating').textContent = s.avg_rating
+            ? `${s.avg_rating} ★` : '-';
+    }
+
+    function renderTable(reviews) {
+        const tbody = document.getElementById('reviewsTable');
+        if (!reviews.length) {
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">No reviews found</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = reviews.map(r => {
+            const stars = renderStars(parseInt(r.rating));
+            const statusBadge = r.is_approved == 1
+                ? '<span class="badge bg-success">Visible</span>'
+                : '<span class="badge bg-secondary">Hidden</span>';
+
+            const reviewText = r.review_text
+                ? `<div style="font-size:13px;max-width:260px;">${esc(r.review_text.substring(0, 120))}${r.review_text.length > 120 ? '…' : ''}</div>`
+                : '<span class="text-muted small">No text</span>';
+
+            const titleHtml = r.review_title
+                ? `<div class="fw-semibold" style="font-size:13px;">${esc(r.review_title)}</div>`
+                : '';
+
+            const verifiedBadge = r.is_verified_purchase == 1
+                ? '<span class="badge bg-success bg-opacity-10 text-success ms-1" style="font-size:10px;">Verified</span>'
+                : '';
+
+            const approveBtn = r.is_approved == 1
+                ? `<button class="btn btn-xs btn-outline-secondary" onclick="reviewAction(${r.review_id},'hide')" title="Hide"><i class="fas fa-eye-slash"></i></button>`
+                : `<button class="btn btn-xs btn-outline-success"   onclick="reviewAction(${r.review_id},'approve')" title="Show"><i class="fas fa-eye"></i></button>`;
+
+            const date = new Date(r.created_at).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'2-digit' });
+
+            return `<tr>
+                <td>
+                    <div style="font-size:13px;font-weight:600;max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${esc(r.product_name)}">${esc(r.product_name)}</div>
+                    <div class="text-muted" style="font-size:11px;">${esc(r.shop_name || '')}</div>
+                </td>
+                <td>
+                    <div style="font-size:13px;">${esc(r.customer_name)}${verifiedBadge}</div>
+                    <div class="text-muted" style="font-size:11px;">${esc(r.customer_email)}</div>
+                </td>
+                <td>${stars}</td>
+                <td>${titleHtml}${reviewText}</td>
+                <td>${statusBadge}</td>
+                <td style="font-size:12px;">${date}</td>
+                <td>
+                    <div class="d-flex gap-1">
+                        ${approveBtn}
+                        <button class="btn btn-xs btn-outline-danger" onclick="reviewAction(${r.review_id},'delete')" title="Delete"><i class="fas fa-trash"></i></button>
+                    </div>
+                </td>
+            </tr>`;
+        }).join('');
+    }
+
+    function renderStars(rating) {
+        let html = '';
+        for (let i = 1; i <= 5; i++) {
+            html += i <= rating
+                ? '<i class="fas fa-star text-warning" style="font-size:12px;"></i>'
+                : '<i class="far fa-star text-muted"   style="font-size:12px;"></i>';
+        }
+        return `<div>${html} <span class="ms-1" style="font-size:12px;">${rating}/5</span></div>`;
+    }
+
+    async function reviewAction(reviewId, action) {
+        if (action === 'delete') {
+            if (!confirm('Delete this review permanently?')) return;
+        }
+
+        try {
+            const res  = await fetch('../api/admin/reviews.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action, review_id: reviewId })
+            });
+            const data = await res.json();
+            if (data.success) {
+                loadReviews(currentPage);
+            } else {
+                alert(data.message);
+            }
+        } catch (e) {
+            alert('Action failed');
+        }
+    }
+
+    function renderPagination(page, pages) {
+        const el = document.getElementById('pagination');
+        if (pages <= 1) { el.innerHTML = ''; return; }
+
+        let html = '';
+        for (let i = 1; i <= pages; i++) {
+            html += `<button class="btn btn-sm ${i === page ? 'btn-dark' : 'btn-outline-secondary'}"
+                             onclick="loadReviews(${i})">${i}</button>`;
+        }
+        el.innerHTML = html;
+    }
+
+    function clearFilters() {
+        document.getElementById('searchReview').value = '';
+        document.getElementById('filterStatus').value = '';
+        loadReviews(1);
+    }
+
+    function showError(msg) {
+        document.getElementById('reviewsTable').innerHTML =
+            `<tr><td colspan="7" class="text-center text-danger py-4">${msg}</td></tr>`;
+    }
+
+    function esc(str) {
+        if (!str) return '';
+        return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+    </script>
+</body>
+</html>
