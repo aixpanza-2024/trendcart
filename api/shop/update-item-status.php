@@ -54,7 +54,7 @@ try {
     $shop_id = $shop['shop_id'];
 
     // Verify item belongs to this shop
-    $stmt = $conn->prepare("SELECT order_item_id FROM order_items WHERE order_item_id = :id AND shop_id = :shop_id");
+    $stmt = $conn->prepare("SELECT order_item_id FROM order_item WHERE order_item_id = :id AND shop_id = :shop_id");
     $stmt->bindParam(':id', $data['order_item_id']);
     $stmt->bindParam(':shop_id', $shop_id);
     $stmt->execute();
@@ -66,7 +66,7 @@ try {
     }
 
     // Update status
-    $stmt = $conn->prepare("UPDATE order_items SET item_status = :status WHERE order_item_id = :id");
+    $stmt = $conn->prepare("UPDATE order_item SET item_status = :status WHERE order_item_id = :id");
     $stmt->bindParam(':status', $data['status']);
     $stmt->bindParam(':id', $data['order_item_id']);
     $stmt->execute();
@@ -74,8 +74,8 @@ try {
     // Sync parent orders.order_status based on all item statuses for this order
     $syncStmt = $conn->prepare(
         "SELECT order_id, GROUP_CONCAT(item_status) AS all_statuses
-         FROM order_items
-         WHERE order_id = (SELECT order_id FROM order_items WHERE order_item_id = :id LIMIT 1)
+         FROM order_item
+         WHERE order_id = (SELECT order_id FROM order_item WHERE order_item_id = :id LIMIT 1)
          GROUP BY order_id
          LIMIT 1"
     );

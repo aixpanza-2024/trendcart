@@ -46,7 +46,7 @@ try {
     // Verify item belongs to this customer and is delivered
     $stmt = $conn->prepare("
         SELECT oi.product_id, oi.order_id, oi.item_status
-        FROM order_items oi
+        FROM order_item oi
         INNER JOIN orders o ON oi.order_id = o.order_id
         WHERE oi.order_item_id = :item_id AND o.customer_id = :customer_id
         LIMIT 1

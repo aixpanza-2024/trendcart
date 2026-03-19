@@ -12,5 +12,5 @@ CREATE TABLE IF NOT EXISTS product_colors (
 );
 
 -- 2. Add selected_color to order_items
-ALTER TABLE order_items
+ALTER TABLE order_item
     ADD COLUMN IF NOT EXISTS selected_color VARCHAR(50) DEFAULT NULL AFTER selected_size;

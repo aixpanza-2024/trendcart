@@ -70,7 +70,7 @@ try {
     $stmt->bindValue(':uid', $user_id, PDO::PARAM_INT);
     $stmt->execute();
 
-    // Delete shop (cascades → products → product_sizes, order_items, reviews, wishlist, product_images, shop_payments)
+    // Delete shop (cascades → products → product_sizes, order_item, reviews, wishlist, product_images, shop_payments)
     $stmt = $conn->prepare("DELETE FROM shops WHERE shop_id = :id");
     $stmt->bindValue(':id', $shop_id, PDO::PARAM_INT);
     $stmt->execute();

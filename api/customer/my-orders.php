@@ -27,7 +27,7 @@ try {
                    o.shipping_name, o.shipping_address, o.shipping_city,
                    COUNT(oi.order_item_id) AS item_count
             FROM orders o
-            LEFT JOIN order_items oi ON o.order_id = oi.order_id
+            LEFT JOIN order_item oi ON o.order_id = oi.order_id
             WHERE o.customer_id = :customer_id
             GROUP BY o.order_id
             ORDER BY o.order_date DESC";
@@ -51,7 +51,7 @@ try {
                             LIMIT 1) AS product_image,
                            CASE WHEN pr.review_id IS NOT NULL THEN 1 ELSE 0 END AS has_reviewed,
                            pr.rating AS review_rating
-                    FROM order_items oi
+                    FROM order_item oi
                     INNER JOIN orders o ON oi.order_id = o.order_id
                     INNER JOIN products p ON oi.product_id = p.product_id
                     INNER JOIN shops s ON oi.shop_id = s.shop_id

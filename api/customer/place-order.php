@@ -210,7 +210,7 @@ try {
 
     // Insert order items
     $iStmt = $conn->prepare(
-        "INSERT INTO order_items
+        "INSERT INTO order_item
             (order_id, shop_id, product_id, product_name, selected_size, selected_color, quantity, price, subtotal)
          VALUES
             (:order_id, :shop_id, :product_id, :product_name, :selected_size, :selected_color, :quantity, :price, :subtotal)"
