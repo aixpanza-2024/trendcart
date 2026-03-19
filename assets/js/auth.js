@@ -259,9 +259,11 @@ function validateConfirmPassword() {
    =================================== */
 function logout() {
     // Clear auth data only — cart is preserved across logout
-    localStorage.removeItem('isLoggedIn');
-    localStorage.removeItem('userName');
-    localStorage.removeItem('userEmail');
+    sessionStorage.removeItem('isLoggedIn');
+    sessionStorage.removeItem('userName');
+    sessionStorage.removeItem('userEmail');
+    sessionStorage.removeItem('loginExpiry');
+    sessionStorage.removeItem('user');
 
     showToast('Logged out successfully', 'success');
 
@@ -275,7 +277,13 @@ function logout() {
    CHECK IF USER IS LOGGED IN
    =================================== */
 function isUserLoggedIn() {
-    return localStorage.getItem('isLoggedIn') === 'true';
+    if (sessionStorage.getItem('isLoggedIn') !== 'true') return false;
+    const expiry = sessionStorage.getItem('loginExpiry');
+    if (expiry && Date.now() > parseInt(expiry)) {
+        sessionStorage.clear();
+        return false;
+    }
+    return true;
 }
 
 /* ===================================

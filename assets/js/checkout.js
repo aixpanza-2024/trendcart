@@ -3,7 +3,7 @@
  */
 
 document.addEventListener('DOMContentLoaded', function () {
-    if (localStorage.getItem('isLoggedIn') !== 'true') {
+    if (sessionStorage.getItem('isLoggedIn') !== 'true') {
         window.location.href = 'login.html';
         return;
     }

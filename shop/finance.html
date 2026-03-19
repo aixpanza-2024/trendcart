@@ -380,8 +380,10 @@
         try {
             await fetch('../api/customer/logout.php');
         } catch(e) {}
-        localStorage.removeItem('isLoggedIn');
-        localStorage.removeItem('userName');
+        sessionStorage.removeItem('isLoggedIn');
+        sessionStorage.removeItem('userName');
+        sessionStorage.removeItem('loginExpiry');
+        sessionStorage.removeItem('user');
         window.location.href = '../pages/login.html';
     }
     </script>

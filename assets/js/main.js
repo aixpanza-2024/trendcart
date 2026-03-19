@@ -3,6 +3,17 @@
    General functionality and initialization
    =================================== */
 
+/* Auth helper — checks sessionStorage and 365-day expiry */
+function _isAuthValid() {
+    if (sessionStorage.getItem('isLoggedIn') !== 'true') return false;
+    const expiry = sessionStorage.getItem('loginExpiry');
+    if (expiry && Date.now() > parseInt(expiry)) {
+        sessionStorage.clear();
+        return false;
+    }
+    return true;
+}
+
 // Wait for DOM to be fully loaded
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize all components
@@ -72,7 +83,7 @@ function injectMobileNav() {
     const href     = (page) => inPages ? page : 'pages/' + page;
     const rootHref = inPages ? '../index.html' : 'index.html';
 
-    const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+    const isLoggedIn = _isAuthValid();
 
     // Active tab detection
     const page     = window.location.pathname.split('/').pop() || 'index.html';
@@ -254,7 +265,7 @@ function updateCartBadge() {
    AUTH STATUS CHECK
    =================================== */
 function checkAuthStatus() {
-    const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+    const isLoggedIn = _isAuthValid();
     const authButtons = document.querySelector('.auth-buttons');
 
     // Always hide the Register nav-item when logged in
@@ -266,7 +277,7 @@ function checkAuthStatus() {
     }
 
     if (authButtons && isLoggedIn) {
-        const userName = localStorage.getItem('userName') || 'User';
+        const userName = sessionStorage.getItem('userName') || 'User';
 
         // Build path-aware links (root vs inside /pages/)
         const inPages = window.location.pathname.includes('/pages/');
@@ -319,9 +330,11 @@ function mobileProductSearch(e) {
    LOGOUT FUNCTION
    =================================== */
 function logout() {
-    localStorage.removeItem('isLoggedIn');
-    localStorage.removeItem('userName');
-    localStorage.removeItem('userEmail');
+    sessionStorage.removeItem('isLoggedIn');
+    sessionStorage.removeItem('userName');
+    sessionStorage.removeItem('userEmail');
+    sessionStorage.removeItem('loginExpiry');
+    sessionStorage.removeItem('user');
     const inPages = window.location.pathname.replace(/\\/g, '/').includes('/pages/');
     window.location.href = inPages ? '../index.html' : 'index.html';
 }

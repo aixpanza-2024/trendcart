@@ -17,7 +17,7 @@ function makeCartKey(productId, size, color) {
    =================================== */
 function addToCart(productId, productName, productPrice, productImage, shopName, size, color, qty = 1) {
     // Check if user is logged in
-    const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+    const isLoggedIn = (typeof _isAuthValid === 'function' ? _isAuthValid() : sessionStorage.getItem('isLoggedIn') === 'true');
 
     if (!isLoggedIn) {
         showToast('Please login to add items to cart', 'error');
@@ -322,7 +322,7 @@ function proceedToCheckout() {
     }
 
     // Check if user is logged in
-    const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+    const isLoggedIn = (typeof _isAuthValid === 'function' ? _isAuthValid() : sessionStorage.getItem('isLoggedIn') === 'true');
 
     if (!isLoggedIn) {
         showToast('Please login to continue', 'error');
