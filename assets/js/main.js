@@ -3,12 +3,12 @@
    General functionality and initialization
    =================================== */
 
-/* Auth helper — checks sessionStorage and 365-day expiry */
+/* Auth helper — checks localStorage and 365-day expiry */
 function _isAuthValid() {
-    if (sessionStorage.getItem('isLoggedIn') !== 'true') return false;
-    const expiry = sessionStorage.getItem('loginExpiry');
+    if (localStorage.getItem('isLoggedIn') !== 'true') return false;
+    const expiry = localStorage.getItem('loginExpiry');
     if (expiry && Date.now() > parseInt(expiry)) {
-        sessionStorage.clear();
+        ['isLoggedIn','userName','userEmail','loginExpiry','user'].forEach(k => localStorage.removeItem(k));
         return false;
     }
     return true;
@@ -307,7 +307,7 @@ function checkAuthStatus() {
     }
 
     if (authButtons && isLoggedIn) {
-        const userName = sessionStorage.getItem('userName') || 'User';
+        const userName = localStorage.getItem('userName') || 'User';
 
         // Build path-aware links (root vs inside /pages/)
         const inPages = window.location.pathname.includes('/pages/');
@@ -360,11 +360,11 @@ function mobileProductSearch(e) {
    LOGOUT FUNCTION
    =================================== */
 function logout() {
-    sessionStorage.removeItem('isLoggedIn');
-    sessionStorage.removeItem('userName');
-    sessionStorage.removeItem('userEmail');
-    sessionStorage.removeItem('loginExpiry');
-    sessionStorage.removeItem('user');
+    localStorage.removeItem('isLoggedIn');
+    localStorage.removeItem('userName');
+    localStorage.removeItem('userEmail');
+    localStorage.removeItem('loginExpiry');
+    localStorage.removeItem('user');
     const inPages = window.location.pathname.replace(/\\/g, '/').includes('/pages/');
     window.location.href = inPages ? '../index.html' : 'index.html';
 }

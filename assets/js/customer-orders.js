@@ -4,7 +4,7 @@
 
 document.addEventListener('DOMContentLoaded', function () {
     // Redirect to login if not logged in (local check first)
-    if (sessionStorage.getItem('isLoggedIn') !== 'true') {
+    if (localStorage.getItem('isLoggedIn') !== 'true') {
         window.location.href = 'login.html';
         return;
     }

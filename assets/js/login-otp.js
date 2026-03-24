@@ -234,11 +234,11 @@ async function handleOTPVerification(e) {
             if (result.data && result.data.user) {
                 const user = result.data.user;
                 const expiry = Date.now() + 365 * 24 * 60 * 60 * 1000; // 365 days
-                sessionStorage.setItem('user', JSON.stringify(user));
-                sessionStorage.setItem('isLoggedIn', 'true');
-                sessionStorage.setItem('userName', user.full_name || user.email);
-                sessionStorage.setItem('userEmail', user.email);
-                sessionStorage.setItem('loginExpiry', String(expiry));
+                localStorage.setItem('user', JSON.stringify(user));
+                localStorage.setItem('isLoggedIn', 'true');
+                localStorage.setItem('userName', user.full_name || user.email);
+                localStorage.setItem('userEmail', user.email);
+                localStorage.setItem('loginExpiry', String(expiry));
             }
 
             setTimeout(() => {

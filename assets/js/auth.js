@@ -259,11 +259,11 @@ function validateConfirmPassword() {
    =================================== */
 function logout() {
     // Clear auth data only — cart is preserved across logout
-    sessionStorage.removeItem('isLoggedIn');
-    sessionStorage.removeItem('userName');
-    sessionStorage.removeItem('userEmail');
-    sessionStorage.removeItem('loginExpiry');
-    sessionStorage.removeItem('user');
+    localStorage.removeItem('isLoggedIn');
+    localStorage.removeItem('userName');
+    localStorage.removeItem('userEmail');
+    localStorage.removeItem('loginExpiry');
+    localStorage.removeItem('user');
 
     showToast('Logged out successfully', 'success');
 
@@ -277,10 +277,10 @@ function logout() {
    CHECK IF USER IS LOGGED IN
    =================================== */
 function isUserLoggedIn() {
-    if (sessionStorage.getItem('isLoggedIn') !== 'true') return false;
-    const expiry = sessionStorage.getItem('loginExpiry');
+    if (localStorage.getItem('isLoggedIn') !== 'true') return false;
+    const expiry = localStorage.getItem('loginExpiry');
     if (expiry && Date.now() > parseInt(expiry)) {
-        sessionStorage.clear();
+        ['isLoggedIn','userName','userEmail','loginExpiry','user'].forEach(k => localStorage.removeItem(k));
         return false;
     }
     return true;

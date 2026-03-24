@@ -3,7 +3,7 @@
  */
 
 document.addEventListener('DOMContentLoaded', function () {
-    if (sessionStorage.getItem('isLoggedIn') !== 'true') {
+    if (localStorage.getItem('isLoggedIn') !== 'true') {
         window.location.href = 'login.html';
         return;
     }
@@ -69,7 +69,7 @@ async function saveProfile(e) {
         if (data.success) {
             showToast('Profile updated successfully', 'success');
             // Update localStorage name
-            if (payload.full_name) sessionStorage.setItem('userName', payload.full_name);
+            if (payload.full_name) localStorage.setItem('userName', payload.full_name);
             document.getElementById('displayName').textContent  = payload.full_name;
             document.getElementById('displayPhone').textContent = payload.phone;
         } else {
