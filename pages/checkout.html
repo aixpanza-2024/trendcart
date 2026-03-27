@@ -127,29 +127,11 @@
                 <!-- Payment Method Section -->
                 <div class="checkout-section">
                     <h4><i class="fas fa-wallet"></i> Payment Method</h4>
-
-                    <div class="payment-option selected">
-                        <input type="radio" name="payment" id="cod" value="cod" checked>
-                        <label for="cod" class="mb-0">
-                            <strong><i class="fas fa-money-bill-wave"></i> Cash on Delivery</strong>
-                            <p class="text-grey small mb-0 mt-1">Pay when you receive your order</p>
-                        </label>
-                    </div>
-
-                    <div class="payment-option" style="opacity: 0.5; cursor: not-allowed;">
-                        <input type="radio" name="payment" id="card" value="card" disabled>
-                        <label for="card" class="mb-0">
-                            <strong><i class="fas fa-credit-card"></i> Credit/Debit Card</strong>
-                            <p class="text-grey small mb-0 mt-1">Coming soon</p>
-                        </label>
-                    </div>
-
-                    <div class="payment-option" style="opacity: 0.5; cursor: not-allowed;">
-                        <input type="radio" name="payment" id="upi" value="upi" disabled>
-                        <label for="upi" class="mb-0">
-                            <strong><i class="fas fa-mobile-alt"></i> UPI</strong>
-                            <p class="text-grey small mb-0 mt-1">Coming soon</p>
-                        </label>
+                    <div id="paymentMethodsContainer">
+                        <!-- Populated dynamically by checkout.js -->
+                        <div class="text-center py-3 text-grey">
+                            <i class="fas fa-spinner fa-spin me-2"></i> Loading payment options...
+                        </div>
                     </div>
                 </div>
             </div>

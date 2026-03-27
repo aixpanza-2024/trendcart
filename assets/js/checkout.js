@@ -8,7 +8,76 @@ document.addEventListener('DOMContentLoaded', function () {
         return;
     }
     loadCheckoutData();
+    loadPaymentMethods();
 });
+
+async function loadPaymentMethods() {
+    const container = document.getElementById('paymentMethodsContainer');
+    const placeBtn  = document.getElementById('placeOrderBtn');
+
+    try {
+        const res  = await fetch('../api/payment-settings.php');
+        const data = await res.json();
+
+        const codEnabled = data.cod_enabled === true;
+        const anyEnabled = codEnabled;
+
+        let html = '';
+
+        if (codEnabled) {
+            html += `
+            <div class="payment-option selected" id="payment-cod" onclick="selectPayment('cod')">
+                <input type="radio" name="payment" id="cod" value="cod" checked>
+                <label for="cod" class="mb-0" style="cursor:pointer;">
+                    <strong><i class="fas fa-money-bill-wave"></i> Cash on Delivery</strong>
+                    <p class="text-grey small mb-0 mt-1">Pay when you receive your order</p>
+                </label>
+            </div>`;
+        }
+
+        // Placeholder future options (always shown as coming soon / disabled)
+        html += `
+        <div class="payment-option" style="opacity:0.5;cursor:not-allowed;">
+            <input type="radio" name="payment" id="card" value="card" disabled>
+            <label for="card" class="mb-0">
+                <strong><i class="fas fa-credit-card"></i> Credit/Debit Card</strong>
+                <p class="text-grey small mb-0 mt-1">Coming soon</p>
+            </label>
+        </div>
+        <div class="payment-option" style="opacity:0.5;cursor:not-allowed;">
+            <input type="radio" name="payment" id="upi" value="upi" disabled>
+            <label for="upi" class="mb-0">
+                <strong><i class="fas fa-mobile-alt"></i> UPI</strong>
+                <p class="text-grey small mb-0 mt-1">Coming soon</p>
+            </label>
+        </div>`;
+
+        if (!anyEnabled) {
+            html = `<div class="alert alert-warning mb-0">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                No payment method is currently available. Please check back later.
+            </div>`;
+            if (placeBtn) placeBtn.disabled = true;
+        }
+
+        container.innerHTML = html;
+
+    } catch (e) {
+        container.innerHTML = `<div class="alert alert-danger mb-0">
+            <i class="fas fa-times-circle me-2"></i> Failed to load payment options.
+        </div>`;
+        if (placeBtn) placeBtn.disabled = true;
+    }
+}
+
+function selectPayment(method) {
+    document.querySelectorAll('.payment-option').forEach(el => el.classList.remove('selected'));
+    const radio = document.getElementById(method);
+    if (radio) {
+        radio.checked = true;
+        radio.closest('.payment-option').classList.add('selected');
+    }
+}
 
 async function loadCheckoutData() {
     const { items, totals } = getCartForCheckout();
@@ -101,11 +170,18 @@ async function placeOrder() {
         pincode:   document.getElementById('pincode').value.trim(),
     };
 
+    const selectedPayment = document.querySelector('input[name="payment"]:checked');
+    if (!selectedPayment) {
+        showToast('Please select a payment method.', 'error');
+        if (btn) { btn.disabled = false; btn.innerHTML = orig; }
+        return;
+    }
+
     const cart = getCart();
     const payload = {
         shipping,
         items:          cart.map(i => ({ id: i.id, quantity: i.quantity, size: i.size || null, color: i.color || null })),
-        payment_method: 'cod',
+        payment_method: selectedPayment.value,
     };
 
     try {

@@ -52,6 +52,25 @@ try {
     $database = new Database();
     $conn     = $database->getConnection();
 
+    // Validate payment method against platform settings
+    $psStmt = $conn->query(
+        "SELECT setting_key, setting_value FROM platform_settings
+         WHERE setting_key IN ('cod_enabled')"
+    );
+    $psRows = $psStmt->fetchAll(PDO::FETCH_KEY_PAIR);
+    $cod_enabled = (int)($psRows['cod_enabled'] ?? 1) === 1;
+
+    if ($payment_method === 'cod' && !$cod_enabled) {
+        echo json_encode(['success' => false, 'message' => 'Cash on Delivery is currently not available. Please try again later.']);
+        exit;
+    }
+
+    // Ensure at least one payment method is available
+    if (!$cod_enabled) {
+        echo json_encode(['success' => false, 'message' => 'No payment method is currently available. Please try again later.']);
+        exit;
+    }
+
     // Validate products against DB — use DB price for security
     $validated_items = [];
     $subtotal        = 0.0;
