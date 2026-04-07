@@ -30,6 +30,7 @@ try {
             ov.is_used,
             ov.expires_at,
             ov.created_at,
+            u.email AS shop_email,
             COALESCE(s.shop_name, sp.shop_name, u.full_name) AS shop_name
         FROM otp_verification ov
         INNER JOIN users u ON (

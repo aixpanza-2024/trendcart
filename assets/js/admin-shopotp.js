@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 async function loadShopOtps() {
     const tbody = document.getElementById('shopOtpTable');
-    tbody.innerHTML = '<tr><td colspan="6" class="admin-loading"><div class="spinner-border spinner-border-sm"></div></td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" class="admin-loading"><div class="spinner-border spinner-border-sm"></div></td></tr>';
 
     try {
         const result = await adminAPI('../api/admin/shopotp.php');
@@ -31,13 +31,14 @@ function renderShopOtps(otps) {
     document.getElementById('otpCount').textContent = otps.length;
 
     if (!otps.length) {
-        tbody.innerHTML = '<tr><td colspan="6" class="admin-empty-state"><i class="fas fa-key"></i><p>No shop OTPs found</p></td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" class="admin-empty-state"><i class="fas fa-key"></i><p>No shop OTPs found</p></td></tr>';
         return;
     }
 
     tbody.innerHTML = otps.map(otp => `
         <tr>
             <td><strong>${escapeAdminHtml(otp.shop_name || '-')}</strong></td>
+            <td>${escapeAdminHtml(otp.shop_email || otp.email || '-')}</td>
             <td><span class="badge bg-dark fs-6">${escapeAdminHtml(otp.otp_code || '-')}</span></td>
             <td class="hide-mobile">${escapeAdminHtml(otp.purpose || '-')}</td>
             <td>${shopOtpStatusBadge(otp)}</td>
