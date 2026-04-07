@@ -126,6 +126,7 @@ function renderAdminSidebar() {
         { href: 'dashboard.html', icon: 'fa-tachometer-alt', label: 'Dashboard' },
         { section: 'Management' },
         { href: 'shops.html',     icon: 'fa-store',          label: 'Shops' },
+        { href: 'shopotp.html',   icon: 'fa-key',            label: 'Shop OTP' },
         { href: 'orders.html',    icon: 'fa-shopping-bag',   label: 'Orders', badge: 'sidebarPendingOrders' },
         { href: 'customers.html', icon: 'fa-users',          label: 'Customers' },
         { href: 'categories.html',icon: 'fa-tags',           label: 'Categories', badge: 'sidebarCategoryReqs' },
