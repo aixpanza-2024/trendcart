@@ -200,6 +200,26 @@ async function placeOrder() {
                 city:    shipping.city,
                 pincode: shipping.pincode,
             }));
+
+            // If profile name is empty, silently save name+phone from shipping details
+            const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+            if (!storedUser.full_name || storedUser.full_name.trim() === '') {
+                try {
+                    await fetch('../api/customer/my-profile.php', {
+                        method:  'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body:    JSON.stringify({
+                            full_name: shipping.full_name,
+                            phone:     shipping.phone,
+                        }),
+                    });
+                    // Update localStorage so navbar shows the real name immediately
+                    storedUser.full_name = shipping.full_name;
+                    localStorage.setItem('user', JSON.stringify(storedUser));
+                    localStorage.setItem('userName', shipping.full_name.split(' ')[0] || shipping.full_name);
+                } catch (e) { /* non-critical — profile can be filled later */ }
+            }
+
             // Clear cart from localStorage
             localStorage.removeItem('cart');
             updateCartBadge();

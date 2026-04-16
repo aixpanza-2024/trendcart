@@ -307,7 +307,9 @@ function checkAuthStatus() {
     }
 
     if (authButtons && isLoggedIn) {
-        const userName = localStorage.getItem('userName') || 'User';
+        const rawName   = (localStorage.getItem('userName') || '').trim();
+        const userEmail = localStorage.getItem('userEmail') || '';
+        const userName  = rawName || (userEmail ? userEmail.split('@')[0] : 'User');
 
         // Build path-aware links (root vs inside /pages/)
         const inPages = window.location.pathname.includes('/pages/');

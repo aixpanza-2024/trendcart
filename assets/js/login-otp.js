@@ -68,7 +68,7 @@ async function handleLogin(e) {
 
         if (result.success) {
             loginEmail = email;
-            showToast(result.message, 'success');
+            showToast('OTP sent! Check your inbox.', 'success');
 
             // Move to step 2
             goToStep2(email);
@@ -229,14 +229,18 @@ async function handleOTPVerification(e) {
         const result = await response.json();
 
         if (result.success) {
-            showToast('Login successful! Redirecting...', 'success');
+            showToast('Verified! Logging you in...', 'success');
 
             if (result.data && result.data.user) {
                 const user = result.data.user;
                 const expiry = Date.now() + 365 * 24 * 60 * 60 * 1000; // 365 days
+                // Display name: use full_name if set, otherwise email prefix
+                const displayName = (user.full_name && user.full_name.trim())
+                    ? user.full_name.trim()
+                    : (user.email ? user.email.split('@')[0] : 'User');
                 localStorage.setItem('user', JSON.stringify(user));
                 localStorage.setItem('isLoggedIn', 'true');
-                localStorage.setItem('userName', user.full_name || user.email);
+                localStorage.setItem('userName', displayName);
                 localStorage.setItem('userEmail', user.email);
                 localStorage.setItem('loginExpiry', String(expiry));
             }

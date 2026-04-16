@@ -209,7 +209,9 @@ class AuthController {
     }
 
     /**
-     * Handle user login (Step 1: Send OTP)
+     * Handle user login/registration (Step 1: Send OTP)
+     * Works for both existing and new customers — OTP is sent either way.
+     * New customers are auto-created when OTP is verified in verifyLoginOTP().
      */
     public function login() {
         // Get posted data
@@ -227,16 +229,13 @@ class AuthController {
             return;
         }
 
+        $email = strtolower(trim($data->email));
+
         // Check if user exists
-        $user_data = $this->user->getUserByEmail($data->email);
+        $user_data = $this->user->getUserByEmail($email);
 
-        if (!$user_data) {
-            $this->sendResponse(404, false, "User not found. Please register first");
-            return;
-        }
-
-        // Check if user is active
-        if (!$user_data['is_active']) {
+        // Block deactivated accounts before sending OTP
+        if ($user_data && !$user_data['is_active']) {
             $this->sendResponse(403, false, "Account is deactivated. Please contact support");
             return;
         }
@@ -244,13 +243,17 @@ class AuthController {
         // Generate OTP
         $otp = $this->otpManager->generateOTP();
 
-        // Save OTP to database
-        if ($this->otpManager->saveOTP($user_data['user_id'], $user_data['email'], $otp, 'login')) {
-            // Try to send OTP via email
-            $email_sent = $this->emailManager->sendOTPEmail($user_data['email'], $user_data['full_name'], $otp, 'login');
+        // Use existing user_id if found, null for new users
+        $user_id   = $user_data ? $user_data['user_id'] : null;
+        $full_name = $user_data ? $user_data['full_name'] : '';
 
-            $this->sendResponse(200, true, "OTP sent successfully to your email", [
-                'email'      => $user_data['email'],
+        // Save OTP to database
+        if ($this->otpManager->saveOTP($user_id, $email, $otp, 'login')) {
+            // Try to send OTP via email
+            $email_sent = $this->emailManager->sendOTPEmail($email, $full_name, $otp, 'login');
+
+            $this->sendResponse(200, true, "OTP sent to your email", [
+                'email'      => $email,
                 'email_sent' => $email_sent
             ]);
         } else {
@@ -260,6 +263,7 @@ class AuthController {
 
     /**
      * Verify OTP and complete login (Step 2)
+     * If user doesn't exist yet, auto-creates a customer account with email only.
      */
     public function verifyLoginOTP() {
         // Get posted data
@@ -271,32 +275,51 @@ class AuthController {
             return;
         }
 
+        $email = strtolower(trim($data->email));
+
         // Verify OTP
-        $otp_result = $this->otpManager->verifyOTP($data->email, $data->otp, 'login');
+        $otp_result = $this->otpManager->verifyOTP($email, $data->otp, 'login');
 
-        if ($otp_result) {
-            $user_data = $this->user->getUserByEmail($data->email);
-
-            if ($user_data) {
-                // Update last login
-                $this->user->updateLastLogin($user_data['user_id']);
-
-                // Create session (store user_type so admin APIs can verify it)
-                $this->createUserSession($user_data['user_id'], $user_data['user_type']);
-
-                // Get complete user data with profile
-                $userData = $this->user->getUserWithProfile($user_data['user_id']);
-
-                $this->sendResponse(200, true, "Login successful", [
-                    'user' => $userData,
-                    'redirect' => $this->getRedirectUrl($userData['user_type'])
-                ]);
-            } else {
-                $this->sendResponse(404, false, "User not found");
-            }
-        } else {
+        if (!$otp_result) {
             $this->sendResponse(400, false, "Invalid or expired OTP");
+            return;
         }
+
+        $user_data = $this->user->getUserByEmail($email);
+
+        if (!$user_data) {
+            // New user — auto-create customer account with email only
+            $this->user->email     = $email;
+            $this->user->full_name = '';
+            $this->user->phone     = null;
+            $this->user->user_type = 'customer';
+            $this->user->is_verified = true;
+
+            $user_id = $this->user->createEmailOnly();
+
+            if (!$user_id) {
+                $this->sendResponse(500, false, "Failed to create account");
+                return;
+            }
+
+            $this->user->createCustomerProfile($user_id);
+
+            $user_data = $this->user->getUserByEmail($email);
+        }
+
+        // Update last login
+        $this->user->updateLastLogin($user_data['user_id']);
+
+        // Create session
+        $this->createUserSession($user_data['user_id'], $user_data['user_type']);
+
+        // Get complete user data with profile
+        $userData = $this->user->getUserWithProfile($user_data['user_id']);
+
+        $this->sendResponse(200, true, "Login successful", [
+            'user'     => $userData,
+            'redirect' => $this->getRedirectUrl($userData['user_type'])
+        ]);
     }
 
     /**

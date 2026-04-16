@@ -53,6 +53,33 @@ class User {
     }
 
     /**
+     * Create customer account with email only (name and phone filled in later).
+     * Used by the unified login flow for first-time customers.
+     * @return bool|int Returns user_id on success, false on failure
+     */
+    public function createEmailOnly() {
+        try {
+            $query = "INSERT INTO " . $this->table_name . "
+                     (email, full_name, phone, user_type, is_verified)
+                     VALUES (:email, '', NULL, 'customer', 1)";
+
+            $stmt = $this->conn->prepare($query);
+            $email = htmlspecialchars(strip_tags($this->email));
+            $stmt->bindValue(":email", $email, PDO::PARAM_STR);
+
+            if ($stmt->execute()) {
+                $this->user_id = $this->conn->lastInsertId();
+                return $this->user_id;
+            }
+
+            return false;
+        } catch (PDOException $e) {
+            error_log("Create email-only user error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
      * Create new user
      * @return bool|int Returns user_id on success, false on failure
      */
