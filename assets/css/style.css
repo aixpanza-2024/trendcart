@@ -260,7 +260,6 @@ a {
     border-color: var(--grey-primary);
 }
 
-.shop-card img,
 .product-card img {
     width: 100%;
     height: 250px;
@@ -270,7 +269,10 @@ a {
 }
 
 .shop-card img {
+    width: 100%;
     height: 170px;
+    object-fit: cover;
+    transition: transform var(--transition-speed) ease;
 }
 
 .shop-card:hover img,
