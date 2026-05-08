@@ -25,7 +25,8 @@ try {
 
     // Base query — one row per order
     $sql = "SELECT o.order_id, o.order_number, o.order_date, o.order_status,
-                   o.total_amount, o.subtotal, o.tax_amount, o.shipping_amount,
+                   o.total_amount, o.subtotal, o.tax_amount,
+                   o.shipping_amount, o.handling_fee, o.delivery_zone,
                    o.payment_method, o.shipping_name, o.shipping_city,
                    u.full_name AS customer_name,
                    u.email AS customer_email,
@@ -70,19 +71,23 @@ try {
     $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // Summary stats
-    $total_revenue  = array_sum(array_column($orders, 'total_amount'));
-    $total_orders   = count($orders);
+    $total_revenue       = array_sum(array_column($orders, 'total_amount'));
+    $total_orders        = count($orders);
+    $total_delivery_fees = array_sum(array_column($orders, 'shipping_amount'));
+    $total_handling_fees = array_sum(array_column($orders, 'handling_fee'));
 
     // Fetch shop list for filter dropdown
     $shopStmt = $conn->query("SELECT shop_id, shop_name FROM shops WHERE shop_status = 'open' ORDER BY shop_name");
     $shopList = $shopStmt->fetchAll(PDO::FETCH_ASSOC);
 
     echo json_encode([
-        'success'        => true,
-        'data'           => $orders,
-        'total_orders'   => $total_orders,
-        'total_revenue'  => $total_revenue,
-        'shops'          => $shopList
+        'success'              => true,
+        'data'                 => $orders,
+        'total_orders'         => $total_orders,
+        'total_revenue'        => $total_revenue,
+        'total_delivery_fees'  => $total_delivery_fees,
+        'total_handling_fees'  => $total_handling_fees,
+        'shops'                => $shopList
     ]);
 
 } catch (Exception $e) {

@@ -284,30 +284,54 @@ function renderCartItems() {
 /* ===================================
    UPDATE CART SUMMARY (for cart.html)
    =================================== */
+let _cartHandlingFee = 0;
+
 function updateCartSummary() {
     const totals = calculateCartTotals();
 
-    const subtotalEl = document.getElementById('cartSubtotal');
-    const shippingEl = document.getElementById('cartShipping');
-    const totalEl = document.getElementById('cartTotal');
-    const checkoutBtn = document.getElementById('checkoutBtn');
+    const subtotalEl      = document.getElementById('cartSubtotal');
+    const shippingEl      = document.getElementById('cartShipping');
+    const totalEl         = document.getElementById('cartTotal');
+    const handlingRow     = document.getElementById('cartHandlingFeeRow');
+    const handlingEl      = document.getElementById('cartHandling');
+    const checkoutBtn     = document.getElementById('checkoutBtn');
 
     if (subtotalEl) subtotalEl.textContent = formatCurrency(totals.subtotal);
-    if (shippingEl) {
-        shippingEl.innerHTML = '<s class="text-grey me-1">₹40</s><span class="text-success fw-bold">FREE</span>';
-    }
-    if (totalEl) totalEl.textContent = formatCurrency(totals.total);
 
-    // Disable checkout button if cart is empty
+    // Delivery: show note (exact fee calculated at checkout by pincode)
+    if (shippingEl) {
+        shippingEl.innerHTML = '<span class="text-muted small">Calculated at checkout</span>';
+    }
+
+    // Handling fee — always visible once loaded
+    if (handlingEl) {
+        handlingEl.textContent = _cartHandlingFee > 0 ? formatCurrency(_cartHandlingFee) : '—';
+    }
+
+    // Total = subtotal + handling fee (delivery added at checkout)
+    if (totalEl) totalEl.textContent = formatCurrency(totals.subtotal + _cartHandlingFee);
+
+    // Checkout button
     if (checkoutBtn) {
         if (totals.itemCount === 0) {
             checkoutBtn.disabled = true;
             checkoutBtn.textContent = 'Cart is Empty';
         } else {
             checkoutBtn.disabled = false;
-            checkoutBtn.textContent = `Proceed to Checkout (${totals.itemCount} items)`;
+            checkoutBtn.innerHTML = `Proceed to Checkout (${totals.itemCount} item${totals.itemCount > 1 ? 's' : ''}) <i class="fas fa-arrow-right ms-1"></i>`;
         }
     }
+}
+
+async function loadCartHandlingFee() {
+    try {
+        const res  = await fetch('../api/customer/checkout-config.php');
+        const data = await res.json();
+        if (data.success) {
+            _cartHandlingFee = data.handling_fee || 0;
+        }
+    } catch (e) { /* silent */ }
+    updateCartSummary();
 }
 
 /* ===================================
@@ -342,6 +366,7 @@ function proceedToCheckout() {
 if (window.location.pathname.includes('cart.html')) {
     document.addEventListener('DOMContentLoaded', function() {
         renderCartItems();
+        loadCartHandlingFee();
     });
 }
 

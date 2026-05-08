@@ -28,8 +28,8 @@ try {
     $conn = $database->getConnection();
 
     $stmt = $conn->prepare("
-        INSERT INTO categories (category_name, parent_category_id, category_description, display_order)
-        VALUES (:name, :parent, :desc, :display_order)
+        INSERT INTO categories (category_name, parent_category_id, category_description, display_order, category_image)
+        VALUES (:name, :parent, :desc, :display_order, :image)
     ");
     $stmt->bindParam(':name', $data['category_name']);
     $parent = !empty($data['parent_category_id']) ? $data['parent_category_id'] : null;
@@ -38,6 +38,8 @@ try {
     $stmt->bindParam(':desc', $desc);
     $order = $data['display_order'] ?? 0;
     $stmt->bindParam(':display_order', $order);
+    $image = !empty($data['category_image']) ? $data['category_image'] : null;
+    $stmt->bindParam(':image', $image);
     $stmt->execute();
 
     echo json_encode(['success' => true, 'message' => 'Category created', 'data' => ['category_id' => $conn->lastInsertId()]]);

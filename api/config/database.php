@@ -7,9 +7,9 @@
 class Database {
     // Database credentials
      private $host = "localhost";
-    private $db_name = "notechin_trencart";
-    private $username = "notechin_trencart";  // Change for production
-    private $password = "trencart@#!2026";      // Change for production
+    private $db_name = "trencart_db";
+    private $username = "root";  // Change for production
+    private $password = "";      // Change for production
     private $charset = "utf8mb4";
 
     public $conn;

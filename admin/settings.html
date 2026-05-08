@@ -95,6 +95,33 @@
                     </div>
                 </div>
 
+                <!-- Delivery & Handling Fees -->
+                <div class="admin-card mb-4">
+                    <div class="admin-card-header">
+                        <h6 class="mb-0"><i class="fas fa-truck me-2"></i>Delivery & Handling Fees</h6>
+                    </div>
+                    <div class="admin-card-body">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Handling Fee (₹)</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">₹</span>
+                                    <input type="number" class="form-control" id="s_handling_fee" min="0" step="1" value="0">
+                                </div>
+                                <div class="form-text">Charged on every order regardless of zone. Set 0 to disable.</div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">First Order Free Delivery</label>
+                                <select class="form-select" id="s_first_order_free_delivery">
+                                    <option value="1">Yes — first order always free</option>
+                                    <option value="0">No — apply normal zone fees</option>
+                                </select>
+                                <div class="form-text">Overrides delivery fee for a customer's very first order.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="d-flex gap-2">
                     <button type="submit" class="btn btn-primary px-4" id="saveBtn">
                         <i class="fas fa-save me-2"></i>Save Settings
@@ -128,6 +155,8 @@
             document.getElementById('s_order_auto_confirm_hours').value  = s.order_auto_confirm_hours?.value ?? 24;
             document.getElementById('s_max_return_days').value           = s.max_return_days?.value ?? 7;
             document.getElementById('s_cod_enabled').value               = s.cod_enabled?.value ?? 1;
+            document.getElementById('s_handling_fee').value              = s.handling_fee?.value ?? 0;
+            document.getElementById('s_first_order_free_delivery').value = s.first_order_free_delivery?.value ?? 1;
 
             document.getElementById('settingsLoader').style.display = 'none';
             document.getElementById('settingsForm').style.display   = '';
@@ -149,6 +178,8 @@
             { key: 'order_auto_confirm_hours',  value: document.getElementById('s_order_auto_confirm_hours').value },
             { key: 'max_return_days',           value: document.getElementById('s_max_return_days').value },
             { key: 'cod_enabled',               value: document.getElementById('s_cod_enabled').value },
+            { key: 'handling_fee',              value: document.getElementById('s_handling_fee').value },
+            { key: 'first_order_free_delivery', value: document.getElementById('s_first_order_free_delivery').value },
         ];
 
         try {

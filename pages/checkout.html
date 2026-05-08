@@ -118,9 +118,11 @@
                             </div>
                             <div class="col-md-3 mb-3">
                                 <label for="pincode" class="form-label">Pincode</label>
-                                <input type="text" class="form-control" id="pincode" maxlength="6" required>
+                                <input type="text" class="form-control" id="pincode" maxlength="6" required
+                                       oninput="onPincodeInput(this.value)">
                             </div>
                         </div>
+                        <div id="deliveryZoneBadge" style="display:none;" class="mb-2"></div>
                     </form>
                 </div>
 
@@ -153,12 +155,19 @@
                     </div>
 
                     <div class="summary-row">
-                        <span>Shipping:</span>
-                        <strong id="orderShipping">₹0.00</strong>
+                        <span>Delivery:</span>
+                        <strong id="orderShipping">—</strong>
                     </div>
 
-                    <div class="summary-row">
-                        <span>Total:</span>
+                    <div class="summary-row" id="handlingFeeRow" style="display:none;">
+                        <span>Handling Fee:</span>
+                        <strong id="orderHandling">₹0</strong>
+                    </div>
+
+                    <hr class="my-2">
+
+                    <div class="summary-row" style="font-size:1.05rem;">
+                        <span><strong>Total:</strong></span>
                         <strong id="orderTotal">₹0.00</strong>
                     </div>
 

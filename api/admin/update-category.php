@@ -27,22 +27,23 @@ try {
     $database = new Database();
     $conn = $database->getConnection();
 
-    $stmt = $conn->prepare("
-        UPDATE categories SET
-            category_name = :name,
-            parent_category_id = :parent,
-            category_description = :desc,
-            display_order = :display_order
-        WHERE category_id = :id
-    ");
-    $stmt->bindParam(':name', $data['category_name']);
-    $parent = !empty($data['parent_category_id']) ? $data['parent_category_id'] : null;
-    $stmt->bindParam(':parent', $parent);
-    $desc = $data['category_description'] ?? '';
-    $stmt->bindParam(':desc', $desc);
-    $order = $data['display_order'] ?? 0;
-    $stmt->bindParam(':display_order', $order);
-    $stmt->bindParam(':id', $data['category_id']);
+    $sets   = "category_name=:name, parent_category_id=:parent, category_description=:desc, display_order=:display_order";
+    $params = [
+        ':name'          => $data['category_name'],
+        ':parent'        => !empty($data['parent_category_id']) ? $data['parent_category_id'] : null,
+        ':desc'          => $data['category_description'] ?? '',
+        ':display_order' => $data['display_order'] ?? 0,
+        ':id'            => $data['category_id'],
+    ];
+
+    // Only update image if a new one was provided; null means "keep existing"
+    if (array_key_exists('category_image', $data)) {
+        $sets .= ', category_image=:image';
+        $params[':image'] = !empty($data['category_image']) ? $data['category_image'] : null;
+    }
+
+    $stmt = $conn->prepare("UPDATE categories SET $sets WHERE category_id = :id");
+    foreach ($params as $k => $v) $stmt->bindValue($k, $v);
     $stmt->execute();
 
     echo json_encode(['success' => true, 'message' => 'Category updated']);

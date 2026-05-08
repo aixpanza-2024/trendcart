@@ -126,6 +126,19 @@
                         <label class="form-label">Display Order</label>
                         <input type="number" class="form-control" id="displayOrder" value="0" min="0">
                     </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Category Image</label>
+                        <div id="catImgPreviewWrap" style="display:none;margin-bottom:8px;align-items:center;gap:10px;" class="d-flex">
+                            <img id="catImgPreview" src="" alt="Preview" style="height:80px;width:80px;border-radius:8px;object-fit:cover;border:1px solid #dee2e6;">
+                            <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeCatImage()">
+                                <i class="fas fa-times me-1"></i>Remove
+                            </button>
+                        </div>
+                        <input type="file" class="form-control" id="catImageFile" accept="image/jpeg,image/png,image/webp,image/gif" onchange="previewCatImage(this)">
+                        <small class="text-muted">JPG, PNG, WebP — max 5MB</small>
+                        <input type="hidden" id="catImageUrl">
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
