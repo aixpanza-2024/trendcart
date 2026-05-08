@@ -13,6 +13,10 @@ uploads/products/*
 !uploads/products/.gitkeep
 uploads/shops/*
 !uploads/shops/.gitkeep
+uploads/banners/*
+!uploads/banners/.gitkeep
+uploads/categories/*
+!uploads/categories/.gitkeep
 
 # Claude Code local settings
 .claude/settings.local.json
