@@ -5,7 +5,7 @@
 let currentPeriod = 'daily';
 
 document.addEventListener('DOMContentLoaded', function () {
-    loadRevenue('daily');
+    window.addEventListener('adminReady', () => loadRevenue('daily'), { once: true });
 });
 
 async function loadRevenue(period) {

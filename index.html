@@ -84,6 +84,26 @@
         <div class="hb-dots" id="hbDots"></div>
     </section>
 
+    <!-- New Arrivals Section -->
+    <section class="na-section">
+        <div class="container">
+            <div class="section-title">
+                <h2>New Arrivals</h2>
+                <p>Fresh styles just added &mdash; be the first to explore</p>
+            </div>
+
+            <div class="na-scroll-track" id="newArrivalsTrack">
+                <!-- Loaded dynamically by home.js -->
+            </div>
+
+            <div class="text-center mt-4">
+                <a href="pages/products.html?sort=newest" class="btn btn-outline-primary btn-lg">
+                    Explore All Products <i class="fas fa-arrow-right ms-2"></i>
+                </a>
+            </div>
+        </div>
+    </section>
+
     <!-- Featured Shops Section -->
     <section class="section">
         <div class="container">
@@ -99,26 +119,6 @@
             <div class="text-center mt-5">
                 <a href="pages/shops.html" class="btn btn-outline-primary btn-lg">
                     View All Shops <i class="fas fa-store ms-2"></i>
-                </a>
-            </div>
-        </div>
-    </section>
-
-    <!-- New Arrivals Section -->
-    <section class="na-section">
-        <div class="container">
-            <div class="section-title">
-                <h2>New Arrivals</h2>
-                <p>Fresh styles just added &mdash; be the first to explore</p>
-            </div>
-
-            <div class="na-scroll-track" id="newArrivalsTrack">
-                <!-- Loaded dynamically by home.js -->
-            </div>
-
-            <div class="text-center mt-4">
-                <a href="pages/products.html?sort=newest" class="btn btn-outline-light btn-lg">
-                    Explore All Products <i class="fas fa-arrow-right ms-2"></i>
                 </a>
             </div>
         </div>
@@ -525,7 +525,7 @@
                             ? `<img src="${cat.category_image.replace(/^\//, '')}" alt="${cat.category_name}" loading="lazy" data-fallback="${cat.category_name}">`
                             : catAvatar(cat.category_name);
                         return `
-                            <a class="cat-circle-item" href="pages/products.html?category=${cat.category_id}">
+                            <a class="cat-circle-item" href="pages/products.html?category_id=${cat.category_id}">
                                 <div class="cat-circle">${inner}</div>
                                 <span class="cat-name">${cat.category_name}</span>
                             </a>`;

@@ -186,7 +186,7 @@ function displayExistingImages(images) {
         div.innerHTML = `
             <img src="${image.image_url}" alt="Product Image ${index + 1}">
             ${image.is_primary ? '<span class="primary-badge">Primary</span>' : ''}
-            <button type="button" class="remove-image" onclick="removeExistingImage(${image.image_id})">
+            <button type="button" class="remove-image" onclick="removeExistingImage(${image.image_id}, this)">
                 <i class="fas fa-times"></i>
             </button>
         `;
@@ -236,7 +236,7 @@ function removeImage(index) {
     });
 }
 
-async function removeExistingImage(imageId) {
+async function removeExistingImage(imageId, btn) {
     if (!confirm('Remove this image?')) return;
     try {
         const response = await fetch('../api/shop/delete-image.php', {
@@ -247,7 +247,7 @@ async function removeExistingImage(imageId) {
         const result = await response.json();
         if (result.success) {
             showToast('Image removed', 'success');
-            loadProductData(productId);
+            btn.closest('.image-preview').remove();
         } else {
             showToast(result.message || 'Failed to remove image', 'error');
         }

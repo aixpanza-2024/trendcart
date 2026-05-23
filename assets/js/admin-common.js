@@ -213,6 +213,9 @@ async function checkAdminAuth() {
         loadSidebarBadges();
         startAdminOrderNotifications();
         _requestAdminNotifPermission();
+
+        // Signal page-specific JS that auth is confirmed and session lock is released
+        window.dispatchEvent(new Event('adminReady'));
     } catch (e) {
         console.error('Auth check failed:', e);
         window.location.href = '../pages/login.html';

@@ -3,8 +3,7 @@
  */
 
 document.addEventListener('DOMContentLoaded', function () {
-    loadPayments();
-    loadShopsFilter();
+    window.addEventListener('adminReady', () => { loadPayments(); loadShopsFilter(); }, { once: true });
 });
 
 async function loadShopsFilter() {

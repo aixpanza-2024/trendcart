@@ -66,13 +66,12 @@ try {
     $stmt = $conn->prepare("
         SELECT
             s.shop_id,
-            COALESCE(SUM(oi.subtotal), 0) AS period_sales
+            SUM(oi.subtotal) AS period_sales
         FROM shops s
-        LEFT JOIN order_items oi ON s.shop_id = oi.shop_id
-            AND oi.item_status = 'delivered'
-        LEFT JOIN orders o ON oi.order_id = o.order_id
-            AND DATE(o.order_date) >= :start
-            AND DATE(o.order_date) <= :end
+        INNER JOIN order_items oi ON s.shop_id = oi.shop_id AND oi.item_status = 'delivered'
+        INNER JOIN orders o ON oi.order_id = o.order_id
+        WHERE DATE(o.order_date) >= :start
+          AND DATE(o.order_date) <= :end
         GROUP BY s.shop_id
         HAVING period_sales > 0
     ");

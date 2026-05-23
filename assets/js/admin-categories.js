@@ -5,8 +5,7 @@
 let allCategories = [];
 
 document.addEventListener('DOMContentLoaded', function () {
-    loadCategories();
-    loadCategoryRequests();
+    window.addEventListener('adminReady', () => { loadCategories(); loadCategoryRequests(); }, { once: true });
 });
 
 async function loadCategories() {

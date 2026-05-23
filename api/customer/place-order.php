@@ -155,9 +155,9 @@ try {
     $orderCountStmt->execute();
     $is_first_order = (int)$orderCountStmt->fetchColumn() === 0;
 
-    // Determine delivery fee from DB (never trust client value)
+    // Determine delivery fee — compare customer zone vs shop zone
     $zStmt = $conn->prepare("
-        SELECT z.delivery_fee, z.zone_name
+        SELECT z.zone_id, z.delivery_fee, z.zone_name
         FROM delivery_pincodes dp
         INNER JOIN delivery_zones z ON dp.zone_id = z.zone_id
         WHERE dp.pincode = :pin AND z.is_active = 1
@@ -168,13 +168,36 @@ try {
     $zRow = $zStmt->fetch();
 
     if ($zRow) {
+        $customer_zone_id   = (int)$zRow['zone_id'];
         $shipping_amount    = (float)$zRow['delivery_fee'];
         $delivery_zone_name = $zRow['zone_name'];
     } else {
-        $defStmt = $conn->query("SELECT delivery_fee, zone_name FROM delivery_zones WHERE is_default_zone = 1 AND is_active = 1 LIMIT 1");
+        $defStmt = $conn->query("SELECT zone_id, delivery_fee, zone_name FROM delivery_zones WHERE is_default_zone = 1 AND is_active = 1 LIMIT 1");
         $defRow  = $defStmt->fetch();
-        $shipping_amount    = $defRow ? (float)$defRow['delivery_fee'] : 0.00;
+        // Use -1 so it never matches the shop's zone — ensures default fee is charged
+        $customer_zone_id   = -1;
+        $shipping_amount    = $defRow ? (float)$defRow['delivery_fee'] : 49.00;
         $delivery_zone_name = $defRow ? $defRow['zone_name'] : '';
+    }
+
+    // Look up shop's zone using first validated item's shop_id
+    $shop_id_for_zone = $validated_items[0]['shop_id'] ?? 0;
+    if ($shop_id_for_zone > 0) {
+        $shopZoneStmt = $conn->prepare("
+            SELECT z.zone_id
+            FROM shops s
+            INNER JOIN delivery_pincodes dp ON dp.pincode = s.shop_pincode
+            INNER JOIN delivery_zones z    ON dp.zone_id  = z.zone_id
+            WHERE s.shop_id = :sid AND z.is_active = 1
+            LIMIT 1
+        ");
+        $shopZoneStmt->bindValue(':sid', $shop_id_for_zone, PDO::PARAM_INT);
+        $shopZoneStmt->execute();
+        $shopZoneRow = $shopZoneStmt->fetch();
+        // Free only when shop pincode is known AND customer is in the same zone
+        if ($shopZoneRow && (int)$shopZoneRow['zone_id'] === $customer_zone_id) {
+            $shipping_amount = 0.00;
+        }
     }
 
     // First order: override delivery to free

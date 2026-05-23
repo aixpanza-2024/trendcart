@@ -3,10 +3,10 @@
  */
 
 document.addEventListener('DOMContentLoaded', function () {
-    loadOrders();
     document.getElementById('searchOrder').addEventListener('keyup', function (e) {
         if (e.key === 'Enter') loadOrders();
     });
+    window.addEventListener('adminReady', loadOrders, { once: true });
 });
 
 async function loadOrders() {

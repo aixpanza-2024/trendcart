@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadNewArrivals();
 });
 
-async function loadFeaturedShops() {
+async function loadFeaturedShops(retry = true) {
     const container = document.getElementById('featuredShops');
     if (!container) return;
 
@@ -18,6 +18,10 @@ async function loadFeaturedShops() {
         const data = await res.json();
 
         if (!data.success || !data.data.length) {
+            if (retry) {
+                setTimeout(() => loadFeaturedShops(false), 1500);
+                return;
+            }
             container.innerHTML = '<div class="col-12 text-center text-grey py-4">No shops available yet.</div>';
             return;
         }
@@ -25,8 +29,11 @@ async function loadFeaturedShops() {
         container.innerHTML = data.data.map(shop => buildShopCard(shop, true)).join('');
 
     } catch (err) {
-        console.error('Load featured shops error:', err);
-        container.innerHTML = '<div class="col-12 text-center text-danger py-4">Failed to load shops.</div>';
+        if (retry) {
+            setTimeout(() => loadFeaturedShops(false), 1500);
+            return;
+        }
+        container.innerHTML = '<div class="col-12 text-center text-grey py-4">No shops available yet.</div>';
     }
 }
 
@@ -98,11 +105,11 @@ function buildArrivalCard(p) {
 
     const cartBtn = hasSizes
         ? `<button class="btn btn-primary btn-sm w-100 mt-1"
-               onclick="naAddToCart('${pid}','${safeName}',${price},'${safeImg}','${safeShop}',this)">
+               onclick="naAddToCart('${pid}','${safeName}',${price},'${safeImg}','${safeShop}','${p.shop_id}',this)">
                <i class="fas fa-cart-plus"></i> Add to Cart
            </button>`
         : `<button class="btn btn-primary btn-sm w-100 mt-1"
-               onclick="quickAddToCart(this,'${pid}','${safeName}',${price},'${safeImg}','${safeShop}')">
+               onclick="quickAddToCart(this,'${pid}','${safeName}',${price},'${safeImg}','${safeShop}','${p.shop_id}')">
                <i class="fas fa-cart-plus"></i> Add to Cart
            </button>`;
 
@@ -126,11 +133,11 @@ function buildArrivalCard(p) {
         </div>`;
 }
 
-function naAddToCart(productId, productName, productPrice, productImage, shopName, btn) {
+function naAddToCart(productId, productName, productPrice, productImage, shopName, shopId, btn) {
     const card       = btn.closest('.na-card');
     const activeSize = card ? card.querySelector('.card-size-btn.active') : null;
     const size       = activeSize ? activeSize.dataset.size : null;
-    quickAddToCart(btn, productId, productName, productPrice, productImage, shopName, size);
+    quickAddToCart(btn, productId, productName, productPrice, productImage, shopName, shopId, size);
 }
 
 function buildShopCard(shop, showStats) {
@@ -144,7 +151,6 @@ function buildShopCard(shop, showStats) {
                 ${parseFloat(shop.rating_average || 0).toFixed(1)}
                 (${shop.total_ratings || 0} reviews)
             </span>
-            <span class="text-grey"><i class="fas fa-box"></i> ${shop.total_products || 0} Products</span>
         </div>` : '';
 
     return `

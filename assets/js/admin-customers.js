@@ -3,10 +3,10 @@
  */
 
 document.addEventListener('DOMContentLoaded', function () {
-    loadCustomers();
     document.getElementById('searchCustomer').addEventListener('keyup', function (e) {
         if (e.key === 'Enter') loadCustomers();
     });
+    window.addEventListener('adminReady', loadCustomers, { once: true });
 });
 
 async function loadCustomers() {
