@@ -161,17 +161,18 @@ function renderProducts(products) {
 
     if (products.length > displayLimit) {
         const remaining = products.length - displayLimit;
-        const wrap = document.createElement('div');
-        wrap.id = 'loadMoreBtn';
-        wrap.className = 'col-12 text-center mt-4 mb-2';
-        wrap.innerHTML = `<button class="btn btn-outline-dark px-5" onclick="loadMore()">
-            Load More <span class="badge bg-secondary ms-2">${remaining} more</span>
-        </button>`;
-        container.after(wrap);
+        container.insertAdjacentHTML('beforeend', `
+            <div id="loadMoreBtn" class="col-12 text-center mt-4 mb-3">
+                <button class="btn btn-outline-dark px-5" onclick="loadMore()">
+                    Load More <span class="badge bg-secondary ms-2">${remaining} more</span>
+                </button>
+            </div>`);
     }
 }
 
 function loadMore() {
+    document.getElementById('loadMoreBtn')?.remove();
+
     const prev = displayLimit;
     displayLimit = Math.min(displayLimit + PAGE_SIZE, currentFiltered.length);
     const newCards = currentFiltered.slice(prev, displayLimit);
@@ -179,17 +180,14 @@ function loadMore() {
     const container = document.getElementById('productsGrid');
     newCards.forEach(p => container.insertAdjacentHTML('beforeend', buildProductCard(p)));
 
-    document.getElementById('loadMoreBtn')?.remove();
-
     if (currentFiltered.length > displayLimit) {
         const remaining = currentFiltered.length - displayLimit;
-        const wrap = document.createElement('div');
-        wrap.id = 'loadMoreBtn';
-        wrap.className = 'col-12 text-center mt-4 mb-2';
-        wrap.innerHTML = `<button class="btn btn-outline-dark px-5" onclick="loadMore()">
-            Load More <span class="badge bg-secondary ms-2">${remaining} more</span>
-        </button>`;
-        container.after(wrap);
+        container.insertAdjacentHTML('beforeend', `
+            <div id="loadMoreBtn" class="col-12 text-center mt-4 mb-3">
+                <button class="btn btn-outline-dark px-5" onclick="loadMore()">
+                    Load More <span class="badge bg-secondary ms-2">${remaining} more</span>
+                </button>
+            </div>`);
     }
 }
 

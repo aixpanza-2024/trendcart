@@ -7,7 +7,29 @@ document.addEventListener('DOMContentLoaded', function () {
         if (e.key === 'Enter') loadOrders();
     });
     window.addEventListener('adminReady', loadOrders, { once: true });
+
+    // Inject image preview modal once
+    document.body.insertAdjacentHTML('beforeend', `
+        <div id="imgPreviewModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.82);align-items:center;justify-content:center;" onclick="closeImgPreview()">
+            <div style="position:relative;max-width:90vw;max-height:90vh;text-align:center;" onclick="event.stopPropagation()">
+                <img id="imgPreviewSrc" src="" alt="" style="max-width:90vw;max-height:80vh;object-fit:contain;border-radius:8px;box-shadow:0 8px 32px rgba(0,0,0,0.5);">
+                <div id="imgPreviewName" style="color:#fff;margin-top:10px;font-size:14px;font-weight:500;"></div>
+                <button onclick="closeImgPreview()" style="position:absolute;top:-14px;right:-14px;background:#fff;border:none;border-radius:50%;width:32px;height:32px;font-size:18px;cursor:pointer;line-height:1;">&times;</button>
+            </div>
+        </div>`);
 });
+
+function showImgPreview(url, name) {
+    document.getElementById('imgPreviewSrc').src = url;
+    document.getElementById('imgPreviewName').textContent = name;
+    const modal = document.getElementById('imgPreviewModal');
+    modal.style.display = 'flex';
+}
+
+function closeImgPreview() {
+    document.getElementById('imgPreviewModal').style.display = 'none';
+    document.getElementById('imgPreviewSrc').src = '';
+}
 
 async function loadOrders() {
     const params = new URLSearchParams();
@@ -78,7 +100,20 @@ function renderOrders(orders) {
                 const sizeBadge = item.selected_size
                     ? `<span class="badge bg-light text-dark border me-1" style="font-size:10px;"><i class="fas fa-ruler-combined me-1"></i>${item.selected_size}</span>`
                     : '';
+                const imgUrl = item.product_image
+                    ? '../' + item.product_image.replace(/^\//, '')
+                    : null;
+                const safeImgName = item.product_name.replace(/'/g, "\\'");
+                const imgHtml = imgUrl
+                    ? `<img src="${imgUrl}" alt="${item.product_name}"
+                           style="width:44px;height:44px;object-fit:cover;border-radius:6px;border:1px solid #ddd;flex-shrink:0;cursor:zoom-in;"
+                           onclick="showImgPreview('${imgUrl}','${safeImgName}')"
+                           onerror="this.style.display='none'">`
+                    : `<div style="width:44px;height:44px;border-radius:6px;background:#eee;flex-shrink:0;display:flex;align-items:center;justify-content:center;">
+                           <i class="fas fa-image text-muted" style="font-size:16px;"></i>
+                       </div>`;
                 return `<div class="d-flex align-items-center gap-2 py-1 border-bottom">
+                    ${imgHtml}
                     <div class="flex-grow-1">
                         <span style="font-size:13px;font-weight:500;">${item.product_name}</span>
                         <div class="mt-1">${colorBadge}${sizeBadge}</div>
