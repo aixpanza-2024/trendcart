@@ -64,24 +64,23 @@ try {
         exit();
     }
 
-    // Get all shops with delivered sales for this period
-    // Filter by delivered_at (when actually delivered, not when ordered)
-    // Exclude items already counted in any existing payout for the same shop
+    // Get all shops with delivered sales for this period.
+    // Use orders.delivered_at when available (accurate), fall back to order_date for old orders.
+    // Exclude items already counted in any previous payout period for the same shop.
     $stmt = $conn->prepare("
         SELECT
             s.shop_id,
             SUM(oi.subtotal) AS period_sales
         FROM shops s
-        INNER JOIN order_items oi ON s.shop_id = oi.shop_id
-        WHERE oi.item_status = 'delivered'
-          AND oi.delivered_at IS NOT NULL
-          AND DATE(oi.delivered_at) >= :start
-          AND DATE(oi.delivered_at) <= :end
+        INNER JOIN order_items oi ON s.shop_id = oi.shop_id AND oi.item_status = 'delivered'
+        INNER JOIN orders o ON oi.order_id = o.order_id
+        WHERE DATE(COALESCE(o.delivered_at, o.order_date)) >= :start
+          AND DATE(COALESCE(o.delivered_at, o.order_date)) <= :end
           AND NOT EXISTS (
               SELECT 1 FROM shop_payments sp
               WHERE sp.shop_id = oi.shop_id
-                AND sp.period_start <= DATE(oi.delivered_at)
-                AND sp.period_end   >= DATE(oi.delivered_at)
+                AND sp.period_start <= DATE(COALESCE(o.delivered_at, o.order_date))
+                AND sp.period_end   >= DATE(COALESCE(o.delivered_at, o.order_date))
           )
         GROUP BY s.shop_id
         HAVING period_sales > 0

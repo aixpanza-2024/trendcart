@@ -65,9 +65,8 @@ try {
         exit();
     }
 
-    // Update status — stamp delivered_at when delivered
-    $deliveredAt = $data['status'] === 'delivered' ? ', delivered_at = NOW()' : '';
-    $stmt = $conn->prepare("UPDATE order_items SET item_status = :status{$deliveredAt} WHERE order_item_id = :id");
+    // Update status
+    $stmt = $conn->prepare("UPDATE order_items SET item_status = :status WHERE order_item_id = :id");
     $stmt->bindParam(':status', $data['status']);
     $stmt->bindParam(':id', $data['order_item_id']);
     $stmt->execute();
@@ -97,7 +96,8 @@ try {
             $newOrderStatus = array_search($minPri, $priority);
         }
 
-        $updO = $conn->prepare("UPDATE orders SET order_status = :status WHERE order_id = :oid");
+        $deliveredStamp = $newOrderStatus === 'delivered' ? ', delivered_at = NOW()' : '';
+        $updO = $conn->prepare("UPDATE orders SET order_status = :status{$deliveredStamp} WHERE order_id = :oid");
         $updO->bindValue(':status', $newOrderStatus);
         $updO->bindValue(':oid', (int)$syncRow['order_id'], PDO::PARAM_INT);
         $updO->execute();
