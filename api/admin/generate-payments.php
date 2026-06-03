@@ -25,18 +25,35 @@ try {
 
     // Read period type from request body
     $body   = json_decode(file_get_contents('php://input'), true);
-    $period = isset($body['period']) ? trim($body['period']) : 'weekly';
-    if (!in_array($period, ['daily', 'weekly'])) $period = 'weekly';
+    $period = isset($body['period']) ? trim($body['period']) : 'daily';
+    if (!in_array($period, ['daily', 'range'])) $period = 'daily';
 
     // Determine date range
     if ($period === 'daily') {
         $period_start = date('Y-m-d');
         $period_end   = date('Y-m-d');
     } else {
-        // Use ISO day-of-week (1=Mon, 7=Sun) to avoid PHP strtotime Sunday bug
-        $dow          = (int)date('N');
-        $period_start = date('Y-m-d', strtotime('-' . ($dow - 1) . ' days'));
-        $period_end   = date('Y-m-d', strtotime('+' . (7 - $dow) . ' days'));
+        // Custom date range — validate both dates
+        $period_start = isset($body['date_from']) ? trim($body['date_from']) : '';
+        $period_end   = isset($body['date_to'])   ? trim($body['date_to'])   : '';
+
+        if (!$period_start || !$period_end || !strtotime($period_start) || !strtotime($period_end)) {
+            echo json_encode(['success' => false, 'message' => 'Invalid date range provided.']);
+            exit();
+        }
+        if ($period_start > $period_end) {
+            echo json_encode(['success' => false, 'message' => 'From date cannot be after To date.']);
+            exit();
+        }
+        if ($period_end >= date('Y-m-d')) {
+            echo json_encode(['success' => false, 'message' => 'To date must be before today.']);
+            exit();
+        }
+        $diffDays = (strtotime($period_end) - strtotime($period_start)) / 86400 + 1;
+        if ($diffDays > 90) {
+            echo json_encode(['success' => false, 'message' => 'Maximum date range is 90 days.']);
+            exit();
+        }
     }
 
     // Get platform commission rate
@@ -117,10 +134,10 @@ try {
         $created++;
     }
 
-    $range = ($period === 'weekly') ? "$period_start to $period_end" : $period_start;
+    $range = ($period_start === $period_end) ? $period_start : "$period_start to $period_end";
     echo json_encode([
         'success' => true,
-        'message' => "Generated $created $period payment record(s) for $range (delivered orders only)"
+        'message' => "Generated $created payment record(s) for $range (delivered orders only)"
     ]);
 
 } catch (Exception $e) {
