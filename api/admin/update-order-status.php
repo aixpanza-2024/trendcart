@@ -74,8 +74,9 @@ try {
     foreach ($params as $k => $v) { $stmt->bindValue($k, $v); }
     $stmt->execute();
 
-    // Also update all order items
-    $stmt = $conn->prepare("UPDATE order_items SET item_status = :status WHERE order_id = :id");
+    // Also update all order items — stamp delivered_at when delivered
+    $itemDeliveredAt = $data['status'] === 'delivered' ? ', delivered_at = NOW()' : '';
+    $stmt = $conn->prepare("UPDATE order_items SET item_status = :status{$itemDeliveredAt} WHERE order_id = :id");
     $stmt->bindParam(':status', $data['status']);
     $stmt->bindParam(':id', $data['order_id']);
     $stmt->execute();

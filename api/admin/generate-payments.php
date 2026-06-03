@@ -33,8 +33,10 @@ try {
         $period_start = date('Y-m-d');
         $period_end   = date('Y-m-d');
     } else {
-        $period_start = date('Y-m-d', strtotime('monday this week'));
-        $period_end   = date('Y-m-d', strtotime('sunday this week'));
+        // Use ISO day-of-week (1=Mon, 7=Sun) to avoid PHP strtotime Sunday bug
+        $dow          = (int)date('N');
+        $period_start = date('Y-m-d', strtotime('-' . ($dow - 1) . ' days'));
+        $period_end   = date('Y-m-d', strtotime('+' . (7 - $dow) . ' days'));
     }
 
     // Get platform commission rate
@@ -63,15 +65,24 @@ try {
     }
 
     // Get all shops with delivered sales for this period
+    // Filter by delivered_at (when actually delivered, not when ordered)
+    // Exclude items already counted in any existing payout for the same shop
     $stmt = $conn->prepare("
         SELECT
             s.shop_id,
             SUM(oi.subtotal) AS period_sales
         FROM shops s
-        INNER JOIN order_items oi ON s.shop_id = oi.shop_id AND oi.item_status = 'delivered'
-        INNER JOIN orders o ON oi.order_id = o.order_id
-        WHERE DATE(o.order_date) >= :start
-          AND DATE(o.order_date) <= :end
+        INNER JOIN order_items oi ON s.shop_id = oi.shop_id
+        WHERE oi.item_status = 'delivered'
+          AND oi.delivered_at IS NOT NULL
+          AND DATE(oi.delivered_at) >= :start
+          AND DATE(oi.delivered_at) <= :end
+          AND NOT EXISTS (
+              SELECT 1 FROM shop_payments sp
+              WHERE sp.shop_id = oi.shop_id
+                AND sp.period_start <= DATE(oi.delivered_at)
+                AND sp.period_end   >= DATE(oi.delivered_at)
+          )
         GROUP BY s.shop_id
         HAVING period_sales > 0
     ");

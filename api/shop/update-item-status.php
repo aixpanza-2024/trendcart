@@ -65,8 +65,9 @@ try {
         exit();
     }
 
-    // Update status
-    $stmt = $conn->prepare("UPDATE order_items SET item_status = :status WHERE order_item_id = :id");
+    // Update status — stamp delivered_at when delivered
+    $deliveredAt = $data['status'] === 'delivered' ? ', delivered_at = NOW()' : '';
+    $stmt = $conn->prepare("UPDATE order_items SET item_status = :status{$deliveredAt} WHERE order_item_id = :id");
     $stmt->bindParam(':status', $data['status']);
     $stmt->bindParam(':id', $data['order_item_id']);
     $stmt->execute();
