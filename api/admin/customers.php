@@ -56,7 +56,7 @@ try {
         WHERE $where_clause
         GROUP BY u.user_id
         ORDER BY u.created_at DESC
-        LIMIT 100
+        LIMIT 2000
     ");
 
     foreach ($params as $k => $v) { $stmt->bindValue($k, $v); }

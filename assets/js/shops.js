@@ -224,8 +224,6 @@ function buildShopCard(shop) {
                     ${desc}
                     <div class="d-flex align-items-center gap-2 text-grey mb-2" style="font-size:12px;flex-wrap:wrap;">
                         <span title="${rating} out of 5">${stars} <span class="ms-1">${rating}</span></span>
-                        <span class="text-muted">·</span>
-                        <span><i class="fas fa-box me-1"></i>${shop.total_products || 0}</span>
                         ${cityIcon ? `<span class="text-muted">·</span>${cityIcon}` : ''}
                     </div>
                     <a href="products.html?shop_id=${shop.shop_id}" class="btn btn-primary btn-sm w-100">

@@ -13,7 +13,7 @@ header('Access-Control-Allow-Headers: Content-Type');
 require_once __DIR__ . '/../config/session.php';
 
 // Include required files
-require_once '../config/database.php';
+require_once __DIR__ . '/../config/database.php';
 
 // Check if user is logged in
 if (!isset($_SESSION['logged_in']) || !$_SESSION['logged_in']) {

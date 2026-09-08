@@ -14,7 +14,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once __DIR__ . '/../config/session.php';
-require_once '../config/database.php';
+require_once __DIR__ . '/../config/database.php';
 
 if (!isset($_SESSION['logged_in']) || !$_SESSION['logged_in'] || $_SESSION['user_type'] !== 'shop') {
     http_response_code(401);

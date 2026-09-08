@@ -57,8 +57,10 @@ function onPincodeInput(val) {
 
 async function checkDeliveryZone(pincode) {
     try {
-        const res  = await fetch(`../api/customer/check-delivery.php?pincode=${pincode}`);
-        const data = await res.json();
+        const cart   = getCart();
+        const shopId = cart.length > 0 ? (cart[0].shop_id || '') : '';
+        const res    = await fetch(`../api/customer/check-delivery.php?pincode=${pincode}&shop_id=${shopId}`);
+        const data   = await res.json();
         if (!data.success) return;
 
         currentDeliveryZone = data.zone_name;

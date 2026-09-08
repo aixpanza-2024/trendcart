@@ -108,11 +108,17 @@
                             <textarea class="form-control" id="shopDescription" rows="2"></textarea>
                         </div>
                         <div class="row g-2">
-                            <div class="col-md-6 mb-3">
+                            <div class="col-md-4 mb-3">
                                 <label class="form-label">City</label>
                                 <input type="text" class="form-control" id="shopCity">
                             </div>
-                            <div class="col-md-6 mb-3">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Pincode <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="shopPincode" maxlength="6" placeholder="6-digit" required
+                                       onblur="checkShopPincode(this.value,'addZoneInfo')">
+                                <div id="addZoneInfo" class="mt-1" style="min-height:20px;"></div>
+                            </div>
+                            <div class="col-md-4 mb-3">
                                 <label class="form-label">Phone</label>
                                 <input type="tel" class="form-control" id="shopPhone">
                             </div>
@@ -165,6 +171,12 @@
                         <div class="col-md-3">
                             <label class="form-label">Shop City</label>
                             <input type="text" class="form-control" id="editShopCity">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Shop Pincode</label>
+                            <input type="text" class="form-control" id="editShopPincode" maxlength="6" placeholder="6-digit"
+                                   onblur="checkShopPincode(this.value,'editZoneInfo')">
+                            <div id="editZoneInfo" class="mt-1" style="min-height:20px;"></div>
                         </div>
                         <div class="col-md-3">
                             <label class="form-label">Status</label>

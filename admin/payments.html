@@ -33,9 +33,9 @@
                         </a>
                     </li>
                     <li>
-                        <a class="dropdown-item" href="#" onclick="generatePayments('weekly');return false;">
-                            <i class="fas fa-calendar-week me-2 text-success"></i>Weekly Payments
-                            <small class="d-block text-muted ms-4">This week's delivered orders</small>
+                        <a class="dropdown-item" href="#" onclick="openRangeModal();return false;">
+                            <i class="fas fa-calendar-alt me-2 text-success"></i>Date Range Payments
+                            <small class="d-block text-muted ms-4">Pick a custom date range</small>
                         </a>
                     </li>
                 </ul>
@@ -165,6 +165,36 @@
                     <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
                     <button type="button" class="btn btn-success btn-sm" onclick="submitMarkPaid()">
                         <i class="fas fa-check"></i> Confirm Payment
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Date Range Generate Modal -->
+    <div class="modal fade admin-modal" id="rangePaymentModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h6 class="modal-title"><i class="fas fa-calendar-alt me-2"></i>Generate Date Range Payments</h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted small mb-3">Generates payouts for all shops based on orders delivered within the selected date range. Today and future dates cannot be selected.</p>
+                    <div class="mb-3">
+                        <label class="form-label">From Date</label>
+                        <input type="date" class="form-control" id="rangeFrom">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">To Date</label>
+                        <input type="date" class="form-control" id="rangeTo">
+                    </div>
+                    <div id="rangeWarning" class="alert alert-warning d-none small"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-success btn-sm" onclick="submitRangePayments()">
+                        <i class="fas fa-cogs"></i> Generate
                     </button>
                 </div>
             </div>

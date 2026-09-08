@@ -5,7 +5,7 @@
 
 header('Content-Type: application/json');
 require_once __DIR__ . '/../config/session.php';
-require_once '../config/database.php';
+require_once __DIR__ . '/../config/database.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(200); exit(); }
 
@@ -60,16 +60,18 @@ try {
             shop_name        = :shop_name,
             shop_description = :shop_desc,
             shop_city        = :shop_city,
+            shop_pincode     = :shop_pincode,
             shop_phone       = :shop_phone,
             shop_email       = :shop_email,
             shop_status      = :shop_status
         WHERE shop_id = :shop_id
     ");
-    $stmt->bindValue(':shop_name',   $data['shop_name'], PDO::PARAM_STR);
-    $stmt->bindValue(':shop_desc',   $data['shop_description'] ?? '', PDO::PARAM_STR);
-    $stmt->bindValue(':shop_city',   $data['shop_city'] ?? '', PDO::PARAM_STR);
-    $stmt->bindValue(':shop_phone',  $data['shop_phone'] ?? '', PDO::PARAM_STR);
-    $stmt->bindValue(':shop_email',  $data['shop_email'] ?? '', PDO::PARAM_STR);
+    $stmt->bindValue(':shop_name',    $data['shop_name'], PDO::PARAM_STR);
+    $stmt->bindValue(':shop_desc',    $data['shop_description'] ?? '', PDO::PARAM_STR);
+    $stmt->bindValue(':shop_city',    $data['shop_city'] ?? '', PDO::PARAM_STR);
+    $stmt->bindValue(':shop_pincode', $data['shop_pincode'] ?? '', PDO::PARAM_STR);
+    $stmt->bindValue(':shop_phone',   $data['shop_phone'] ?? '', PDO::PARAM_STR);
+    $stmt->bindValue(':shop_email',   $data['shop_email'] ?? '', PDO::PARAM_STR);
     $valid_statuses = ['open', 'closed', 'suspended'];
     $status = in_array($data['shop_status'] ?? '', $valid_statuses) ? $data['shop_status'] : 'open';
     $stmt->bindValue(':shop_status', $status, PDO::PARAM_STR);

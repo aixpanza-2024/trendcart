@@ -7,7 +7,7 @@
  */
 header('Content-Type: application/json');
 require_once __DIR__ . '/../config/session.php';
-require_once '../config/database.php';
+require_once __DIR__ . '/../config/database.php';
 
 if (!isset($_SESSION['logged_in']) || !$_SESSION['logged_in'] || ($_SESSION['user_type'] ?? '') !== 'admin') {
     http_response_code(401);
@@ -23,6 +23,30 @@ try {
 
     if ($method === 'GET') {
         $type = $_GET['type'] ?? 'zones';
+
+        if ($type === 'check_pincode') {
+            $pin = trim($_GET['pincode'] ?? '');
+            if (!preg_match('/^\d{6}$/', $pin)) {
+                echo json_encode(['success' => false, 'message' => 'Invalid pincode']);
+                exit;
+            }
+            $stmt = $conn->prepare("
+                SELECT z.zone_id, z.zone_name, dp.area_name
+                FROM delivery_pincodes dp
+                INNER JOIN delivery_zones z ON dp.zone_id = z.zone_id
+                WHERE dp.pincode = :pin AND z.is_active = 1
+                LIMIT 1
+            ");
+            $stmt->bindValue(':pin', $pin);
+            $stmt->execute();
+            $zone = $stmt->fetch();
+            if ($zone) {
+                echo json_encode(['success' => true, 'found' => true, 'zone_id' => $zone['zone_id'], 'zone_name' => $zone['zone_name'], 'area_name' => $zone['area_name']]);
+            } else {
+                echo json_encode(['success' => true, 'found' => false]);
+            }
+            exit;
+        }
 
         if ($type === 'pincodes') {
             $zone_id = isset($_GET['zone_id']) ? (int)$_GET['zone_id'] : 0;

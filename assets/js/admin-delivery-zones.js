@@ -9,8 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
     zoneModal    = new bootstrap.Modal(document.getElementById('zoneModal'));
     pincodeModal = new bootstrap.Modal(document.getElementById('pincodeModal'));
     bulkModal    = new bootstrap.Modal(document.getElementById('bulkModal'));
-    loadZones();
-    loadPincodes();
+    window.addEventListener('adminReady', () => { loadZones(); loadPincodes(); }, { once: true });
 });
 
 /* ── Zones ── */

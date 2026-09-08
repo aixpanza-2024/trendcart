@@ -15,7 +15,7 @@ function makeCartKey(productId, size, color) {
 /* ===================================
    ADD TO CART
    =================================== */
-function addToCart(productId, productName, productPrice, productImage, shopName, size, color, qty = 1) {
+function addToCart(productId, productName, productPrice, productImage, shopName, shopId, size, color, qty = 1) {
     // Check if user is logged in
     const isLoggedIn = (typeof _isAuthValid === 'function' ? _isAuthValid() : sessionStorage.getItem('isLoggedIn') === 'true');
 
@@ -36,16 +36,16 @@ function addToCart(productId, productName, productPrice, productImage, shopName,
     if (existingShop && shopName && existingShop !== shopName) {
         _showShopConflictModal(existingShop, shopName, function () {
             localStorage.removeItem('cart');
-            _doAddToCart([], cartKey, productId, productName, productPrice, productImage, shopName, size, color, qty);
+            _doAddToCart([], cartKey, productId, productName, productPrice, productImage, shopName, shopId, size, color, qty);
         });
         return;
     }
 
-    _doAddToCart(cart, cartKey, productId, productName, productPrice, productImage, shopName, size, color, qty);
+    _doAddToCart(cart, cartKey, productId, productName, productPrice, productImage, shopName, shopId, size, color, qty);
 }
 
 /* Internal: actually insert/increment the item and save */
-function _doAddToCart(cart, cartKey, productId, productName, productPrice, productImage, shopName, size, color, qty = 1) {
+function _doAddToCart(cart, cartKey, productId, productName, productPrice, productImage, shopName, shopId, size, color, qty = 1) {
     const existingItemIndex = cart.findIndex(item => item.cartKey === cartKey);
 
     if (existingItemIndex > -1) {
@@ -55,8 +55,9 @@ function _doAddToCart(cart, cartKey, productId, productName, productPrice, produ
         cart.push({
             cartKey,
             id:       productId,
-            size:     size  || null,
-            color:    color || null,
+            shop_id:  shopId  || null,
+            size:     size    || null,
+            color:    color   || null,
             name:     productName,
             price:    parseFloat(productPrice),
             image:    productImage,
@@ -373,14 +374,14 @@ if (window.location.pathname.includes('cart.html')) {
 /* ===================================
    QUICK ADD TO CART (with animation)
    =================================== */
-function quickAddToCart(button, productId, productName, productPrice, productImage, shopName, size, qty = 1) {
+function quickAddToCart(button, productId, productName, productPrice, productImage, shopName, shopId, size, qty = 1) {
     // Add loading state to button
     const originalHTML = button.innerHTML;
     button.disabled = true;
     button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Adding...';
 
     setTimeout(() => {
-        addToCart(productId, productName, productPrice, productImage, shopName, size || null, null, qty);
+        addToCart(productId, productName, productPrice, productImage, shopName, shopId || null, size || null, null, qty);
 
         // Reset button
         button.disabled = false;

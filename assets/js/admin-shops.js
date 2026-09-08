@@ -2,11 +2,59 @@
  * Admin Shops Management
  */
 
+let _shopsMap = {};
+
+// null = unchecked, true = valid zone, false = not in any zone
+let _addPincodeStatus  = null;
+let _editPincodeStatus = null;
+
+async function checkShopPincode(pincode, displayId) {
+    const el = document.getElementById(displayId);
+    const isAdd = displayId === 'addZoneInfo';
+
+    if (!pincode) {
+        el.innerHTML = '';
+        if (isAdd) _addPincodeStatus  = null;
+        else       _editPincodeStatus = null;
+        return;
+    }
+    if (!/^\d{6}$/.test(pincode)) {
+        el.innerHTML = '<span class="text-danger small"><i class="fas fa-times-circle me-1"></i>Must be 6 digits</span>';
+        if (isAdd) _addPincodeStatus  = false;
+        else       _editPincodeStatus = false;
+        return;
+    }
+
+    el.innerHTML = '<span class="text-muted small"><i class="fas fa-spinner fa-spin me-1"></i>Checking zone…</span>';
+    try {
+        const res  = await adminAPI('../api/admin/delivery-zones.php?type=check_pincode&pincode=' + pincode);
+        if (res.found) {
+            const area = res.area_name ? ` — ${res.area_name}` : '';
+            el.innerHTML = `<span class="badge bg-success"><i class="fas fa-map-marker-alt me-1"></i>${res.zone_name}${area}</span>`;
+            if (isAdd) _addPincodeStatus  = true;
+            else       _editPincodeStatus = true;
+        } else {
+            el.innerHTML = '<span class="text-danger small"><i class="fas fa-exclamation-circle me-1"></i>Pincode not in any delivery zone — add it in Delivery Zones first</span>';
+            if (isAdd) _addPincodeStatus  = false;
+            else       _editPincodeStatus = false;
+        }
+    } catch (e) {
+        el.innerHTML = '';
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function () {
-    loadShops();
     document.getElementById('searchShop').addEventListener('keyup', function (e) {
         if (e.key === 'Enter') loadShops();
     });
+
+    document.getElementById('addShopModal').addEventListener('show.bs.modal', () => {
+        _addPincodeStatus = null;
+        document.getElementById('addZoneInfo').innerHTML = '';
+    });
+
+    // Wait for auth check to complete before loading — avoids PHP session lock race
+    window.addEventListener('adminReady', loadShops, { once: true });
 });
 
 async function loadShops() {
@@ -20,15 +68,23 @@ async function loadShops() {
         const result = await adminAPI('../api/admin/shops.php?' + params);
         if (result.success) {
             renderShops(result.data);
+        } else {
+            document.getElementById('shopsTable').innerHTML =
+                '<tr><td colspan="7" class="admin-empty-state"><i class="fas fa-exclamation-circle text-danger"></i><p>Failed to load shops</p></td></tr>';
         }
     } catch (e) {
         console.error('Load shops error:', e);
+        document.getElementById('shopsTable').innerHTML =
+            '<tr><td colspan="7" class="admin-empty-state"><i class="fas fa-exclamation-circle text-danger"></i><p>Failed to load shops</p></td></tr>';
     }
 }
 
 function renderShops(shops) {
     const tbody = document.getElementById('shopsTable');
     document.getElementById('shopCount').textContent = shops.length;
+
+    _shopsMap = {};
+    shops.forEach(s => { _shopsMap[s.shop_id] = s; });
 
     if (!shops.length) {
         tbody.innerHTML = '<tr><td colspan="7" class="admin-empty-state"><i class="fas fa-store"></i><p>No shops found</p></td></tr>';
@@ -57,8 +113,8 @@ function renderShops(shops) {
                         <i class="fas fa-cog"></i>
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end">
-                        <li><a class="dropdown-item" href="#" onclick="openEditModal(${JSON.stringify(s).replace(/"/g, '&quot;')})"><i class="fas fa-edit me-2"></i>Edit Details</a></li>
-                        <li><a class="dropdown-item" href="#" onclick="openLogoModal(${s.shop_id}, '${s.shop_name.replace(/'/g, "\\'")}', '${s.shop_logo || ''}')"><i class="fas fa-image me-2"></i>Upload Logo</a></li>
+                        <li><a class="dropdown-item" href="#" onclick="openEditModal(${s.shop_id})"><i class="fas fa-edit me-2"></i>Edit Details</a></li>
+                        <li><a class="dropdown-item" href="#" onclick="openLogoModal(${s.shop_id})"><i class="fas fa-image me-2"></i>Upload Logo</a></li>
                         <li><hr class="dropdown-divider"></li>
                         ${s.shop_status !== 'suspended' ?
                             `<li><a class="dropdown-item text-danger" href="#" onclick="updateShopStatus(${s.shop_id}, 'suspended')"><i class="fas fa-ban me-2"></i>Suspend</a></li>` :
@@ -71,7 +127,7 @@ function renderShops(shops) {
                             `<li><a class="dropdown-item" href="#" onclick="updateShopStatus(${s.shop_id}, 'open')"><i class="fas fa-door-open me-2"></i>Mark Open</a></li>` : ''
                         }
                         <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item text-danger" href="#" onclick="deleteShop(${s.shop_id}, '${s.shop_name.replace(/'/g, "\\'")}')"><i class="fas fa-trash me-2"></i>Delete Shop</a></li>
+                        <li><a class="dropdown-item text-danger" href="#" onclick="deleteShop(${s.shop_id})"><i class="fas fa-trash me-2"></i>Delete Shop</a></li>
                     </ul>
                 </div>
             </td>
@@ -92,11 +148,19 @@ async function addShop() {
         shop_name: document.getElementById('shopName').value.trim(),
         shop_description: document.getElementById('shopDescription').value.trim(),
         shop_city: document.getElementById('shopCity').value.trim(),
+        shop_pincode: document.getElementById('shopPincode').value.trim(),
         shop_phone: document.getElementById('shopPhone').value.trim()
     };
 
     if (!data.full_name || !data.email || !data.phone || !data.shop_name) {
         adminToast('Please fill all required fields', 'error');
+        btn.disabled = false;
+        btn.innerHTML = orig;
+        return;
+    }
+
+    if (_addPincodeStatus === false) {
+        adminToast('Pincode is not in any delivery zone. Add it in Delivery Zones first.', 'error');
         btn.disabled = false;
         btn.innerHTML = orig;
         return;
@@ -149,7 +213,10 @@ async function updateShopStatus(shopId, status) {
 }
 
 /* --- Delete Shop --- */
-async function deleteShop(shopId, shopName) {
+async function deleteShop(shopId) {
+    const shop = _shopsMap[shopId];
+    if (!shop) return;
+    const shopName = shop.shop_name;
     if (!confirm(`DELETE "${shopName}"?\n\nThis will permanently delete the shop, all its products, images, and order history. This cannot be undone.`)) return;
 
     try {
@@ -171,18 +238,28 @@ async function deleteShop(shopId, shopName) {
 }
 
 /* --- Edit Shop --- */
-function openEditModal(shop) {
-    if (typeof shop === 'string') shop = JSON.parse(shop);
+function openEditModal(shopId) {
+    const shop = _shopsMap[shopId];
+    if (!shop) return;
     document.getElementById('editShopId').value          = shop.shop_id;
-    document.getElementById('editOwnerName').value       = shop.owner_name   || '';
-    document.getElementById('editOwnerEmail').value      = shop.email        || '';
-    document.getElementById('editOwnerPhone').value      = shop.phone        || '';
-    document.getElementById('editShopName').value        = shop.shop_name    || '';
-    document.getElementById('editShopCity').value        = shop.shop_city    || '';
-    document.getElementById('editShopPhone').value       = shop.shop_phone   || '';
-    document.getElementById('editShopEmail').value       = shop.shop_email   || '';
+    document.getElementById('editOwnerName').value       = shop.owner_name    || '';
+    document.getElementById('editOwnerEmail').value      = shop.email         || '';
+    document.getElementById('editOwnerPhone').value      = shop.phone         || '';
+    document.getElementById('editShopName').value        = shop.shop_name     || '';
+    document.getElementById('editShopCity').value        = shop.shop_city     || '';
+    document.getElementById('editShopPincode').value     = shop.shop_pincode  || '';
+    document.getElementById('editShopPhone').value       = shop.shop_phone    || '';
+    document.getElementById('editShopEmail').value       = shop.shop_email    || '';
     document.getElementById('editShopDescription').value = shop.shop_description || '';
-    document.getElementById('editShopStatus').value      = shop.shop_status  || 'open';
+    document.getElementById('editShopStatus').value      = shop.shop_status   || 'open';
+
+    _editPincodeStatus = null;
+    if (shop.shop_pincode) {
+        checkShopPincode(shop.shop_pincode, 'editZoneInfo');
+    } else {
+        document.getElementById('editZoneInfo').innerHTML = '';
+    }
+
     bootstrap.Modal.getOrCreateInstance(document.getElementById('editShopModal')).show();
 }
 
@@ -198,6 +275,7 @@ async function saveShop() {
         owner_phone:      document.getElementById('editOwnerPhone').value.trim(),
         shop_name:        document.getElementById('editShopName').value.trim(),
         shop_city:        document.getElementById('editShopCity').value.trim(),
+        shop_pincode:     document.getElementById('editShopPincode').value.trim(),
         shop_phone:       document.getElementById('editShopPhone').value.trim(),
         shop_email:       document.getElementById('editShopEmail').value.trim(),
         shop_description: document.getElementById('editShopDescription').value.trim(),
@@ -206,6 +284,13 @@ async function saveShop() {
 
     if (!data.owner_name || !data.shop_name) {
         adminToast('Owner name and shop name are required', 'error');
+        btn.disabled = false;
+        btn.innerHTML = orig;
+        return;
+    }
+
+    if (_editPincodeStatus === false) {
+        adminToast('Pincode is not in any delivery zone. Add it in Delivery Zones first.', 'error');
         btn.disabled = false;
         btn.innerHTML = orig;
         return;
@@ -234,9 +319,12 @@ async function saveShop() {
 }
 
 /* --- Logo Upload --- */
-function openLogoModal(shopId, shopName, logoPath) {
-    document.getElementById('logoShopId').value       = shopId;
-    document.getElementById('logoShopName').textContent = shopName;
+function openLogoModal(shopId) {
+    const shop = _shopsMap[shopId];
+    if (!shop) return;
+    const logoPath = shop.shop_logo || '';
+    document.getElementById('logoShopId').value         = shopId;
+    document.getElementById('logoShopName').textContent = shop.shop_name;
 
     const preview     = document.getElementById('adminLogoPreview');
     const placeholder = document.getElementById('adminLogoPlaceholder');

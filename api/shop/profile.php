@@ -7,7 +7,7 @@
 
 header('Content-Type: application/json');
 require_once __DIR__ . '/../config/session.php';
-require_once '../config/database.php';
+require_once __DIR__ . '/../config/database.php';
 
 if (!isset($_SESSION['logged_in']) || !$_SESSION['logged_in']) {
     http_response_code(401);

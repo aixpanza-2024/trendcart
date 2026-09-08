@@ -15,7 +15,7 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true || $_SESSI
 
 $customer_id = (int)$_SESSION['user_id'];
 
-require_once '../config/database.php';
+require_once __DIR__ . '/../config/database.php';
 
 try {
     $database = new Database();

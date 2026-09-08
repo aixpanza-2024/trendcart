@@ -3,8 +3,7 @@
  */
 
 document.addEventListener('DOMContentLoaded', function () {
-    loadPayments();
-    loadShopsFilter();
+    window.addEventListener('adminReady', () => { loadPayments(); loadShopsFilter(); }, { once: true });
 });
 
 async function loadShopsFilter() {
@@ -118,8 +117,7 @@ async function submitMarkPaid() {
 }
 
 async function generatePayments(period) {
-    const label = period === 'daily' ? "today's" : "this week's";
-    if (!confirm(`Generate ${period} payment records for ${label} delivered orders for all shops?`)) return;
+    if (!confirm(`Generate daily payment records for today's delivered orders for all shops?`)) return;
 
     try {
         const result = await adminAPI('../api/admin/generate-payments.php', {
@@ -129,7 +127,7 @@ async function generatePayments(period) {
         });
 
         if (result.success) {
-            adminToast(result.message || `${period} payments generated`, 'success');
+            adminToast(result.message || 'Payments generated', 'success');
             loadPayments();
         } else {
             adminToast(result.message || 'Failed', 'error');
@@ -139,5 +137,81 @@ async function generatePayments(period) {
     }
 }
 
-// Backward-compatibility alias
-function generateWeeklyPayments() { generatePayments('weekly'); }
+function openRangeModal() {
+    // Max selectable date = yesterday
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const maxDate = yesterday.toISOString().split('T')[0];
+
+    const fromEl = document.getElementById('rangeFrom');
+    const toEl   = document.getElementById('rangeTo');
+
+    fromEl.max = maxDate;
+    toEl.max   = maxDate;
+
+    // Default: last 7 days (from 7 days ago to yesterday)
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    fromEl.value = sevenDaysAgo.toISOString().split('T')[0];
+    toEl.value   = maxDate;
+
+    document.getElementById('rangeWarning').classList.add('d-none');
+    new bootstrap.Modal(document.getElementById('rangePaymentModal')).show();
+}
+
+async function submitRangePayments() {
+    const fromDate = document.getElementById('rangeFrom').value;
+    const toDate   = document.getElementById('rangeTo').value;
+    const warning  = document.getElementById('rangeWarning');
+
+    warning.classList.add('d-none');
+
+    // Validate
+    if (!fromDate || !toDate) {
+        warning.textContent = 'Please select both From and To dates.';
+        warning.classList.remove('d-none');
+        return;
+    }
+
+    const from = new Date(fromDate);
+    const to   = new Date(toDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (to >= today) {
+        warning.textContent = 'To date must be before today. Today\'s orders may still come in.';
+        warning.classList.remove('d-none');
+        return;
+    }
+    if (from > to) {
+        warning.textContent = 'From date cannot be after To date.';
+        warning.classList.remove('d-none');
+        return;
+    }
+
+    const diffDays = Math.round((to - from) / (1000 * 60 * 60 * 24)) + 1;
+    if (diffDays > 90) {
+        warning.textContent = 'Maximum range is 90 days. Please split into smaller periods.';
+        warning.classList.remove('d-none');
+        return;
+    }
+
+    bootstrap.Modal.getInstance(document.getElementById('rangePaymentModal')).hide();
+
+    try {
+        const result = await adminAPI('../api/admin/generate-payments.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ period: 'range', date_from: fromDate, date_to: toDate })
+        });
+
+        if (result.success) {
+            adminToast(result.message || 'Range payments generated', 'success');
+            loadPayments();
+        } else {
+            adminToast(result.message || 'Failed', 'error');
+        }
+    } catch (e) {
+        adminToast('Failed to generate range payments', 'error');
+    }
+}

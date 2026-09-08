@@ -4,8 +4,7 @@
  */
 
 header('Content-Type: application/json');
-require_once '../config/database.php';
-
+require_once __DIR__ . '/../config/database.php';
 try {
     $database = new Database();
     $conn = $database->getConnection();
@@ -14,9 +13,12 @@ try {
         SELECT c.category_id, c.category_name, c.parent_category_id, c.category_image
         FROM categories c
         WHERE c.is_active = 1
+          AND c.parent_category_id IS NULL
           AND EXISTS (
               SELECT 1 FROM products p
-              WHERE p.category_id = c.category_id AND p.product_status = 'active'
+              INNER JOIN categories sc ON p.category_id = sc.category_id
+              WHERE (sc.category_id = c.category_id OR sc.parent_category_id = c.category_id)
+                AND p.product_status = 'active'
           )
         ORDER BY c.category_name ASC
     ");

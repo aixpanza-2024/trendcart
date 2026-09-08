@@ -6,7 +6,7 @@
 
 header('Content-Type: application/json');
 require_once __DIR__ . '/../config/session.php';
-require_once '../config/database.php';
+require_once __DIR__ . '/../config/database.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(200); exit(); }
 
@@ -66,14 +66,16 @@ try {
 
     // Create shops table entry
     $stmt = $conn->prepare("
-        INSERT INTO shops (user_id, shop_name, shop_description, shop_city, shop_phone, shop_email, shop_status)
-        VALUES (:uid, :name, :desc, :city, :phone, :email, 'open')
+        INSERT INTO shops (user_id, shop_name, shop_description, shop_city, shop_pincode, shop_phone, shop_email, shop_status)
+        VALUES (:uid, :name, :desc, :city, :pincode, :phone, :email, 'open')
     ");
     $stmt->bindParam(':uid', $user_id);
     $stmt->bindParam(':name', $data['shop_name']);
     $stmt->bindParam(':desc', $desc);
     $city = $data['shop_city'] ?? '';
     $stmt->bindParam(':city', $city);
+    $pincode = $data['shop_pincode'] ?? '';
+    $stmt->bindParam(':pincode', $pincode);
     $shop_phone = $data['shop_phone'] ?? $data['phone'];
     $stmt->bindParam(':phone', $shop_phone);
     $stmt->bindParam(':email', $data['email']);

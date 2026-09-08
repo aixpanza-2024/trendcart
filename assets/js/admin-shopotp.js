@@ -3,7 +3,7 @@
  */
 
 document.addEventListener('DOMContentLoaded', function () {
-    loadShopOtps();
+    window.addEventListener('adminReady', loadShopOtps, { once: true });
 });
 
 async function loadShopOtps() {

@@ -63,7 +63,7 @@ try {
         WHERE $where_clause
         GROUP BY o.order_id
         ORDER BY o.order_date DESC
-        LIMIT 100
+        LIMIT 2000
     ");
 
     foreach ($params as $k => $v) { $stmt->bindValue($k, $v); }
@@ -77,7 +77,11 @@ try {
         $itemStmt = $conn->prepare("
             SELECT oi.order_id, oi.product_name, oi.quantity, oi.price, oi.subtotal,
                    oi.selected_size, oi.selected_color, oi.item_status,
-                   s.shop_name
+                   s.shop_name,
+                   (SELECT image_url FROM product_images
+                    WHERE product_id = oi.product_id
+                    ORDER BY is_primary DESC, display_order ASC
+                    LIMIT 1) AS product_image
             FROM order_items oi
             LEFT JOIN shops s ON oi.shop_id = s.shop_id
             WHERE oi.order_id IN ($placeholders)

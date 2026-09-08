@@ -5,8 +5,8 @@
 let bannerModal;
 document.addEventListener('DOMContentLoaded', () => {
     bannerModal = new bootstrap.Modal(document.getElementById('bannerModal'));
-    loadBanners();
     initImageUpload();
+    window.addEventListener('adminReady', loadBanners, { once: true });
 });
 
 /* ── Load & render banners ── */

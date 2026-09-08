@@ -25,16 +25,35 @@ try {
 
     // Read period type from request body
     $body   = json_decode(file_get_contents('php://input'), true);
-    $period = isset($body['period']) ? trim($body['period']) : 'weekly';
-    if (!in_array($period, ['daily', 'weekly'])) $period = 'weekly';
+    $period = isset($body['period']) ? trim($body['period']) : 'daily';
+    if (!in_array($period, ['daily', 'range'])) $period = 'daily';
 
     // Determine date range
     if ($period === 'daily') {
         $period_start = date('Y-m-d');
         $period_end   = date('Y-m-d');
     } else {
-        $period_start = date('Y-m-d', strtotime('monday this week'));
-        $period_end   = date('Y-m-d', strtotime('sunday this week'));
+        // Custom date range — validate both dates
+        $period_start = isset($body['date_from']) ? trim($body['date_from']) : '';
+        $period_end   = isset($body['date_to'])   ? trim($body['date_to'])   : '';
+
+        if (!$period_start || !$period_end || !strtotime($period_start) || !strtotime($period_end)) {
+            echo json_encode(['success' => false, 'message' => 'Invalid date range provided.']);
+            exit();
+        }
+        if ($period_start > $period_end) {
+            echo json_encode(['success' => false, 'message' => 'From date cannot be after To date.']);
+            exit();
+        }
+        if ($period_end >= date('Y-m-d')) {
+            echo json_encode(['success' => false, 'message' => 'To date must be before today.']);
+            exit();
+        }
+        $diffDays = (strtotime($period_end) - strtotime($period_start)) / 86400 + 1;
+        if ($diffDays > 90) {
+            echo json_encode(['success' => false, 'message' => 'Maximum date range is 90 days.']);
+            exit();
+        }
     }
 
     // Get platform commission rate
@@ -62,17 +81,24 @@ try {
         exit();
     }
 
-    // Get all shops with delivered sales for this period
+    // Get all shops with delivered sales for this period.
+    // Use orders.delivered_at when available (accurate), fall back to order_date for old orders.
+    // Exclude items already counted in any previous payout period for the same shop.
     $stmt = $conn->prepare("
         SELECT
             s.shop_id,
-            COALESCE(SUM(oi.subtotal), 0) AS period_sales
+            SUM(oi.subtotal) AS period_sales
         FROM shops s
-        LEFT JOIN order_items oi ON s.shop_id = oi.shop_id
-            AND oi.item_status = 'delivered'
-        LEFT JOIN orders o ON oi.order_id = o.order_id
-            AND DATE(o.order_date) >= :start
-            AND DATE(o.order_date) <= :end
+        INNER JOIN order_items oi ON s.shop_id = oi.shop_id AND oi.item_status = 'delivered'
+        INNER JOIN orders o ON oi.order_id = o.order_id
+        WHERE DATE(COALESCE(o.delivered_at, o.order_date)) >= :start
+          AND DATE(COALESCE(o.delivered_at, o.order_date)) <= :end
+          AND NOT EXISTS (
+              SELECT 1 FROM shop_payments sp
+              WHERE sp.shop_id = oi.shop_id
+                AND sp.period_start <= DATE(COALESCE(o.delivered_at, o.order_date))
+                AND sp.period_end   >= DATE(COALESCE(o.delivered_at, o.order_date))
+          )
         GROUP BY s.shop_id
         HAVING period_sales > 0
     ");
@@ -108,10 +134,10 @@ try {
         $created++;
     }
 
-    $range = ($period === 'weekly') ? "$period_start to $period_end" : $period_start;
+    $range = ($period_start === $period_end) ? $period_start : "$period_start to $period_end";
     echo json_encode([
         'success' => true,
-        'message' => "Generated $created $period payment record(s) for $range (delivered orders only)"
+        'message' => "Generated $created payment record(s) for $range (delivered orders only)"
     ]);
 
 } catch (Exception $e) {
