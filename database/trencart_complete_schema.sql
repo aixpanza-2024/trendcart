@@ -207,7 +207,7 @@ CREATE TABLE IF NOT EXISTS products (
     discount_percentage DECIMAL(5,2) DEFAULT 0.00,
     stock_quantity INT DEFAULT 0,
     low_stock_threshold INT DEFAULT 10,
-    color VARCHAR(50),
+    color VARCHAR(500),
     size VARCHAR(50),
     material VARCHAR(100),
     fabric_type VARCHAR(100),

@@ -3,7 +3,7 @@
  */
 
 document.addEventListener('DOMContentLoaded', function () {
-    loadDashboardData();
+    window.addEventListener('adminReady', loadDashboardData, { once: true });
 });
 
 async function loadDashboardData() {

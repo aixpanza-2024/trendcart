@@ -179,7 +179,6 @@ function renderProduct(p) {
                 <div class="text-grey small">
                     ${buildStars(parseFloat(p.rating_average || 0))}
                     <span class="ms-1">${parseFloat(p.rating_average || 0).toFixed(1)}</span>
-                    &bull; ${p.total_products || 0} products
                 </div>
             </div>
             <a href="products.html?shop_id=${p.shop_id}" class="btn btn-outline-secondary btn-sm">
@@ -281,6 +280,7 @@ function renderProduct(p) {
             effectivePrice,
             primaryImg,
             p.shop_name,
+            p.shop_id,
             hasSizes ? selectedSize : null,
             hasColors ? selectedColor : null,
             currentQty
@@ -572,7 +572,7 @@ function buildMoreCard(p) {
                         ₹${parseFloat(p.price).toLocaleString()}${originalPrice}
                     </div>
                     <button class="btn btn-primary btn-sm w-100"
-                        onclick="quickAddToCart(this,'${p.product_id}','${safeName}',${p.price},'${safeImg}','${safeShop}')">
+                        onclick="quickAddToCart(this,'${p.product_id}','${safeName}',${p.price},'${safeImg}','${safeShop}','${p.shop_id}')">
                         <i class="fas fa-shopping-cart"></i> Add to Cart
                     </button>
                 </div>

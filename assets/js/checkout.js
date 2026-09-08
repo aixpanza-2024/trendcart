@@ -2,14 +2,125 @@
  * Checkout Page
  */
 
+let currentDeliveryFee  = 0;
+let currentDeliveryZone = '';
+let currentHandlingFee  = 0;
+let isFirstOrder        = false;
+let firstOrderFreeEnabled = false;
+let deliveryCheckTimer  = null;
+let _profileFromDB      = null;
+
 document.addEventListener('DOMContentLoaded', function () {
     if (localStorage.getItem('isLoggedIn') !== 'true') {
         window.location.href = 'login.html';
         return;
     }
+    loadCheckoutConfig();
     loadCheckoutData();
     loadPaymentMethods();
 });
+
+async function loadCheckoutConfig() {
+    try {
+        const res  = await fetch('../api/customer/checkout-config.php');
+        const data = await res.json();
+        if (!data.success) return;
+
+        currentHandlingFee    = data.handling_fee || 0;
+        isFirstOrder          = data.is_first_order || false;
+        firstOrderFreeEnabled = data.first_order_free_delivery || false;
+
+        // If first order and free delivery enabled, show banner
+        if (isFirstOrder && firstOrderFreeEnabled) {
+            const badge = document.getElementById('deliveryZoneBadge');
+            if (badge) {
+                badge.innerHTML = `<span class="badge bg-success px-3 py-2" style="font-size:13px;">
+                    <i class="fas fa-gift me-1"></i> First Order — Free Delivery!
+                </span>`;
+                badge.style.display = 'block';
+            }
+            currentDeliveryFee = 0;
+        }
+
+        updateCheckoutTotals();
+    } catch (e) { /* silent */ }
+}
+
+function onPincodeInput(val) {
+    clearTimeout(deliveryCheckTimer);
+    if (val.length === 6) {
+        deliveryCheckTimer = setTimeout(() => checkDeliveryZone(val), 400);
+    } else {
+        document.getElementById('deliveryZoneBadge').style.display = 'none';
+    }
+}
+
+async function checkDeliveryZone(pincode) {
+    try {
+        const cart   = getCart();
+        const shopId = cart.length > 0 ? (cart[0].shop_id || '') : '';
+        const res    = await fetch(`../api/customer/check-delivery.php?pincode=${pincode}&shop_id=${shopId}`);
+        const data   = await res.json();
+        if (!data.success) return;
+
+        currentDeliveryZone = data.zone_name;
+
+        // First order overrides delivery fee to 0 regardless of zone
+        if (isFirstOrder && firstOrderFreeEnabled) {
+            currentDeliveryFee = 0;
+            const badge = document.getElementById('deliveryZoneBadge');
+            badge.innerHTML = `<span class="badge bg-success px-3 py-2" style="font-size:13px;">
+                <i class="fas fa-gift me-1"></i> First Order — Free Delivery!
+                <span class="opacity-75 ms-1">(${data.zone_name})</span>
+            </span>`;
+            badge.style.display = 'block';
+        } else {
+            currentDeliveryFee = data.delivery_fee;
+            const badge = document.getElementById('deliveryZoneBadge');
+            if (data.is_free) {
+                badge.innerHTML = `<span class="badge bg-success px-3 py-2" style="font-size:13px;">
+                    <i class="fas fa-check-circle me-1"></i> Free Delivery — ${data.zone_name}
+                    ${data.area_name ? `<span class="opacity-75 ms-1">(${data.area_name})</span>` : ''}
+                </span>`;
+            } else {
+                badge.innerHTML = `<span class="badge bg-warning text-dark px-3 py-2" style="font-size:13px;">
+                    <i class="fas fa-truck me-1"></i> Delivery: ₹${data.delivery_fee} — ${data.zone_name}
+                </span>`;
+            }
+            badge.style.display = 'block';
+        }
+
+        updateCheckoutTotals();
+    } catch (e) { /* silent */ }
+}
+
+function updateCheckoutTotals() {
+    const { totals } = getCartForCheckout();
+    const deliveryFee = (isFirstOrder && firstOrderFreeEnabled) ? 0 : currentDeliveryFee;
+    const total = totals.subtotal + deliveryFee + currentHandlingFee;
+
+    document.getElementById('orderSubtotal').textContent = formatCurrency(totals.subtotal);
+
+    // Delivery row
+    const shippingEl = document.getElementById('orderShipping');
+    if (deliveryFee === 0) {
+        shippingEl.innerHTML = '<span class="text-success fw-bold">FREE</span>';
+    } else {
+        shippingEl.textContent = formatCurrency(deliveryFee);
+    }
+
+    // Handling fee row — always sync
+    const handlingRow = document.getElementById('handlingFeeRow');
+    const handlingEl  = document.getElementById('orderHandling');
+    if (currentHandlingFee > 0) {
+        if (handlingRow) handlingRow.style.display = '';
+        if (handlingEl)  handlingEl.textContent    = formatCurrency(currentHandlingFee);
+    } else {
+        if (handlingRow) handlingRow.style.display = 'none';
+    }
+
+    document.getElementById('orderTotal').textContent = formatCurrency(total);
+}
 
 async function loadPaymentMethods() {
     const container = document.getElementById('paymentMethodsContainer');
@@ -106,10 +217,10 @@ async function loadCheckoutData() {
             </div>`).join('');
     }
 
-    // Update totals
+    // Initial totals — delivery/handling update after config+pincode load
     document.getElementById('orderSubtotal').textContent = formatCurrency(totals.subtotal);
-    document.getElementById('orderShipping').innerHTML = '<s class="text-grey me-1">₹40</s><span class="text-success fw-bold">FREE</span>';
-    document.getElementById('orderTotal').textContent    = formatCurrency(totals.total);
+    document.getElementById('orderShipping').innerHTML   = '<span class="text-muted small">Enter pincode</span>';
+    document.getElementById('orderTotal').textContent    = formatCurrency(totals.subtotal);
 
     // Pre-fill name + email from localStorage
     const user = getCurrentUser();
@@ -126,7 +237,10 @@ async function loadCheckoutData() {
         if (saved.phone)   document.getElementById('phone').value   = saved.phone;
         if (saved.address) document.getElementById('address').value = saved.address;
         if (saved.city)    document.getElementById('city').value    = saved.city;
-        if (saved.pincode) document.getElementById('pincode').value = saved.pincode;
+        if (saved.pincode) {
+            document.getElementById('pincode').value = saved.pincode;
+            if (saved.pincode.length === 6) checkDeliveryZone(saved.pincode);
+        }
     }
 
     // Override with DB-saved default address from profile API (most up-to-date)
@@ -135,12 +249,16 @@ async function loadCheckoutData() {
         const data = await res.json();
         if (data.success && data.data) {
             const p = data.data;
+            _profileFromDB = p;
             if (p.phone)    document.getElementById('phone').value   = p.phone;
             if (p.default_address) {
                 const a = p.default_address;
                 if (a.address_line1) document.getElementById('address').value = a.address_line1;
                 if (a.city)          document.getElementById('city').value    = a.city;
-                if (a.pincode)       document.getElementById('pincode').value = a.pincode;
+                if (a.pincode) {
+                    document.getElementById('pincode').value = a.pincode;
+                    if (a.pincode.length === 6) checkDeliveryZone(a.pincode);
+                }
             }
         }
     } catch (e) { /* pre-fill is optional */ }
@@ -182,6 +300,9 @@ async function placeOrder() {
         shipping,
         items:          cart.map(i => ({ id: i.id, quantity: i.quantity, size: i.size || null, color: i.color || null })),
         payment_method: selectedPayment.value,
+        delivery_fee:   (isFirstOrder && firstOrderFreeEnabled) ? 0 : currentDeliveryFee,
+        delivery_zone:  currentDeliveryZone,
+        handling_fee:   currentHandlingFee,
     };
 
     try {
@@ -201,22 +322,27 @@ async function placeOrder() {
                 pincode: shipping.pincode,
             }));
 
-            // If profile name is empty, silently save name+phone from shipping details
-            const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
-            if (!storedUser.full_name || storedUser.full_name.trim() === '') {
+            // Silently fill empty profile fields from shipping details
+            const dbName  = (_profileFromDB?.full_name || '').trim();
+            const dbPhone = (_profileFromDB?.phone      || '').trim();
+            const needsUpdate = (!dbName && shipping.full_name) || (!dbPhone && shipping.phone);
+            if (needsUpdate) {
                 try {
+                    const updatePayload = {};
+                    if (!dbName  && shipping.full_name) updatePayload.full_name = shipping.full_name;
+                    if (!dbPhone && shipping.phone)     updatePayload.phone     = shipping.phone;
                     await fetch('../api/customer/my-profile.php', {
                         method:  'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body:    JSON.stringify({
-                            full_name: shipping.full_name,
-                            phone:     shipping.phone,
-                        }),
+                        body:    JSON.stringify(updatePayload),
                     });
                     // Update localStorage so navbar shows the real name immediately
-                    storedUser.full_name = shipping.full_name;
-                    localStorage.setItem('user', JSON.stringify(storedUser));
-                    localStorage.setItem('userName', shipping.full_name.split(' ')[0] || shipping.full_name);
+                    if (!dbName && shipping.full_name) {
+                        const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+                        storedUser.full_name = shipping.full_name;
+                        localStorage.setItem('user', JSON.stringify(storedUser));
+                        localStorage.setItem('userName', shipping.full_name.split(' ')[0] || shipping.full_name);
+                    }
                 } catch (e) { /* non-critical — profile can be filled later */ }
             }
 

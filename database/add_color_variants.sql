@@ -11,6 +11,6 @@ CREATE TABLE IF NOT EXISTS product_colors (
     INDEX idx_product (product_id)
 );
 
--- 2. Add selected_color to order_items
+-- 2. Add selected_color to order_items (run only if column doesn't exist)
 ALTER TABLE order_items
-    ADD COLUMN IF NOT EXISTS selected_color VARCHAR(50) DEFAULT NULL AFTER selected_size;
+    ADD COLUMN selected_color VARCHAR(50) DEFAULT NULL AFTER selected_size;

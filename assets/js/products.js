@@ -3,13 +3,10 @@
  */
 
 let allProducts = [];
-let allCategories = []; // full list (parents + children) for hierarchy-aware filtering
-let activeFilters = {
-    categories: [],
-    maxPrice: 0,
-    sort: 'featured',
-    search: ''
-};
+let allCategories = [];
+let currentFiltered = [];
+const PAGE_SIZE = 24;
+let displayLimit = PAGE_SIZE;
 
 document.addEventListener('DOMContentLoaded', function () {
     const urlParams  = new URLSearchParams(window.location.search);
@@ -110,7 +107,6 @@ async function loadProducts(shopId, categoryId) {
                 const city    = shop.shop_city ? `<span class="text-grey small"><i class="fas fa-map-marker-alt me-1"></i>${shop.shop_city}</span>` : '';
                 statsEl.innerHTML = `
                     <span class="text-grey small"><i class="fas fa-star text-warning me-1"></i><strong>${rating}</strong> <span class="text-grey">(${reviews} reviews)</span></span>
-                    <span class="text-grey small"><i class="fas fa-box me-1"></i><strong>${shop.total_products || 0}</strong> Products</span>
                     ${city}`;
             }
         } else {
@@ -147,6 +143,9 @@ function renderProducts(products) {
 
     if (countEl) countEl.textContent = products.length;
 
+    // Remove any existing Load More button
+    document.getElementById('loadMoreBtn')?.remove();
+
     if (!products.length) {
         container.innerHTML = `
             <div class="col-12 text-center py-5">
@@ -157,7 +156,39 @@ function renderProducts(products) {
         return;
     }
 
-    container.innerHTML = products.map(p => buildProductCard(p)).join('');
+    const visible = products.slice(0, displayLimit);
+    container.innerHTML = visible.map(p => buildProductCard(p)).join('');
+
+    if (products.length > displayLimit) {
+        const remaining = products.length - displayLimit;
+        container.insertAdjacentHTML('beforeend', `
+            <div id="loadMoreBtn" class="col-12 text-center mt-4 mb-3">
+                <button class="btn btn-outline-dark px-5" onclick="loadMore()">
+                    Load More <span class="badge bg-secondary ms-2">${remaining} more</span>
+                </button>
+            </div>`);
+    }
+}
+
+function loadMore() {
+    document.getElementById('loadMoreBtn')?.remove();
+
+    const prev = displayLimit;
+    displayLimit = Math.min(displayLimit + PAGE_SIZE, currentFiltered.length);
+    const newCards = currentFiltered.slice(prev, displayLimit);
+
+    const container = document.getElementById('productsGrid');
+    newCards.forEach(p => container.insertAdjacentHTML('beforeend', buildProductCard(p)));
+
+    if (currentFiltered.length > displayLimit) {
+        const remaining = currentFiltered.length - displayLimit;
+        container.insertAdjacentHTML('beforeend', `
+            <div id="loadMoreBtn" class="col-12 text-center mt-4 mb-3">
+                <button class="btn btn-outline-dark px-5" onclick="loadMore()">
+                    Load More <span class="badge bg-secondary ms-2">${remaining} more</span>
+                </button>
+            </div>`);
+    }
 }
 
 function buildProductCard(p) {
@@ -222,11 +253,11 @@ function buildProductCard(p) {
 
     const cartBtn = hasSizes
         ? `<button class="btn btn-primary btn-sm w-100"
-               onclick="cardAddToCart('${pid}','${safeName}',${p.price},'${safeImg}','${safeShop}',this)">
+               onclick="cardAddToCart('${pid}','${safeName}',${p.price},'${safeImg}','${safeShop}','${p.shop_id}',this)">
                <i class="fas fa-shopping-cart"></i> Add to Cart
            </button>`
         : `<button class="btn btn-primary btn-sm w-100"
-               onclick="cardAddToCartNoSize('${pid}','${safeName}',${p.price},'${safeImg}','${safeShop}',this)">
+               onclick="cardAddToCartNoSize('${pid}','${safeName}',${p.price},'${safeImg}','${safeShop}','${p.shop_id}',this)">
                <i class="fas fa-shopping-cart"></i> Add to Cart
            </button>`;
 
@@ -285,7 +316,7 @@ function cardChangeQty(btn, delta) {
     if (amount && price) amount.textContent = '₹' + (price * qty).toLocaleString('en-IN');
 }
 
-function cardAddToCart(productId, productName, productPrice, productImage, shopName, addBtn) {
+function cardAddToCart(productId, productName, productPrice, productImage, shopName, shopId, addBtn) {
     const card       = addBtn.closest('.product-card');
     const activeSize = card ? card.querySelector('.card-size-btn.active') : null;
     const size       = activeSize ? activeSize.dataset.size : null;
@@ -300,14 +331,14 @@ function cardAddToCart(productId, productName, productPrice, productImage, shopN
         showToast(`Only ${maxStock} left in stock for size ${size}`, 'error');
         return;
     }
-    quickAddToCart(addBtn, productId, productName, productPrice, productImage, shopName, size, qty);
+    quickAddToCart(addBtn, productId, productName, productPrice, productImage, shopName, shopId, size, qty);
 }
 
-function cardAddToCartNoSize(productId, productName, productPrice, productImage, shopName, addBtn) {
+function cardAddToCartNoSize(productId, productName, productPrice, productImage, shopName, shopId, addBtn) {
     const card  = addBtn.closest('.product-card');
     const qtyEl = card ? card.querySelector('.card-qty-display') : null;
     const qty   = qtyEl ? (parseInt(qtyEl.textContent) || 1) : 1;
-    quickAddToCart(addBtn, productId, productName, productPrice, productImage, shopName, null, qty);
+    quickAddToCart(addBtn, productId, productName, productPrice, productImage, shopName, shopId, null, qty);
 }
 
 async function loadCategories(activeCategoryId) {
@@ -384,7 +415,9 @@ function applyFilters() {
         case 'popular':    filtered.sort((a, b) => (b.orders_count || 0) - (a.orders_count || 0)); break;
     }
 
-    renderProducts(filtered);
+    currentFiltered = filtered;
+    displayLimit = PAGE_SIZE;
+    renderProducts(currentFiltered);
 }
 
 function resetFilters() {
@@ -399,6 +432,8 @@ function resetFilters() {
     const sortBy = document.getElementById('sortBy');
     if (sortBy) sortBy.value = 'featured';
 
-    renderProducts(allProducts);
+    currentFiltered = allProducts.slice();
+    displayLimit = PAGE_SIZE;
+    renderProducts(currentFiltered);
     showToast('Filters reset', 'success');
 }

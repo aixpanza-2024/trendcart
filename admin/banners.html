@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Banners - Admin - TrenCart</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../assets/css/theme.css">
+    <link rel="stylesheet" href="../assets/css/admin.css">
+    <style>
+        .banner-preview-img {
+            width: 100%;
+            height: 110px;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+            background: #f5f5f5;
+        }
+        .banner-card {
+            border: 1px solid #e8e8e8;
+            border-radius: 10px;
+            overflow: hidden;
+            background: #fff;
+            transition: box-shadow 0.2s;
+        }
+        .banner-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.10); }
+        .banner-card-body { padding: 12px; }
+        .banner-card-title { font-size: 13px; font-weight: 600; color: #222; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .banner-card-sub   { font-size: 11px; color: #888; margin-bottom: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .banner-card-actions { display: flex; gap: 6px; }
+        .upload-drop-area {
+            border: 2px dashed #ccc;
+            border-radius: 8px;
+            padding: 28px;
+            text-align: center;
+            cursor: pointer;
+            background: #fafafa;
+            transition: border-color 0.2s;
+        }
+        .upload-drop-area:hover, .upload-drop-area.dragover { border-color: var(--primary-color, #8B5E3C); background: #fdf6f0; }
+        .upload-drop-area img { max-height: 140px; max-width: 100%; border-radius: 6px; margin-top: 10px; }
+        #uploadProgress { display: none; }
+    </style>
+</head>
+<body class="admin-body">
+
+    <nav class="admin-sidebar" id="sidebar"></nav>
+    <div class="admin-overlay" id="overlay"></div>
+
+    <div class="admin-main">
+        <div class="admin-topbar">
+            <div class="d-flex align-items-center gap-3">
+                <button class="menu-toggle" id="menuToggle"><i class="fas fa-bars"></i></button>
+                <h5 class="page-title">Banners</h5>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="openBannerModal()">
+                <i class="fas fa-plus"></i> <span class="d-none d-md-inline">Add Banner</span>
+            </button>
+        </div>
+
+        <div class="admin-content">
+            <div class="admin-card">
+                <div class="admin-card-header">
+                    <h6><i class="fas fa-images me-2"></i>Homepage Banners</h6>
+                    <small class="text-muted">Drag to reorder · shown as carousel on homepage</small>
+                </div>
+                <div class="admin-card-body">
+                    <div class="row g-3" id="bannersGrid">
+                        <div class="col-12 text-center py-4 text-muted" id="emptyState">
+                            <i class="fas fa-images fa-2x mb-2"></i>
+                            <p class="mb-0">No banners yet. Add one to get started.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add / Edit Modal -->
+    <div class="modal fade" id="bannerModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="bannerModalTitle">Add Banner</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="editBannerId">
+
+                    <!-- Image upload -->
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Banner Image <span class="text-danger">*</span></label>
+                        <div class="upload-drop-area" id="dropArea" onclick="document.getElementById('bannerImageInput').click()">
+                            <i class="fas fa-cloud-upload-alt fa-2x text-muted mb-2"></i>
+                            <p class="mb-0 text-muted" id="dropText">Click or drag & drop to upload<br><small>JPG, PNG, WebP · max 5MB · recommended 1200×400px</small></p>
+                            <img id="imagePreview" src="" alt="" style="display:none;">
+                        </div>
+                        <input type="file" id="bannerImageInput" accept="image/*" class="d-none">
+                        <div class="progress mt-2" id="uploadProgress" style="height:4px;">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated" style="width:100%"></div>
+                        </div>
+                        <input type="hidden" id="bannerImageUrl">
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Title <small class="text-muted">(optional)</small></label>
+                            <input type="text" class="form-control" id="bannerTitle" placeholder="e.g. Summer Sale">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Subtitle <small class="text-muted">(optional)</small></label>
+                            <input type="text" class="form-control" id="bannerSubtitle" placeholder="e.g. Up to 50% off">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Link URL <small class="text-muted">(optional)</small></label>
+                            <input type="text" class="form-control" id="bannerLinkUrl" placeholder="e.g. pages/products.html">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Display Order</label>
+                            <input type="number" class="form-control" id="bannerOrder" value="0" min="0">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Status</label>
+                            <select class="form-select" id="bannerActive">
+                                <option value="1">Active</option>
+                                <option value="0">Inactive</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="saveBannerBtn" onclick="saveBanner()">
+                        <i class="fas fa-save me-1"></i> Save Banner
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../assets/js/admin-common.js"></script>
+    <script src="../assets/js/admin-banners.js"></script>
+</body>
+</html>

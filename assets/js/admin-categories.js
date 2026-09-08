@@ -5,8 +5,7 @@
 let allCategories = [];
 
 document.addEventListener('DOMContentLoaded', function () {
-    loadCategories();
-    loadCategoryRequests();
+    window.addEventListener('adminReady', () => { loadCategories(); loadCategoryRequests(); }, { once: true });
 });
 
 async function loadCategories() {
@@ -32,11 +31,15 @@ function renderCategories(categories) {
     tbody.innerHTML = categories.map(c => {
         const parent = c.parent_category_id ? allCategories.find(p => p.category_id == c.parent_category_id) : null;
         const isParent = !c.parent_category_id;
+        const imgSrc = c.category_image ? c.category_image.replace(/^\//, '../') : '';
+        const thumb = imgSrc
+            ? `<img src="${imgSrc}" style="width:32px;height:32px;border-radius:6px;object-fit:cover;margin-right:8px;vertical-align:middle;" onerror="this.style.display='none'">`
+            : `<span style="display:inline-block;width:32px;height:32px;border-radius:6px;background:#f0f0f0;margin-right:8px;vertical-align:middle;text-align:center;line-height:32px;font-size:13px;color:#999;"><i class="fas fa-image"></i></span>`;
         return `
             <tr>
                 <td>
                     ${c.parent_category_id ? '<span class="text-muted me-2">└</span>' : ''}
-                    <strong>${c.category_name}</strong>
+                    ${thumb}<strong>${c.category_name}</strong>
                 </td>
                 <td>${parent ? parent.category_name : '-'}</td>
                 <td class="hide-mobile">${c.product_count || 0}</td>
@@ -87,20 +90,49 @@ function openCategoryModal(category) {
     const isEditing = !!category;
     const hasSub = isEditing && !!category.parent_category_id;
 
-    // Show/hide type toggle only for new categories
     document.getElementById('categoryTypeRow').style.display = isEditing ? 'none' : '';
+    document.getElementById('editCategoryId').value       = isEditing ? category.category_id : '';
+    document.getElementById('categoryName').value         = isEditing ? category.category_name : '';
+    document.getElementById('categoryDescription').value  = isEditing ? (category.category_description || '') : '';
+    document.getElementById('displayOrder').value         = isEditing ? (category.display_order || 0) : 0;
+    document.getElementById('catImageFile').value         = '';
+    document.getElementById('catImageUrl').value          = isEditing ? (category.category_image || '') : '';
 
-    document.getElementById('editCategoryId').value = isEditing ? category.category_id : '';
-    document.getElementById('categoryName').value = isEditing ? category.category_name : '';
-    document.getElementById('categoryDescription').value = isEditing ? (category.category_description || '') : '';
-    document.getElementById('displayOrder').value = isEditing ? (category.display_order || 0) : 0;
-
-    setCategoryType(hasSub);
-    if (hasSub) {
-        document.getElementById('parentCategory').value = category.parent_category_id;
+    // Show existing image preview when editing
+    const previewWrap = document.getElementById('catImgPreviewWrap');
+    const previewImg  = document.getElementById('catImgPreview');
+    if (isEditing && category.category_image) {
+        previewImg.src = category.category_image.replace(/^\//, '../');
+        previewWrap.style.display = 'flex';
+    } else {
+        previewWrap.style.display = 'none';
+        previewImg.src = '';
     }
 
+    setCategoryType(hasSub);
+    if (hasSub) document.getElementById('parentCategory').value = category.parent_category_id;
+
     new bootstrap.Modal(document.getElementById('categoryModal')).show();
+}
+
+function previewCatImage(input) {
+    const previewWrap = document.getElementById('catImgPreviewWrap');
+    const previewImg  = document.getElementById('catImgPreview');
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = e => {
+            previewImg.src = e.target.result;
+            previewWrap.style.display = 'flex';
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+function removeCatImage() {
+    document.getElementById('catImageFile').value = '';
+    document.getElementById('catImageUrl').value  = '';
+    document.getElementById('catImgPreview').src  = '';
+    document.getElementById('catImgPreviewWrap').style.display = 'none';
 }
 
 function editCategory(categoryId) {
@@ -121,8 +153,8 @@ function addSubcategory(parentId) {
 }
 
 async function saveCategory() {
-    const id = document.getElementById('editCategoryId').value;
-    const isSub = document.getElementById('parentCategoryRow').style.display !== 'none';
+    const id      = document.getElementById('editCategoryId').value;
+    const isSub   = document.getElementById('parentCategoryRow').style.display !== 'none';
     const parentVal = document.getElementById('parentCategory').value;
 
     if (!document.getElementById('categoryName').value.trim()) {
@@ -134,22 +166,41 @@ async function saveCategory() {
         return;
     }
 
-    const data = {
-        category_name: document.getElementById('categoryName').value.trim(),
-        parent_category_id: isSub ? parentVal : null,
-        category_description: document.getElementById('categoryDescription').value.trim(),
-        display_order: document.getElementById('displayOrder').value || 0
-    };
-
-    if (id) data.category_id = id;
-
-    const url = id ? '../api/admin/update-category.php' : '../api/admin/create-category.php';
+    const saveBtn = document.querySelector('#categoryModal .btn-primary');
+    const origLabel = saveBtn ? saveBtn.innerHTML : '';
+    if (saveBtn) { saveBtn.disabled = true; saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Saving...'; }
 
     try {
+        // Upload new image if one was selected
+        let imageUrl = document.getElementById('catImageUrl').value || null;
+        const fileInput = document.getElementById('catImageFile');
+        if (fileInput.files && fileInput.files[0]) {
+            const fd = new FormData();
+            fd.append('image', fileInput.files[0]);
+            const upRes = await fetch('../api/admin/upload-category-image.php', { method: 'POST', body: fd });
+            const upData = await upRes.json();
+            if (!upData.success) {
+                adminToast(upData.message || 'Image upload failed', 'error');
+                if (saveBtn) { saveBtn.disabled = false; saveBtn.innerHTML = origLabel; }
+                return;
+            }
+            imageUrl = upData.image_url;
+        }
+
+        const data = {
+            category_name:        document.getElementById('categoryName').value.trim(),
+            parent_category_id:   isSub ? parentVal : null,
+            category_description: document.getElementById('categoryDescription').value.trim(),
+            display_order:        document.getElementById('displayOrder').value || 0,
+            category_image:       imageUrl,
+        };
+        if (id) data.category_id = id;
+
+        const url = id ? '../api/admin/update-category.php' : '../api/admin/create-category.php';
         const result = await adminAPI(url, {
-            method: 'POST',
+            method:  'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
+            body:    JSON.stringify(data),
         });
 
         if (result.success) {
@@ -161,6 +212,8 @@ async function saveCategory() {
         }
     } catch (e) {
         adminToast('Failed to save category', 'error');
+    } finally {
+        if (saveBtn) { saveBtn.disabled = false; saveBtn.innerHTML = origLabel; }
     }
 }
 

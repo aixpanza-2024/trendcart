@@ -72,7 +72,7 @@
 
             <!-- Summary Cards -->
             <div class="row g-3 mb-4">
-                <div class="col-md-4">
+                <div class="col-md-2 col-sm-6">
                     <div class="admin-stat-card">
                         <div class="stat-icon"><i class="fas fa-shopping-bag"></i></div>
                         <div class="stat-info">
@@ -81,7 +81,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3 col-sm-6">
                     <div class="admin-stat-card">
                         <div class="stat-icon"><i class="fas fa-rupee-sign"></i></div>
                         <div class="stat-info">
@@ -90,12 +90,30 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-2 col-sm-6">
                     <div class="admin-stat-card">
                         <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
                         <div class="stat-info">
                             <div class="stat-value" id="statDelivered">—</div>
                             <div class="stat-label">Delivered</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-2 col-sm-6">
+                    <div class="admin-stat-card">
+                        <div class="stat-icon" style="background:rgba(13,110,253,.1);color:#0d6efd;"><i class="fas fa-truck"></i></div>
+                        <div class="stat-info">
+                            <div class="stat-value" id="statDeliveryFees">—</div>
+                            <div class="stat-label">Delivery Fees</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-sm-6">
+                    <div class="admin-stat-card">
+                        <div class="stat-icon" style="background:rgba(25,135,84,.1);color:#198754;"><i class="fas fa-hand-holding-usd"></i></div>
+                        <div class="stat-info">
+                            <div class="stat-value" id="statHandlingFees">—</div>
+                            <div class="stat-label">Handling Fees</div>
                         </div>
                     </div>
                 </div>
@@ -120,7 +138,10 @@
                                     <th>Customer</th>
                                     <th>Shops</th>
                                     <th>Items</th>
-                                    <th>Amount</th>
+                                    <th>Subtotal</th>
+                                    <th>Delivery</th>
+                                    <th>Handling</th>
+                                    <th>Total</th>
                                     <th>Payment</th>
                                     <th>Status</th>
                                 </tr>
@@ -180,9 +201,12 @@
             renderTable(reportData);
 
             const delivered = reportData.filter(o => o.order_status === 'delivered').length;
-            document.getElementById('statOrders').textContent   = data.total_orders;
-            document.getElementById('statRevenue').textContent  = '₹' + parseFloat(data.total_revenue).toLocaleString('en-IN', {minimumFractionDigits:2});
-            document.getElementById('statDelivered').textContent = delivered;
+            const fmt = v => '₹' + parseFloat(v||0).toLocaleString('en-IN', {minimumFractionDigits:2});
+            document.getElementById('statOrders').textContent        = data.total_orders;
+            document.getElementById('statRevenue').textContent       = fmt(data.total_revenue);
+            document.getElementById('statDelivered').textContent     = delivered;
+            document.getElementById('statDeliveryFees').textContent  = fmt(data.total_delivery_fees);
+            document.getElementById('statHandlingFees').textContent  = fmt(data.total_handling_fees);
 
         } catch (err) {
             alert('Error: ' + err.message);
@@ -207,7 +231,11 @@
             return `<span class="badge bg-${map[s]||'secondary'} text-capitalize">${s}</span>`;
         };
 
-        tbody.innerHTML = orders.map(o => `
+        const fmtAmt = v => '₹' + parseFloat(v||0).toLocaleString('en-IN', {minimumFractionDigits:2});
+        tbody.innerHTML = orders.map(o => {
+            const delivery = parseFloat(o.shipping_amount||0);
+            const handling = parseFloat(o.handling_fee||0);
+            return `
             <tr>
                 <td><span class="fw-semibold">${o.order_number}</span></td>
                 <td>${new Date(o.order_date).toLocaleDateString('en-IN')}</td>
@@ -217,10 +245,14 @@
                 </td>
                 <td><small>${o.shops || '—'}</small></td>
                 <td class="text-center">${o.item_count}</td>
-                <td>₹${parseFloat(o.total_amount).toLocaleString('en-IN', {minimumFractionDigits:2})}</td>
+                <td>${fmtAmt(o.subtotal)}</td>
+                <td>${delivery > 0 ? fmtAmt(delivery) : '<span class="text-success small fw-semibold">FREE</span>'}</td>
+                <td>${handling > 0 ? fmtAmt(handling) : '<span class="text-muted small">—</span>'}</td>
+                <td><strong>${fmtAmt(o.total_amount)}</strong></td>
                 <td><span class="text-capitalize">${o.payment_method}</span></td>
                 <td>${statusBadge(o.order_status)}</td>
-            </tr>`).join('');
+            </tr>`;
+        }).join('');
 
         wrap.style.display = '';
     }
@@ -235,7 +267,7 @@
 
     function exportCSV() {
         if (!reportData.length) { alert('No data to export'); return; }
-        const headers = ['Order #','Date','Customer','Email','Shops','Items','Amount','Payment','Status'];
+        const headers = ['Order #','Date','Customer','Email','Shops','Items','Subtotal','Delivery Fee','Handling Fee','Total','Payment','Status'];
         const rows = reportData.map(o => [
             o.order_number,
             new Date(o.order_date).toLocaleDateString('en-IN'),
@@ -243,6 +275,9 @@
             o.customer_email || '',
             o.shops || '',
             o.item_count,
+            parseFloat(o.subtotal||0).toFixed(2),
+            parseFloat(o.shipping_amount||0).toFixed(2),
+            parseFloat(o.handling_fee||0).toFixed(2),
             parseFloat(o.total_amount).toFixed(2),
             o.payment_method,
             o.order_status

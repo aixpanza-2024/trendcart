@@ -73,7 +73,7 @@ try {
         default:           $sql .= " ORDER BY p.is_featured DESC, p.created_at DESC";
     }
 
-    $sql .= " LIMIT 60";
+    $sql .= " LIMIT 500";
 
     $stmt = $conn->prepare($sql);
     foreach ($params as $key => $val) {

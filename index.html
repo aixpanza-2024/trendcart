@@ -63,14 +63,44 @@
         </div>
     </nav>
 
-    <!-- Hero Section -->
-    <section class="hero-section">
-        <div class="hero-content">
-            <h1>Welcome to TrenCart</h1>
-            <p>Discover premium dress materials and fabrics from the finest shops</p>
-            <a href="pages/shops.html" class="btn btn-light btn-lg">
-                Explore Shops <i class="fas fa-arrow-right ms-2"></i>
-            </a>
+    <!-- Category Circles Section -->
+    <section class="cat-circles-section">
+        <div class="cat-scroll-track" id="catScrollTrack">
+            <!-- Loaded dynamically -->
+        </div>
+    </section>
+
+    <!-- Hero Banner Carousel -->
+    <section class="hb-section" id="heroBannerSection">
+        <div class="hb-wrap" id="hbWrap">
+            <div class="hb-track" id="hbTrack">
+                <div class="hb-slide hb-fallback">
+                    <div class="hb-fallback-inner">
+                        <img src="assets/images/trencartlogo.png" alt="TrenCart" style="max-height:90px;max-width:70%;object-fit:contain;">
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="hb-dots" id="hbDots"></div>
+    </section>
+
+    <!-- New Arrivals Section -->
+    <section class="na-section">
+        <div class="container">
+            <div class="section-title">
+                <h2>New Arrivals</h2>
+                <p>Fresh styles just added &mdash; be the first to explore</p>
+            </div>
+
+            <div class="na-scroll-track" id="newArrivalsTrack">
+                <!-- Loaded dynamically by home.js -->
+            </div>
+
+            <div class="text-center mt-4">
+                <a href="pages/products.html?sort=newest" class="btn btn-outline-primary btn-lg">
+                    Explore All Products <i class="fas fa-arrow-right ms-2"></i>
+                </a>
+            </div>
         </div>
     </section>
 
@@ -89,26 +119,6 @@
             <div class="text-center mt-5">
                 <a href="pages/shops.html" class="btn btn-outline-primary btn-lg">
                     View All Shops <i class="fas fa-store ms-2"></i>
-                </a>
-            </div>
-        </div>
-    </section>
-
-    <!-- New Arrivals Section -->
-    <section class="na-section">
-        <div class="container">
-            <div class="section-title">
-                <h2>New Arrivals</h2>
-                <p>Fresh styles just added &mdash; be the first to explore</p>
-            </div>
-
-            <div class="na-scroll-track" id="newArrivalsTrack">
-                <!-- Loaded dynamically by home.js -->
-            </div>
-
-            <div class="text-center mt-4">
-                <a href="pages/products.html?sort=newest" class="btn btn-outline-light btn-lg">
-                    Explore All Products <i class="fas fa-arrow-right ms-2"></i>
                 </a>
             </div>
         </div>
@@ -194,6 +204,349 @@
     <script src="assets/js/cart.js"></script>
     <script src="assets/js/auth.js"></script>
     <script src="assets/js/home.js"></script>
+
+    <style>
+        /* ── Hero Banner Carousel ── */
+        .hb-section {
+            padding: 0;
+        }
+        .hb-wrap {
+            overflow: hidden;
+            width: 100%;
+        }
+        .hb-track {
+            display: flex;
+            transition: transform 0.5s cubic-bezier(.4,0,.2,1);
+            will-change: transform;
+        }
+        .hb-slide {
+            flex: 0 0 100%;
+            box-sizing: border-box;
+        }
+        .hb-slide-inner {
+            overflow: hidden;
+            position: relative;
+            height: 200px;
+        }
+        .hb-slide a { display: block; height: 100%; }
+        .hb-slide img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        .hb-caption {
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            padding: 10px 14px;
+            background: linear-gradient(transparent, rgba(0,0,0,0.52));
+            color: #fff;
+        }
+        .hb-caption h6    { font-size: 13px; font-weight: 700; margin: 0 0 2px; text-shadow: 0 1px 3px rgba(0,0,0,.5); }
+        .hb-caption small { font-size: 11px; opacity: .9; }
+        .hb-fallback { flex: 0 0 100%; }
+        .hb-fallback-inner {
+            height: 200px;
+            background: #111;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .hb-dots {
+            display: flex; justify-content: center; gap: 6px;
+            padding: 8px 0 2px;
+        }
+        .hb-dot {
+            width: 20px; height: 4px; border-radius: 2px;
+            background: #ccc; border: none; cursor: pointer; padding: 0;
+            transition: background .25s, width .25s;
+        }
+        .hb-dot.active { background: #8B5E3C; width: 32px; }
+        @media (max-width: 575px) {
+            .hb-slide-inner, .hb-fallback-inner { height: 155px; }
+            .hb-fallback-inner h1 { font-size: 1.3rem; }
+            .hb-fallback-inner p  { font-size: 0.88rem; }
+        }
+
+        /* ── Category Circles ── */
+        .cat-circles-section {
+            background: #fff;
+            padding: 10px 0;
+            border-bottom: 1px solid #f0f0f0;
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        .cat-scroll-track {
+            display: flex;
+            overflow-x: auto;
+            scroll-behavior: smooth;
+            gap: 4px;
+            padding: 4px 12px;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+            flex: 1;
+        }
+        .cat-scroll-track::-webkit-scrollbar { display: none; }
+        .cat-circle-item {
+            flex: 0 0 auto;
+            width: 76px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-decoration: none;
+            color: inherit;
+            cursor: pointer;
+            padding: 4px 2px;
+        }
+        .cat-circle-item:hover .cat-circle {
+            border-color: var(--primary-color, #8B5E3C);
+            transform: scale(1.06);
+        }
+        .cat-circle {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 2px solid #e8e8e8;
+            background: #f5f5f5;
+            transition: border-color 0.2s, transform 0.2s;
+            flex-shrink: 0;
+        }
+        .cat-circle img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .cat-circle-placeholder {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f0ebe5;
+            color: #a08060;
+            font-size: 22px;
+        }
+        .cat-name {
+            margin-top: 5px;
+            font-size: 10.5px;
+            font-weight: 600;
+            text-align: center;
+            color: #333;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 74px;
+            line-height: 1.2;
+        }
+        .cat-scroll-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 2;
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 50%;
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+            font-size: 11px;
+            color: #555;
+            transition: background 0.2s;
+        }
+        .cat-scroll-btn:hover { background: #f5f5f5; }
+        .cat-scroll-left { left: 8px; }
+        .cat-scroll-right { right: 8px; }
+        @media (max-width: 767px) {
+            .cat-circle { width: 52px; height: 52px; }
+            .cat-circle-item { width: 66px; }
+            .cat-scroll-btn { display: none; }
+            .cat-scroll-track { padding: 4px 10px; }
+        }
+    </style>
+
+    <script>
+        (function initHeroBanners() {
+            const wrap   = document.getElementById('hbWrap');
+            const track  = document.getElementById('hbTrack');
+            const dotsEl = document.getElementById('hbDots');
+            let original = [], current = 0, autoTimer;
+
+            function slideHTML(b) {
+                const src   = b.image_url.replace(/^\//, '');
+                const img   = `<img src="${src}" alt="${b.title || 'Banner'}" loading="lazy">`;
+                const inner = b.link_url ? `<a href="${b.link_url}">${img}</a>` : img;
+                return `<div class="hb-slide"><div class="hb-slide-inner">${inner}</div></div>`;
+            }
+
+            function render() {
+                // Clone first slide at end for seamless loop
+                const list = [...original, original[0]];
+                track.innerHTML = list.map(b => slideHTML(b)).join('');
+                renderDots();
+                jumpTo(0);
+            }
+
+            function renderDots() {
+                dotsEl.innerHTML = original.map((_, i) =>
+                    `<button class="hb-dot${i === 0 ? ' active' : ''}" data-i="${i}"></button>`
+                ).join('');
+                dotsEl.querySelectorAll('.hb-dot').forEach(d =>
+                    d.addEventListener('click', () => { animateTo(+d.dataset.i); startAuto(); })
+                );
+            }
+
+            function jumpTo(page) {
+                current = page;
+                track.style.transition = 'none';
+                track.style.transform  = `translateX(-${current * wrap.offsetWidth}px)`;
+                updateDots();
+            }
+
+            function animateTo(page) {
+                current = page;
+                track.style.transition = 'transform 0.5s cubic-bezier(.4,0,.2,1)';
+                track.style.transform  = `translateX(-${current * wrap.offsetWidth}px)`;
+                updateDots();
+            }
+
+            function updateDots() {
+                const dot = current % original.length;
+                dotsEl.querySelectorAll('.hb-dot').forEach((d, i) =>
+                    d.classList.toggle('active', i === dot)
+                );
+            }
+
+            // Seamless loop: when clone finishes animating, snap back to real first slide
+            track.addEventListener('transitionend', () => {
+                if (current >= original.length) jumpTo(0);
+            });
+
+            function startAuto() {
+                clearInterval(autoTimer);
+                autoTimer = setInterval(() => animateTo(current + 1), 4500);
+            }
+
+            window.addEventListener('resize', () => jumpTo(current % original.length));
+
+            // ── Touch / Mouse drag to swipe ──
+            let dragStartX = null, dragStartY = null, dragging = false;
+            const SWIPE_THRESHOLD = 50;
+
+            function onDragStart(x, y) {
+                dragStartX = x;
+                dragStartY = y;
+                dragging   = false;
+                clearInterval(autoTimer);
+                track.style.transition = 'none';
+            }
+
+            function onDragMove(x) {
+                if (dragStartX === null) return;
+                dragging = true;
+                const delta = x - dragStartX;
+                track.style.transform = `translateX(${-current * wrap.offsetWidth + delta}px)`;
+            }
+
+            function onDragEnd(x, y) {
+                if (dragStartX === null) return;
+                const dx   = x - dragStartX;
+                const dy   = y - (dragStartY || y);
+                dragStartX = null;
+                dragStartY = null;
+
+                // Ignore if primarily a vertical scroll
+                if (Math.abs(dy) > Math.abs(dx)) {
+                    jumpTo(current);
+                    startAuto();
+                    return;
+                }
+
+                if (dx < -SWIPE_THRESHOLD) {
+                    animateTo(current + 1);
+                } else if (dx > SWIPE_THRESHOLD) {
+                    animateTo(current > 0 ? current - 1 : original.length - 1);
+                } else {
+                    jumpTo(current); // snap back
+                }
+                startAuto();
+            }
+
+            // Touch events
+            wrap.addEventListener('touchstart', e => onDragStart(e.touches[0].clientX, e.touches[0].clientY), { passive: true });
+            wrap.addEventListener('touchmove',  e => {
+                if (dragStartX !== null && Math.abs(e.touches[0].clientX - dragStartX) > Math.abs(e.touches[0].clientY - (dragStartY||0))) {
+                    e.preventDefault();
+                }
+                onDragMove(e.touches[0].clientX);
+            }, { passive: false });
+            wrap.addEventListener('touchend',   e => onDragEnd(e.changedTouches[0].clientX, e.changedTouches[0].clientY));
+
+            // Mouse events
+            wrap.addEventListener('mousedown',  e => { onDragStart(e.clientX, e.clientY); wrap.style.cursor = 'grabbing'; });
+            window.addEventListener('mousemove', e => { if (dragStartX !== null) onDragMove(e.clientX); });
+            window.addEventListener('mouseup',   e => { if (dragStartX !== null) { onDragEnd(e.clientX, e.clientY); wrap.style.cursor = ''; } });
+            wrap.style.cursor = 'grab';
+            // Prevent ghost image drag on links/images inside slider
+            wrap.addEventListener('dragstart', e => e.preventDefault());
+
+            fetch('api/customer/banners.php')
+                .then(r => r.json())
+                .then(res => {
+                    if (!res.success || !res.data.length) return;
+                    original = res.data;
+                    render();
+                    startAuto();
+                })
+                .catch(() => {});
+        })();
+
+        (function loadCategoryCircles() {
+            fetch('api/customer/categories.php')
+                .then(r => r.json())
+                .then(res => {
+                    if (!res.success || !res.data.length) {
+                        document.querySelector('.cat-circles-section').style.display = 'none';
+                        return;
+                    }
+                    const track = document.getElementById('catScrollTrack');
+                    const avatarColors = ['#E53935','#8E24AA','#1E88E5','#00897B','#F4511E','#6D4C41','#3949AB','#039BE5','#43A047','#D81B60','#F9A825','#546E7A'];
+                    function catAvatar(name) {
+                        const color = avatarColors[name.charCodeAt(0) % avatarColors.length];
+                        return `<div class="cat-circle-placeholder" style="background:${color};color:#fff;font-size:22px;font-weight:700;font-family:sans-serif;">${name.charAt(0).toUpperCase()}</div>`;
+                    }
+                    const items = res.data.map(cat => {
+                        const inner = cat.category_image
+                            ? `<img src="${cat.category_image.replace(/^\//, '')}" alt="${cat.category_name}" loading="lazy" data-fallback="${cat.category_name}">`
+                            : catAvatar(cat.category_name);
+                        return `
+                            <a class="cat-circle-item" href="pages/products.html?category_id=${cat.category_id}">
+                                <div class="cat-circle">${inner}</div>
+                                <span class="cat-name">${cat.category_name}</span>
+                            </a>`;
+                    });
+                    track.innerHTML = items.join('');
+                    track.querySelectorAll('img[data-fallback]').forEach(img => {
+                        img.addEventListener('error', function() {
+                            this.replaceWith(document.createRange().createContextualFragment(catAvatar(this.dataset.fallback)));
+                        });
+                    });
+                })
+                .catch(() => {
+                    document.querySelector('.cat-circles-section').style.display = 'none';
+                });
+        })();
+
+        function scrollCategories(dir) {
+            const track = document.getElementById('catScrollTrack');
+            track.scrollBy({ left: dir * 300, behavior: 'smooth' });
+        }
+    </script>
 
 </body>
 </html>

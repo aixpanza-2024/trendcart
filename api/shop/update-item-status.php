@@ -96,7 +96,8 @@ try {
             $newOrderStatus = array_search($minPri, $priority);
         }
 
-        $updO = $conn->prepare("UPDATE orders SET order_status = :status WHERE order_id = :oid");
+        $deliveredStamp = $newOrderStatus === 'delivered' ? ', delivered_at = NOW()' : '';
+        $updO = $conn->prepare("UPDATE orders SET order_status = :status{$deliveredStamp} WHERE order_id = :oid");
         $updO->bindValue(':status', $newOrderStatus);
         $updO->bindValue(':oid', (int)$syncRow['order_id'], PDO::PARAM_INT);
         $updO->execute();

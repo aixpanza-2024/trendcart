@@ -136,6 +136,8 @@ function renderAdminSidebar() {
         { href: 'payments.html',  icon: 'fa-rupee-sign',     label: 'Shop Payments' },
         { href: 'reports.html',   icon: 'fa-file-alt',       label: 'Reports' },
         { section: 'Config' },
+        { href: 'banners.html',         icon: 'fa-images',       label: 'Banners' },
+        { href: 'delivery-zones.html',  icon: 'fa-map-marked-alt', label: 'Delivery Zones' },
         { href: 'settings.html',  icon: 'fa-cog',            label: 'Settings' },
         { divider: true },
         { href: '../index.html',  icon: 'fa-globe',          label: 'View Website' },
@@ -211,6 +213,9 @@ async function checkAdminAuth() {
         loadSidebarBadges();
         startAdminOrderNotifications();
         _requestAdminNotifPermission();
+
+        // Signal page-specific JS that auth is confirmed and session lock is released
+        window.dispatchEvent(new Event('adminReady'));
     } catch (e) {
         console.error('Auth check failed:', e);
         window.location.href = '../pages/login.html';

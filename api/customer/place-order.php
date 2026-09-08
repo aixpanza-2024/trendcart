@@ -134,9 +134,79 @@ try {
         exit;
     }
 
-    $tax_amount      = 0.00;
-    $shipping_amount = 0.00; // Free shipping always
-    $total_amount    = round($subtotal + $shipping_amount, 2);
+    $tax_amount        = 0.00;
+    $order_pincode     = trim($shipping['pincode']);
+    $delivery_zone_name = '';
+
+    // Load platform settings: handling_fee + first_order_free_delivery
+    $psStmt2 = $conn->query(
+        "SELECT setting_key, setting_value FROM platform_settings
+         WHERE setting_key IN ('handling_fee', 'first_order_free_delivery')"
+    );
+    $psRows2 = $psStmt2->fetchAll(PDO::FETCH_KEY_PAIR);
+    $handling_fee_amount       = (float)($psRows2['handling_fee'] ?? 0);
+    $first_order_free_delivery = (int)($psRows2['first_order_free_delivery'] ?? 1) === 1;
+
+    // Check if this is the customer's first order (server-side — never trust client)
+    $orderCountStmt = $conn->prepare(
+        "SELECT COUNT(*) FROM orders WHERE customer_id = :id AND order_status != 'cancelled'"
+    );
+    $orderCountStmt->bindValue(':id', $customer_id, PDO::PARAM_INT);
+    $orderCountStmt->execute();
+    $is_first_order = (int)$orderCountStmt->fetchColumn() === 0;
+
+    // Determine delivery fee — compare customer zone vs shop zone
+    $zStmt = $conn->prepare("
+        SELECT z.zone_id, z.delivery_fee, z.zone_name
+        FROM delivery_pincodes dp
+        INNER JOIN delivery_zones z ON dp.zone_id = z.zone_id
+        WHERE dp.pincode = :pin AND z.is_active = 1
+        LIMIT 1
+    ");
+    $zStmt->bindValue(':pin', $order_pincode);
+    $zStmt->execute();
+    $zRow = $zStmt->fetch();
+
+    if ($zRow) {
+        $customer_zone_id   = (int)$zRow['zone_id'];
+        $shipping_amount    = (float)$zRow['delivery_fee'];
+        $delivery_zone_name = $zRow['zone_name'];
+    } else {
+        $defStmt = $conn->query("SELECT zone_id, delivery_fee, zone_name FROM delivery_zones WHERE is_default_zone = 1 AND is_active = 1 LIMIT 1");
+        $defRow  = $defStmt->fetch();
+        // Use -1 so it never matches the shop's zone — ensures default fee is charged
+        $customer_zone_id   = -1;
+        $shipping_amount    = $defRow ? (float)$defRow['delivery_fee'] : 49.00;
+        $delivery_zone_name = $defRow ? $defRow['zone_name'] : '';
+    }
+
+    // Look up shop's zone using first validated item's shop_id
+    $shop_id_for_zone = $validated_items[0]['shop_id'] ?? 0;
+    if ($shop_id_for_zone > 0) {
+        $shopZoneStmt = $conn->prepare("
+            SELECT z.zone_id
+            FROM shops s
+            INNER JOIN delivery_pincodes dp ON dp.pincode = s.shop_pincode
+            INNER JOIN delivery_zones z    ON dp.zone_id  = z.zone_id
+            WHERE s.shop_id = :sid AND z.is_active = 1
+            LIMIT 1
+        ");
+        $shopZoneStmt->bindValue(':sid', $shop_id_for_zone, PDO::PARAM_INT);
+        $shopZoneStmt->execute();
+        $shopZoneRow = $shopZoneStmt->fetch();
+        // Free only when shop pincode is known AND customer is in the same zone
+        if ($shopZoneRow && (int)$shopZoneRow['zone_id'] === $customer_zone_id) {
+            $shipping_amount = 0.00;
+        }
+    }
+
+    // First order: override delivery to free
+    if ($is_first_order && $first_order_free_delivery) {
+        $shipping_amount    = 0.00;
+        $delivery_zone_name = ($delivery_zone_name ? $delivery_zone_name . ' ' : '') . '(First Order - Free)';
+    }
+
+    $total_amount = round($subtotal + $shipping_amount + $handling_fee_amount, 2);
 
     // Generate unique order number: TC + YYYYMMDD + 4-digit random
     do {
@@ -199,21 +269,23 @@ try {
     // Insert order
     $oStmt = $conn->prepare(
         "INSERT INTO orders
-            (order_number, customer_id, subtotal, tax_amount, shipping_amount, total_amount,
+            (order_number, customer_id, subtotal, tax_amount, shipping_amount, delivery_zone, handling_fee, total_amount,
              order_status, payment_status, payment_method,
              shipping_name, shipping_email, shipping_phone,
              shipping_address, shipping_city, shipping_state, shipping_pincode)
          VALUES
-            (:order_number, :customer_id, :subtotal, :tax, :shipping_amount, :total,
+            (:order_number, :customer_id, :subtotal, :tax, :shipping_amount, :delivery_zone, :handling_fee, :total,
              'pending', 'pending', :payment_method,
              :sname, :semail, :sphone,
              :saddress, :scity, :sstate, :spincode)"
     );
     $oStmt->bindValue(':order_number',   $order_number);
-    $oStmt->bindValue(':customer_id',    $customer_id,                    PDO::PARAM_INT);
+    $oStmt->bindValue(':customer_id',    $customer_id,        PDO::PARAM_INT);
     $oStmt->bindValue(':subtotal',       $subtotal);
     $oStmt->bindValue(':tax',            $tax_amount);
     $oStmt->bindValue(':shipping_amount',$shipping_amount);
+    $oStmt->bindValue(':delivery_zone',  $delivery_zone_name ?: null);
+    $oStmt->bindValue(':handling_fee',   $handling_fee_amount);
     $oStmt->bindValue(':total',          $total_amount);
     $oStmt->bindValue(':payment_method', $payment_method);
     $oStmt->bindValue(':sname',          trim($shipping['full_name']));
