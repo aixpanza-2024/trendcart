@@ -28,3 +28,4 @@ uploads/categories/*
 # OS files
 .DS_Store
 Thumbs.db
+api/config/database.php
