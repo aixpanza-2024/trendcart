@@ -21,7 +21,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 $customer_id = (int)$_SESSION['user_id'];
-require_once '../config/database.php';
+require_once __DIR__ . '/../config/database.php';
 
 $input = json_decode(file_get_contents('php://input'), true);
 if (!$input) {

@@ -37,7 +37,7 @@ if ($order_item_id <= 0 || $rating < 1 || $rating > 5) {
     exit;
 }
 
-require_once '../config/database.php';
+require_once __DIR__ . '/../config/database.php';
 
 try {
     $database = new Database();
