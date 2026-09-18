@@ -1,5 +1,8 @@
 ---
+# NOTE: this file is branch-specific. On the appaddon branch it deploys to
+# the staging subdomain, NOT the live production path — that's deliberate,
+# so deploying this branch can never overwrite the live site.
 deployment:
   tasks:
-    - export DEPLOYPATH=/home/notechin/public_html/trencart.com
+    - export DEPLOYPATH=/home/notechin/public_html/staging.trencart.com
     - /bin/cp -R . $DEPLOYPATH
