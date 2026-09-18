@@ -1,10 +1,13 @@
 ---
 # NOTE: this file is branch-specific. On the appaddon branch it deploys to
-# a staging folder under aksuperspeciality.com, NOT the live production
-# path — that's deliberate, so deploying this branch can never overwrite
-# the live site. The repo clone path and DEPLOYPATH are the same folder
-# here, so rsync (not cp) is used — cp -R errors when source == destination.
+# a staging folder under aksuperspeciality.com's actual document root
+# (public_html/aksuperspeciality.com), NOT the live production path —
+# that's deliberate, so deploying this branch can never overwrite the
+# live site. The repo clone itself lives at a different, non-public path
+# (/home/notechin/aksuperspeciality.com/trencartapp); this task copies
+# the checked-out files from there into the real web-servable folder.
 deployment:
   tasks:
-    - export DEPLOYPATH=/home/notechin/aksuperspeciality.com/trencartapp
+    - export DEPLOYPATH=/home/notechin/public_html/aksuperspeciality.com/trencartapp
+    - /bin/mkdir -p "$DEPLOYPATH"
     - /usr/bin/rsync -a --exclude='.git' ./ "$DEPLOYPATH/"
