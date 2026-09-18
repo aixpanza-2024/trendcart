@@ -2,12 +2,67 @@
  * Shop Profile Management
  */
 
+let shopMap, shopMarker;
+
 document.addEventListener('DOMContentLoaded', function () {
     checkShopAuth();
+    initShopLocationMap();
     loadProfile();
 
     document.getElementById('profileForm').addEventListener('submit', saveProfile);
 });
+
+/* ---- Location Map ---- */
+
+function initShopLocationMap() {
+    shopMap = L.map('shopLocationMap').setView([20.5937, 78.9629], 5); // India-wide default view
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors',
+        maxZoom: 19,
+    }).addTo(shopMap);
+
+    shopMap.on('click', function (e) {
+        setShopLocationMarker(e.latlng.lat, e.latlng.lng);
+    });
+}
+
+function setShopLocationMarker(lat, lng, recenter) {
+    document.getElementById('shopLatitude').value  = lat;
+    document.getElementById('shopLongitude').value = lng;
+    document.getElementById('shopLocationStatus').textContent =
+        `Location set: ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+
+    if (shopMarker) {
+        shopMarker.setLatLng([lat, lng]);
+    } else {
+        shopMarker = L.marker([lat, lng], { draggable: true }).addTo(shopMap);
+        shopMarker.on('dragend', function () {
+            const pos = shopMarker.getLatLng();
+            setShopLocationMarker(pos.lat, pos.lng);
+        });
+    }
+
+    if (recenter) {
+        shopMap.setView([lat, lng], 16);
+    }
+}
+
+function useCurrentLocation() {
+    if (!navigator.geolocation) {
+        showToast('Geolocation is not supported by this browser', 'error');
+        return;
+    }
+    document.getElementById('shopLocationStatus').textContent = 'Getting your location...';
+    navigator.geolocation.getCurrentPosition(
+        function (pos) {
+            setShopLocationMarker(pos.coords.latitude, pos.coords.longitude, true);
+        },
+        function () {
+            document.getElementById('shopLocationStatus').textContent = 'No location set yet.';
+            showToast('Could not get your current location', 'error');
+        }
+    );
+}
 
 async function checkShopAuth() {
     try {
@@ -72,6 +127,11 @@ function fillProfile(p) {
     document.getElementById('ownerName').value  = p.full_name || '';
     document.getElementById('ownerEmail').value = p.email || '';
     document.getElementById('ownerPhone').value = p.phone || '';
+
+    // Location
+    if (p.latitude !== null && p.latitude !== undefined && p.longitude !== null && p.longitude !== undefined) {
+        setShopLocationMarker(parseFloat(p.latitude), parseFloat(p.longitude), true);
+    }
 
     // Stats
     document.getElementById('statProducts').textContent = p.total_products || 0;
@@ -152,6 +212,8 @@ async function saveProfile(e) {
         shop_state:       document.getElementById('shopState').value.trim(),
         shop_pincode:     document.getElementById('shopPincode').value.trim(),
         owner_phone:      document.getElementById('ownerPhone').value.trim(),
+        latitude:         document.getElementById('shopLatitude').value || null,
+        longitude:        document.getElementById('shopLongitude').value || null,
     };
 
     if (!data.shop_name) {

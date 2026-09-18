@@ -118,6 +118,22 @@
                                 </select>
                                 <div class="form-text">Overrides delivery fee for a customer's very first order.</div>
                             </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Delivery Fee — Under 20km (₹)</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">₹</span>
+                                    <input type="number" class="form-control" id="s_delivery_fee_under_20km" min="0" step="1" value="29">
+                                </div>
+                                <div class="form-text">Used when shop and customer both have a map location set, and are less than 20km apart.</div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Delivery Fee — 20km & Above (₹)</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">₹</span>
+                                    <input type="number" class="form-control" id="s_delivery_fee_above_20km" min="0" step="1" value="49">
+                                </div>
+                                <div class="form-text">Same as above, for 20km or more. Falls back to the pincode/zone fee if either side has no map location.</div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -157,6 +173,8 @@
             document.getElementById('s_cod_enabled').value               = s.cod_enabled?.value ?? 1;
             document.getElementById('s_handling_fee').value              = s.handling_fee?.value ?? 0;
             document.getElementById('s_first_order_free_delivery').value = s.first_order_free_delivery?.value ?? 1;
+            document.getElementById('s_delivery_fee_under_20km').value   = s.delivery_fee_under_20km?.value ?? 29;
+            document.getElementById('s_delivery_fee_above_20km').value   = s.delivery_fee_above_20km?.value ?? 49;
 
             document.getElementById('settingsLoader').style.display = 'none';
             document.getElementById('settingsForm').style.display   = '';
@@ -180,6 +198,8 @@
             { key: 'cod_enabled',               value: document.getElementById('s_cod_enabled').value },
             { key: 'handling_fee',              value: document.getElementById('s_handling_fee').value },
             { key: 'first_order_free_delivery', value: document.getElementById('s_first_order_free_delivery').value },
+            { key: 'delivery_fee_under_20km',   value: document.getElementById('s_delivery_fee_under_20km').value },
+            { key: 'delivery_fee_above_20km',   value: document.getElementById('s_delivery_fee_above_20km').value },
         ];
 
         try {

@@ -9,6 +9,7 @@ require_once '../api/config/database.php';
 require_once '../api/models/User.php';
 require_once '../api/utils/OTPManager.php';
 require_once '../api/utils/EmailManager.php';
+require_once '../api/utils/TokenAuth.php';
 
 class AuthController {
     private $db;
@@ -156,14 +157,16 @@ class AuthController {
                     $this->user->createShopProfile($user_id, $shop_name, $shop_image_path);
                 }
 
-                // Create session
+                // Create session (web) + token (mobile/API clients)
                 $this->createUserSession($user_id, $user_type);
+                $token = TokenAuth::createToken($this->db, $user_id);
 
                 // Get user data
                 $userData = $this->user->getUserWithProfile($user_id);
 
                 $this->sendResponse(201, true, "Registration successful", [
                     'user'     => $userData,
+                    'token'    => $token,
                     'redirect' => $this->getRedirectUrl($user_type)
                 ]);
             } else {
@@ -310,14 +313,16 @@ class AuthController {
         // Update last login
         $this->user->updateLastLogin($user_data['user_id']);
 
-        // Create session
+        // Create session (web) + token (mobile/API clients)
         $this->createUserSession($user_data['user_id'], $user_data['user_type']);
+        $token = TokenAuth::createToken($this->db, $user_data['user_id']);
 
         // Get complete user data with profile
         $userData = $this->user->getUserWithProfile($user_data['user_id']);
 
         $this->sendResponse(200, true, "Login successful", [
             'user'     => $userData,
+            'token'    => $token,
             'redirect' => $this->getRedirectUrl($userData['user_type'])
         ]);
     }
@@ -373,6 +378,12 @@ class AuthController {
         session_unset();
         session_destroy();
 
+        // Also revoke the bearer token, if the client (mobile/API) sent one
+        $token = TokenAuth::getBearerToken();
+        if ($token) {
+            TokenAuth::deleteToken($this->db, $token);
+        }
+
         $this->sendResponse(200, true, "Logged out successfully");
     }
 
@@ -383,8 +394,10 @@ class AuthController {
         ini_set('session.gc_maxlifetime', 10 * 365 * 24 * 60 * 60);
         if (session_status() === PHP_SESSION_NONE) { session_start(); }
 
-        if (isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true) {
-            $user_data = $this->user->getUserWithProfile($_SESSION['user_id']);
+        $user = TokenAuth::getUser($this->db); // checks session first, then Authorization: Bearer token
+
+        if ($user) {
+            $user_data = $this->user->getUserWithProfile($user['user_id']);
 
             $this->sendResponse(200, true, "User is authenticated", [
                 'logged_in' => true,

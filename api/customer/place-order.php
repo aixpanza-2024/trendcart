@@ -7,12 +7,9 @@
 
 header('Content-Type: application/json');
 require_once __DIR__ . '/../config/session.php';
-
-if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true || $_SESSION['user_type'] !== 'customer') {
-    http_response_code(401);
-    echo json_encode(['success' => false, 'message' => 'Please login to place an order']);
-    exit;
-}
+require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../utils/TokenAuth.php';
+require_once __DIR__ . '/../utils/DeliveryCalculator.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
@@ -20,8 +17,10 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-$customer_id = (int)$_SESSION['user_id'];
-require_once __DIR__ . '/../config/database.php';
+$database = new Database();
+$conn = $database->getConnection();
+
+$customer_id = TokenAuth::requireCustomer($conn, 'Please login to place an order');
 
 $input = json_decode(file_get_contents('php://input'), true);
 if (!$input) {
@@ -49,9 +48,6 @@ if (empty($cart_items)) {
 }
 
 try {
-    $database = new Database();
-    $conn     = $database->getConnection();
-
     // Validate payment method against platform settings
     $psStmt = $conn->query(
         "SELECT setting_key, setting_value FROM platform_settings
@@ -134,9 +130,10 @@ try {
         exit;
     }
 
-    $tax_amount        = 0.00;
-    $order_pincode     = trim($shipping['pincode']);
-    $delivery_zone_name = '';
+    $tax_amount    = 0.00;
+    $order_pincode = trim($shipping['pincode']);
+    $cust_lat      = isset($shipping['latitude'])  && $shipping['latitude']  !== '' ? (float)$shipping['latitude']  : null;
+    $cust_lng      = isset($shipping['longitude']) && $shipping['longitude'] !== '' ? (float)$shipping['longitude'] : null;
 
     // Load platform settings: handling_fee + first_order_free_delivery
     $psStmt2 = $conn->query(
@@ -155,50 +152,45 @@ try {
     $orderCountStmt->execute();
     $is_first_order = (int)$orderCountStmt->fetchColumn() === 0;
 
-    // Determine delivery fee — compare customer zone vs shop zone
-    $zStmt = $conn->prepare("
-        SELECT z.zone_id, z.delivery_fee, z.zone_name
-        FROM delivery_pincodes dp
-        INNER JOIN delivery_zones z ON dp.zone_id = z.zone_id
-        WHERE dp.pincode = :pin AND z.is_active = 1
-        LIMIT 1
-    ");
-    $zStmt->bindValue(':pin', $order_pincode);
-    $zStmt->execute();
-    $zRow = $zStmt->fetch();
-
-    if ($zRow) {
-        $customer_zone_id   = (int)$zRow['zone_id'];
-        $shipping_amount    = (float)$zRow['delivery_fee'];
-        $delivery_zone_name = $zRow['zone_name'];
-    } else {
-        $defStmt = $conn->query("SELECT zone_id, delivery_fee, zone_name FROM delivery_zones WHERE is_default_zone = 1 AND is_active = 1 LIMIT 1");
-        $defRow  = $defStmt->fetch();
-        // Use -1 so it never matches the shop's zone — ensures default fee is charged
-        $customer_zone_id   = -1;
-        $shipping_amount    = $defRow ? (float)$defRow['delivery_fee'] : 49.00;
-        $delivery_zone_name = $defRow ? $defRow['zone_name'] : '';
+    // Delivery fee is calculated PER SHOP and summed — a cart can contain
+    // items from more than one shop. Distance-based when both the shop and
+    // the customer have coordinates, otherwise the pincode/zone fallback.
+    $items_by_shop = [];
+    foreach ($validated_items as $item) {
+        $items_by_shop[$item['shop_id']][] = $item;
     }
 
-    // Look up shop's zone using first validated item's shop_id
-    $shop_id_for_zone = $validated_items[0]['shop_id'] ?? 0;
-    if ($shop_id_for_zone > 0) {
-        $shopZoneStmt = $conn->prepare("
-            SELECT z.zone_id
-            FROM shops s
-            INNER JOIN delivery_pincodes dp ON dp.pincode = s.shop_pincode
-            INNER JOIN delivery_zones z    ON dp.zone_id  = z.zone_id
-            WHERE s.shop_id = :sid AND z.is_active = 1
-            LIMIT 1
-        ");
-        $shopZoneStmt->bindValue(':sid', $shop_id_for_zone, PDO::PARAM_INT);
-        $shopZoneStmt->execute();
-        $shopZoneRow = $shopZoneStmt->fetch();
-        // Free only when shop pincode is known AND customer is in the same zone
-        if ($shopZoneRow && (int)$shopZoneRow['zone_id'] === $customer_zone_id) {
-            $shipping_amount = 0.00;
+    $shipping_amount   = 0.0;
+    $delivery_breakdown = [];
+    $shopLookupStmt = $conn->prepare("SELECT shop_name, latitude, longitude FROM shops WHERE shop_id = :sid LIMIT 1");
+
+    foreach ($items_by_shop as $shop_id_for_fee => $shop_items) {
+        $shopLookupStmt->bindValue(':sid', $shop_id_for_fee, PDO::PARAM_INT);
+        $shopLookupStmt->execute();
+        $shopRow = $shopLookupStmt->fetch(PDO::FETCH_ASSOC);
+        $shopLat = $shopRow && $shopRow['latitude']  !== null ? (float)$shopRow['latitude']  : null;
+        $shopLng = $shopRow && $shopRow['longitude'] !== null ? (float)$shopRow['longitude'] : null;
+
+        $leg = DeliveryCalculator::distanceFee($conn, $shopLat, $shopLng, $cust_lat, $cust_lng);
+        if (!$leg) {
+            $leg = DeliveryCalculator::zoneFee($conn, $shop_id_for_fee, $order_pincode);
         }
+
+        $shipping_amount += $leg['fee'];
+        $delivery_breakdown[] = [
+            'shop_id'     => $shop_id_for_fee,
+            'shop_name'   => $shopRow['shop_name'] ?? '',
+            'method'      => $leg['method'],
+            'distance_km' => $leg['distance_km'] ?? null,
+            'zone_name'   => $leg['zone_name'] ?? null,
+            'fee'         => $leg['fee'],
+        ];
     }
+
+    $delivery_zone_name = implode('; ', array_map(function ($d) {
+        $label = $d['method'] === 'distance' ? "{$d['distance_km']}km" : ($d['zone_name'] ?: 'Zone');
+        return "{$d['shop_name']}: {$label} (₹{$d['fee']})";
+    }, $delivery_breakdown));
 
     // First order: override delivery to free
     if ($is_first_order && $first_order_free_delivery) {
@@ -370,14 +362,14 @@ try {
         if ($existingAddr) {
             $upd = $conn->prepare(
                 "UPDATE addresses SET full_name=:name, phone=:phone, address_line1=:addr,
-                 city=:city, state=:state, pincode=:pincode
+                 city=:city, state=:state, pincode=:pincode, latitude=:lat, longitude=:lng
                  WHERE address_id=:aid"
             );
             $upd->bindValue(':aid', $existingAddr['address_id'], PDO::PARAM_INT);
         } else {
             $upd = $conn->prepare(
-                "INSERT INTO addresses (user_id, address_type, full_name, phone, address_line1, city, state, pincode, is_default)
-                 VALUES (:uid, 'home', :name, :phone, :addr, :city, :state, :pincode, 1)"
+                "INSERT INTO addresses (user_id, address_type, full_name, phone, address_line1, city, state, pincode, latitude, longitude, is_default)
+                 VALUES (:uid, 'home', :name, :phone, :addr, :city, :state, :pincode, :lat, :lng, 1)"
             );
             $upd->bindValue(':uid', $customer_id, PDO::PARAM_INT);
         }
@@ -387,6 +379,8 @@ try {
         $upd->bindValue(':city',   trim($shipping['city']));
         $upd->bindValue(':state',  trim($shipping['state']));
         $upd->bindValue(':pincode',trim($shipping['pincode']));
+        $upd->bindValue(':lat',    $cust_lat);
+        $upd->bindValue(':lng',    $cust_lng);
         $upd->execute();
     } catch (Exception $addrErr) {
         error_log("Address save error: " . $addrErr->getMessage());
@@ -424,10 +418,7 @@ try {
         }
 
         // Shop owner emails — each shop receives only their own items
-        $items_by_shop = [];
-        foreach ($validated_items as $item) {
-            $items_by_shop[$item['shop_id']][] = $item;
-        }
+        // ($items_by_shop was already computed above for the delivery fee calculation)
         $shopInfoStmt = $conn->prepare(
             "SELECT u.email, s.shop_name FROM shops s
              INNER JOIN users u ON s.user_id = u.user_id
@@ -451,10 +442,12 @@ try {
     }
 
     echo json_encode([
-        'success'      => true,
-        'order_id'     => $order_id,
-        'order_number' => $order_number,
-        'total'        => $total_amount,
+        'success'            => true,
+        'order_id'           => $order_id,
+        'order_number'       => $order_number,
+        'total'              => $total_amount,
+        'shipping_amount'    => $shipping_amount,
+        'delivery_breakdown' => $delivery_breakdown,
     ]);
 
 } catch (Exception $e) {

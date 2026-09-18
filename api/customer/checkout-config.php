@@ -7,6 +7,7 @@
 header('Content-Type: application/json');
 require_once __DIR__ . '/../config/session.php';
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../utils/TokenAuth.php';
 
 try {
     $database = new Database();
@@ -22,13 +23,12 @@ try {
     $handling_fee              = (float)($rows['handling_fee'] ?? 0);
     $first_order_free_delivery = (int)($rows['first_order_free_delivery'] ?? 1) === 1;
 
-    // Check if this customer has placed any previous orders
+    // Check if this customer has placed any previous orders (session or token — optional, not gated)
     $is_first_order = false;
-    if (isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true
-        && isset($_SESSION['user_type']) && $_SESSION['user_type'] === 'customer'
-        && isset($_SESSION['user_id'])) {
+    $authedUser = TokenAuth::getUser($conn);
+    if ($authedUser && $authedUser['user_type'] === 'customer') {
 
-        $customer_id = (int)$_SESSION['user_id'];
+        $customer_id = $authedUser['user_id'];
         $oStmt = $conn->prepare(
             "SELECT COUNT(*) FROM orders WHERE customer_id = :id AND order_status != 'cancelled'"
         );

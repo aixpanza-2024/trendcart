@@ -17,6 +17,8 @@ uploads/banners/*
 !uploads/banners/.gitkeep
 uploads/categories/*
 !uploads/categories/.gitkeep
+uploads/super-categories/*
+!uploads/super-categories/.gitkeep
 
 # Claude Code local settings
 .claude/settings.local.json

@@ -1,0 +1,6 @@
+# Ensure the Authorization header always reaches PHP as $_SERVER['HTTP_AUTHORIZATION'].
+# Apache (especially on shared hosting) commonly does not pass this through by
+# default, which silently breaks Bearer-token auth used by the mobile/API clients.
+RewriteEngine On
+RewriteCond %{HTTP:Authorization} ^(.+)$
+RewriteRule .* - [E=HTTP_AUTHORIZATION:%1]

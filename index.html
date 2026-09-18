@@ -90,6 +90,11 @@
         </div>
     </nav>
 
+    <!-- Super Category Tabs (All / Men / Women / Kids ...) -->
+    <section class="super-cat-tabs-section" id="superCatTabsSection" style="display:none;">
+        <div class="super-cat-tabs" id="superCatTabs"></div>
+    </section>
+
     <!-- Category Circles Section -->
     <section class="cat-circles-section">
         <div class="cat-scroll-track" id="catScrollTrack">
@@ -395,6 +400,41 @@
             .cat-scroll-btn { display: none; }
             .cat-scroll-track { padding: 4px 10px; }
         }
+
+        /* ── Super Category Tabs (All / Men / Women / Kids ...) ── */
+        .super-cat-tabs-section {
+            background: #000;
+        }
+        .super-cat-tabs {
+            display: flex;
+            justify-content: center;
+            overflow-x: auto;
+            gap: 8px;
+            padding: 14px 12px;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+        .super-cat-tabs::-webkit-scrollbar { display: none; }
+        .super-cat-tab {
+            flex: 0 0 auto;
+            border: none;
+            background: transparent;
+            color: #fff;
+            font-size: 12.5px;
+            font-weight: 700;
+            letter-spacing: 0.4px;
+            text-transform: uppercase;
+            padding: 8px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background 0.15s, color 0.15s;
+        }
+        .super-cat-tab:hover { background: rgba(255,255,255,0.1); }
+        .super-cat-tab.active {
+            background: #fff;
+            color: #000;
+        }
     </style>
 
     <script>
@@ -533,15 +573,22 @@
                 .catch(() => {});
         })();
 
-        (function loadCategoryCircles() {
-            fetch('api/customer/categories.php')
+        function loadCategoryCircles(superCategoryId) {
+            const url = superCategoryId
+                ? `api/customer/categories.php?super_category_id=${superCategoryId}`
+                : 'api/customer/categories.php';
+            fetch(url)
                 .then(r => r.json())
                 .then(res => {
+                    const track = document.getElementById('catScrollTrack');
                     if (!res.success || !res.data.length) {
-                        document.querySelector('.cat-circles-section').style.display = 'none';
+                        // Only hide the whole section on the very first (unfiltered) load —
+                        // a tab with zero linked categories should just show an empty strip.
+                        if (!superCategoryId) document.querySelector('.cat-circles-section').style.display = 'none';
+                        else track.innerHTML = '';
                         return;
                     }
-                    const track = document.getElementById('catScrollTrack');
+                    document.querySelector('.cat-circles-section').style.display = '';
                     const avatarColors = ['#E53935','#8E24AA','#1E88E5','#00897B','#F4511E','#6D4C41','#3949AB','#039BE5','#43A047','#D81B60','#F9A825','#546E7A'];
                     function catAvatar(name) {
                         const color = avatarColors[name.charCodeAt(0) % avatarColors.length];
@@ -565,8 +612,34 @@
                     });
                 })
                 .catch(() => {
-                    document.querySelector('.cat-circles-section').style.display = 'none';
+                    if (!superCategoryId) document.querySelector('.cat-circles-section').style.display = 'none';
                 });
+        }
+        loadCategoryCircles();
+
+        (function loadSuperCategoryTabs() {
+            fetch('api/customer/super-categories.php')
+                .then(r => r.json())
+                .then(res => {
+                    if (!res.success || !res.data.length) return; // no super categories set up — leave tabs hidden
+                    const tabsEl = document.getElementById('superCatTabs');
+                    const tabs = [{ super_category_id: 0, super_category_name: 'All' }, ...res.data];
+                    tabsEl.innerHTML = tabs.map((t, i) => `
+                        <button class="super-cat-tab${i === 0 ? ' active' : ''}" data-super-category-id="${t.super_category_id}">
+                            ${t.super_category_name}
+                        </button>`).join('');
+                    document.getElementById('superCatTabsSection').style.display = '';
+
+                    tabsEl.querySelectorAll('.super-cat-tab').forEach(btn => {
+                        btn.addEventListener('click', function () {
+                            tabsEl.querySelectorAll('.super-cat-tab').forEach(b => b.classList.remove('active'));
+                            this.classList.add('active');
+                            const id = parseInt(this.dataset.superCategoryId, 10);
+                            loadCategoryCircles(id || null);
+                        });
+                    });
+                })
+                .catch(() => {});
         })();
 
         function scrollCategories(dir) {

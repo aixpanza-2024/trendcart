@@ -31,6 +31,7 @@ try {
         $stmt = $conn->prepare("
             SELECT s.shop_id, s.shop_name, s.shop_description, s.shop_status,
                    s.shop_address, s.shop_city, s.shop_state, s.shop_pincode,
+                   s.latitude, s.longitude,
                    s.shop_phone, s.shop_email, s.rating_average, s.total_ratings,
                    s.total_products, s.total_orders, s.total_sales, s.created_at,
                    u.full_name, u.email, u.phone,
@@ -72,7 +73,9 @@ try {
                 shop_pincode = :pincode,
                 shop_phone = :phone,
                 shop_email = :email,
-                shop_address = :address
+                shop_address = :address,
+                latitude = :lat,
+                longitude = :lng
             WHERE user_id = :uid
         ");
         $stmt->bindValue(':name', $data['shop_name'] ?? '');
@@ -83,6 +86,8 @@ try {
         $stmt->bindValue(':phone', $data['shop_phone'] ?? '');
         $stmt->bindValue(':email', $data['shop_email'] ?? '');
         $stmt->bindValue(':address', $data['shop_address'] ?? '');
+        $stmt->bindValue(':lat', isset($data['latitude'])  && $data['latitude']  !== '' ? (float)$data['latitude']  : null);
+        $stmt->bindValue(':lng', isset($data['longitude']) && $data['longitude'] !== '' ? (float)$data['longitude'] : null);
         $stmt->bindParam(':uid', $user_id);
         $stmt->execute();
 

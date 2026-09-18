@@ -6,21 +6,15 @@
 
 header('Content-Type: application/json');
 require_once __DIR__ . '/../config/session.php';
-
-if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true || $_SESSION['user_type'] !== 'customer') {
-    http_response_code(401);
-    echo json_encode(['success' => false, 'message' => 'Please login to view orders']);
-    exit;
-}
-
-$customer_id = (int)$_SESSION['user_id'];
-
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../utils/TokenAuth.php';
+
+$database = new Database();
+$conn = $database->getConnection();
+
+$customer_id = TokenAuth::requireCustomer($conn, 'Please login to view orders');
 
 try {
-    $database = new Database();
-    $conn = $database->getConnection();
-
     // Fetch orders with item count and totals
     $sql = "SELECT o.order_id, o.order_number, o.total_amount, o.order_status,
                    o.payment_status, o.payment_method, o.order_date,

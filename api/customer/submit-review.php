@@ -8,12 +8,8 @@
 
 header('Content-Type: application/json');
 require_once __DIR__ . '/../config/session.php';
-
-if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true || $_SESSION['user_type'] !== 'customer') {
-    http_response_code(401);
-    echo json_encode(['success' => false, 'message' => 'Please login to submit a review']);
-    exit;
-}
+require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../utils/TokenAuth.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
@@ -21,7 +17,10 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-$customer_id = (int)$_SESSION['user_id'];
+$database = new Database();
+$conn = $database->getConnection();
+
+$customer_id = TokenAuth::requireCustomer($conn, 'Please login to submit a review');
 
 // Accept JSON or form-encoded body
 $body = json_decode(file_get_contents('php://input'), true);
@@ -37,12 +36,7 @@ if ($order_item_id <= 0 || $rating < 1 || $rating > 5) {
     exit;
 }
 
-require_once __DIR__ . '/../config/database.php';
-
 try {
-    $database = new Database();
-    $conn     = $database->getConnection();
-
     // Verify item belongs to this customer and is delivered
     $stmt = $conn->prepare("
         SELECT oi.product_id, oi.order_id, oi.item_status

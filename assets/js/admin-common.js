@@ -130,6 +130,7 @@ function renderAdminSidebar() {
         { href: 'orders.html',    icon: 'fa-shopping-bag',   label: 'Orders', badge: 'sidebarPendingOrders' },
         { href: 'customers.html', icon: 'fa-users',          label: 'Customers' },
         { href: 'categories.html',icon: 'fa-tags',           label: 'Categories', badge: 'sidebarCategoryReqs' },
+        { href: 'super-categories.html', icon: 'fa-layer-group', label: 'Super Categories' },
         { href: 'reviews.html',   icon: 'fa-star',           label: 'Reviews' },
         { section: 'Finance' },
         { href: 'revenue.html',   icon: 'fa-chart-line',     label: 'Revenue' },

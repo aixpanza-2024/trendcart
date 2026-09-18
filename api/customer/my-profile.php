@@ -6,25 +6,21 @@
 
 header('Content-Type: application/json');
 require_once __DIR__ . '/../config/session.php';
-
-if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true || $_SESSION['user_type'] !== 'customer') {
-    http_response_code(401);
-    echo json_encode(['success' => false, 'message' => 'Please login']);
-    exit;
-}
-
-$user_id = (int)$_SESSION['user_id'];
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../utils/TokenAuth.php';
+
+$database = new Database();
+$conn = $database->getConnection();
+
+$user_id = TokenAuth::requireCustomer($conn, 'Please login');
 
 try {
-    $database = new Database();
-    $conn = $database->getConnection();
-
     /* ───── GET ───── */
     if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $stmt = $conn->prepare(
             "SELECT u.user_id, u.full_name, u.email, u.phone,
-                    cp.date_of_birth, cp.gender, cp.profile_image
+                    cp.date_of_birth, cp.gender, cp.profile_image,
+                    cp.latitude, cp.longitude, cp.location_updated_at
              FROM users u
              LEFT JOIN customer_profiles cp ON u.user_id = cp.user_id
              WHERE u.user_id = :user_id LIMIT 1"

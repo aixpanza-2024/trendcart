@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS shop_payments (
     shop_id INT NOT NULL,
 
     -- Payment Period
-    period_type ENUM('daily', 'weekly', 'monthly') DEFAULT 'weekly',
+    period_type ENUM('daily', 'weekly', 'monthly', 'range') DEFAULT 'weekly',
     period_start DATE NOT NULL,
     period_end DATE NOT NULL,
 
