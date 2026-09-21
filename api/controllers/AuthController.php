@@ -279,8 +279,10 @@ class AuthController {
             return;
         }
 
-        // Enforce the resend cooldown on the server (the browser timer is only for display)
-        $wait = $this->otpManager->getResendWaitSeconds($identifier, 'login');
+        // Enforce the resend cooldown on the server (the browser timer is only for display).
+        // Test servers (DEBUG_SHOW_OTP) skip it so a test login can be repeated straight away.
+        $test_mode = DebugOtp::isEnabledFor($identifier);
+        $wait = $test_mode ? 0 : $this->otpManager->getResendWaitSeconds($identifier, 'login');
         if ($wait > 0) {
             $this->sendResponse(429, false, "Please wait {$wait} seconds before requesting a new OTP",
                 $echo + ['retry_after' => $wait]);
@@ -301,15 +303,20 @@ class AuthController {
         }
 
         if ($is_phone) {
-            if (!$this->smsManager->sendOTP($identifier, $otp)) {
+            $resp = $echo + ['resend_after' => OTPManager::RESEND_COOLDOWN_SECONDS];
+
+            $dbg = DebugOtp::reveal($identifier, $otp);
+            if ($dbg !== null) {
+                // Test server without an SMS gateway: hand the OTP back instead of texting it
+                $resp['debug_otp'] = $dbg;
+            } elseif (!$this->smsManager->sendOTP($identifier, $otp)) {
                 // Drop the unsent OTP so the failed attempt does not start a cooldown
                 $this->otpManager->deleteOldOTPs($identifier, 'login');
                 $this->sendResponse(502, false, "Could not send the SMS right now. Please try again shortly");
                 return;
             }
 
-            $this->sendResponse(200, true, "OTP sent to your mobile number",
-                $echo + ['resend_after' => OTPManager::RESEND_COOLDOWN_SECONDS]);
+            $this->sendResponse(200, true, "OTP sent to your mobile number", $resp);
             return;
         }
 

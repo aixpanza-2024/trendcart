@@ -88,7 +88,9 @@ async function handleLogin(e) {
             }
 
             goToStep2(loginPayload, alreadySent ? data.retry_after : (data.resend_after || RESEND_SECONDS_DEFAULT));
-            fillDebugOtp(result);
+            if (fillDebugOtp(result)) {
+                autoSubmitOtp();
+            }
         } else {
             showToast(result.message, 'error');
             loginBtn.disabled = false;
@@ -368,16 +370,34 @@ async function resendOTP() {
 
 /**
  * Test servers only: when the API returns debug_otp (the server opted in for
- * this email), fill the OTP boxes so the login can be completed without email.
+ * this email or mobile number), fill the OTP boxes so the login can be completed
+ * without email or SMS. Returns true when the boxes were filled.
  */
 function fillDebugOtp(result) {
     const otp = result && result.data && result.data.debug_otp;
-    if (!otp || !/^\d{6}$/.test(otp)) return;
+    if (!otp || !/^\d{6}$/.test(otp)) return false;
     otp.split('').forEach((digit, i) => {
         const box = document.getElementById('otp' + (i + 1));
         if (box) box.value = digit;
     });
     showToast('TEST MODE: OTP ' + otp + ' filled in', 'success');
+    return true;
+}
+
+/**
+ * Test servers only: the OTP was filled in for us, so verify it straight away
+ * (auto login). The short delay lets the step change and toast be seen.
+ */
+function autoSubmitOtp() {
+    const form = document.getElementById('verifyOtpForm');
+    if (!form) return;
+    setTimeout(() => {
+        if (form.requestSubmit) {
+            form.requestSubmit();
+        } else {
+            form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+        }
+    }, 700);
 }
 
 // showToast is provided globally by main.js
