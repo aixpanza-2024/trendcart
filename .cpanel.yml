@@ -9,5 +9,5 @@
 deployment:
   tasks:
     - export DEPLOYPATH=/home/notechin/public_html/aksuperspeciality.com/trencartapp
-    - /bin/mkdir -p "$DEPLOYPATH"
-    - /usr/bin/rsync -a --exclude='.git' ./ "$DEPLOYPATH/"
+    - /bin/mkdir -p $DEPLOYPATH
+    - /bin/cp -R . $DEPLOYPATH
