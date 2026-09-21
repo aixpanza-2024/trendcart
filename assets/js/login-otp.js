@@ -72,6 +72,7 @@ async function handleLogin(e) {
 
             // Move to step 2
             goToStep2(email);
+            fillDebugOtp(result);
         } else {
             showToast(result.message, 'error');
             loginBtn.disabled = false;
@@ -285,6 +286,7 @@ async function resendOTP() {
         if (result.success) {
             showToast('OTP resent successfully!', 'success');
             clearOTPInputs();
+            fillDebugOtp(result);
             document.getElementById('otp1').focus();
         } else {
             showToast(result.message, 'error');
@@ -293,6 +295,20 @@ async function resendOTP() {
         console.error('Resend OTP error:', error);
         showToast('Failed to resend OTP', 'error');
     }
+}
+
+/**
+ * Test servers only: when the API returns debug_otp (the server opted in for
+ * this email), fill the OTP boxes so the login can be completed without email.
+ */
+function fillDebugOtp(result) {
+    const otp = result && result.data && result.data.debug_otp;
+    if (!otp || !/^\d{6}$/.test(otp)) return;
+    otp.split('').forEach((digit, i) => {
+        const box = document.getElementById('otp' + (i + 1));
+        if (box) box.value = digit;
+    });
+    showToast('TEST MODE: OTP ' + otp + ' filled in', 'success');
 }
 
 // showToast is provided globally by main.js

@@ -60,7 +60,7 @@ class EmailManager {
             $mail->AltBody  = "Hello {$to_name},\n\n" . $this->getGreeting($purpose) . "\n\nYour OTP: {$otp}\n\nThis OTP expires in 10 minutes.\n\nIf you did not request this, please ignore this email.\n\nTrenCart";
             $mail->send();
             return true;
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             error_log("OTP email failed to {$to_email}: " . $e->getMessage());
             return false;
         }
@@ -83,7 +83,7 @@ class EmailManager {
             $mail->AltBody  = "Hi {$to_name}, your order #{$order_data['order_number']} has been placed successfully.\nTotal: Rs." . number_format($order_data['total'], 2) . "\nPayment: Cash on Delivery.\n\nTrenCart";
             $mail->send();
             return true;
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             error_log("Order confirmation email failed: " . $e->getMessage());
             return false;
         }
@@ -106,7 +106,7 @@ class EmailManager {
             $mail->AltBody  = "New order #{$order_data['order_number']} received.\nTotal: Rs." . number_format($order_data['total'], 2) . "\nPayment: Cash on Delivery.\n\nTrenCart Admin";
             $mail->send();
             return true;
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             error_log("Admin order email failed: " . $e->getMessage());
             return false;
         }
@@ -129,7 +129,7 @@ class EmailManager {
             $mail->AltBody  = "Hi {$shop_name}, you have a new order #{$order_data['order_number']}.\nPlease log in to your shop panel to process it.\n\nTrenCart";
             $mail->send();
             return true;
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             error_log("Shop order email failed: " . $e->getMessage());
             return false;
         }

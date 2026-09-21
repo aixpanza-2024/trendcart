@@ -10,6 +10,7 @@ require_once '../api/models/User.php';
 require_once '../api/utils/OTPManager.php';
 require_once '../api/utils/EmailManager.php';
 require_once '../api/utils/TokenAuth.php';
+require_once '../api/utils/DebugOtp.php';
 
 class AuthController {
     private $db;
@@ -83,10 +84,14 @@ class AuthController {
             // Try to send OTP via email
             $email_sent = $this->emailManager->sendOTPEmail($data->email, $data->full_name, $otp, 'registration');
 
-            $this->sendResponse(200, true, "OTP sent successfully to your email", [
+            $resp = [
                 'email'      => $data->email,
                 'email_sent' => $email_sent
-            ]);
+            ];
+            $dbg = DebugOtp::reveal($data->email, $otp);
+            if ($dbg !== null) { $resp['debug_otp'] = $dbg; }
+
+            $this->sendResponse(200, true, "OTP sent successfully to your email", $resp);
         } else {
             $this->sendResponse(500, false, "Failed to generate OTP");
         }
@@ -255,10 +260,14 @@ class AuthController {
             // Try to send OTP via email
             $email_sent = $this->emailManager->sendOTPEmail($email, $full_name, $otp, 'login');
 
-            $this->sendResponse(200, true, "OTP sent to your email", [
+            $resp = [
                 'email'      => $email,
                 'email_sent' => $email_sent
-            ]);
+            ];
+            $dbg = DebugOtp::reveal($email, $otp);
+            if ($dbg !== null) { $resp['debug_otp'] = $dbg; }
+
+            $this->sendResponse(200, true, "OTP sent to your email", $resp);
         } else {
             $this->sendResponse(500, false, "Failed to generate OTP");
         }
