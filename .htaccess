@@ -4,3 +4,9 @@
 RewriteEngine On
 RewriteCond %{HTTP:Authorization} ^(.+)$
 RewriteRule .* - [E=HTTP_AUTHORIZATION:%1]
+
+# Never serve git metadata, database dumps or PHP error logs to the public.
+# (Plain mod_alias rules, the same override class as RewriteEngine above.)
+RedirectMatch 404 /\.git
+RedirectMatch 404 \.sql$
+RedirectMatch 404 /error_log$

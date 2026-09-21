@@ -78,7 +78,8 @@ class AuthController {
         }
 
         // Validate user type
-        $valid_types = ['customer', 'shop', 'admin', 'delivery_boy'];
+        // Public sign-up is customers only: shop accounts are created by an admin, admin accounts never through the API
+        $valid_types = ['customer'];
         if (!in_array($data->user_type, $valid_types)) {
             $this->sendResponse(400, false, "Invalid user type");
             return;
@@ -143,7 +144,8 @@ class AuthController {
         $shop_name = isset($data->shop_name) ? $data->shop_name : null;
 
         // Validate user type
-        $valid_types = ['customer', 'shop', 'admin', 'delivery_boy'];
+        // Public sign-up is customers only: shop accounts are created by an admin, admin accounts never through the API
+        $valid_types = ['customer'];
         if (!in_array($user_type, $valid_types)) {
             $this->sendResponse(400, false, "Invalid user type");
             return;
