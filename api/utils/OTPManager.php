@@ -1,10 +1,13 @@
 <?php
 /**
  * OTP Manager
- * Handles OTP generation, validation, and cleanup
+ * Handles OTP generation, validation, and cleanup.
+ * The `email` column holds the login identifier: an email address or a 10-digit phone number.
  */
 
 class OTPManager {
+    const RESEND_COOLDOWN_SECONDS = 120;
+
     private $conn;
     private $table_name = "otp_verification";
 
@@ -17,7 +20,41 @@ class OTPManager {
      * @return string
      */
     public function generateOTP() {
-        return str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT);
+        return str_pad((string)random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+    }
+
+    /**
+     * Seconds the caller must still wait before another OTP may be sent.
+     * Based on when the latest unused OTP was created, so it cannot be bypassed from the browser.
+     * @param string $identifier email or phone
+     * @param string $purpose
+     * @return int 0 when a new OTP may be sent now
+     */
+    public function getResendWaitSeconds($identifier, $purpose) {
+        try {
+            $query = "SELECT TIMESTAMPDIFF(SECOND, created_at, NOW()) AS age
+                     FROM " . $this->table_name . "
+                     WHERE email = :identifier
+                     AND purpose = :purpose
+                     AND is_used = FALSE
+                     ORDER BY created_at DESC
+                     LIMIT 1";
+
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindValue(":identifier", $identifier, PDO::PARAM_STR);
+            $stmt->bindValue(":purpose", $purpose, PDO::PARAM_STR);
+            $stmt->execute();
+
+            $row = $stmt->fetch();
+            if ($row === false) {
+                return 0;
+            }
+
+            return max(0, self::RESEND_COOLDOWN_SECONDS - (int)$row['age']);
+        } catch(PDOException $e) {
+            error_log("Resend wait error: " . $e->getMessage());
+            return 0;
+        }
     }
 
     /**
@@ -129,7 +166,7 @@ class OTPManager {
      * @param string $purpose
      * @return bool
      */
-    private function deleteOldOTPs($email, $purpose) {
+    public function deleteOldOTPs($email, $purpose) {
         try {
             $query = "DELETE FROM " . $this->table_name . "
                      WHERE email = :email

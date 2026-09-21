@@ -1,13 +1,18 @@
 /**
  * Login with OTP - JavaScript
- * Timeline stepper login with dev OTP display
+ * Timeline stepper login. Accepts an email or a 10-digit mobile number;
+ * the OTP arrives by email or SMS. Resend is locked for 2 minutes after each send.
  */
 
 document.addEventListener('DOMContentLoaded', function() {
     initializeLogin();
 });
 
-let loginEmail = '';
+const RESEND_SECONDS_DEFAULT = 120;
+
+// {email: ...} or {phone: ...}, exactly as normalised by the server
+let loginPayload = null;
+let resendTimerId = null;
 
 function initializeLogin() {
     const loginForm = document.getElementById('loginForm');
@@ -26,6 +31,7 @@ function initializeLogin() {
     if (resendOtpLink) {
         resendOtpLink.addEventListener('click', function(e) {
             e.preventDefault();
+            if (resendOtpLink.classList.contains('disabled')) return;
             resendOTP();
         });
     }
@@ -47,12 +53,14 @@ async function handleLogin(e) {
 
     const loginBtn = document.getElementById('loginBtn');
     const originalHTML = loginBtn.innerHTML;
-    const email = document.getElementById('loginEmail').value.trim();
+    const value = document.getElementById('loginEmail').value.trim();
 
-    if (!email) {
-        showToast('Please enter your email address', 'error');
+    if (!value) {
+        showToast('Please enter your email or mobile number', 'error');
         return;
     }
+
+    const payload = value.includes('@') ? { email: value } : { phone: value };
 
     loginBtn.disabled = true;
     loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending OTP...';
@@ -61,17 +69,25 @@ async function handleLogin(e) {
         const response = await fetch('../api/login.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: email })
+            body: JSON.stringify(payload)
         });
 
         const result = await response.json();
+        const data = result.data || {};
 
-        if (result.success) {
-            loginEmail = email;
-            showToast('OTP sent! Check your inbox.', 'success');
+        // 429 = a code was sent moments ago; carry on to step 2 with the time left
+        const alreadySent = response.status === 429 && data.retry_after;
 
-            // Move to step 2
-            goToStep2(email);
+        if (result.success || alreadySent) {
+            loginPayload = data.phone ? { phone: data.phone } : { email: data.email };
+
+            if (alreadySent) {
+                showToast('A code was already sent. You can request a new one when the timer ends.', 'success');
+            } else {
+                showToast(loginPayload.phone ? 'OTP sent to your mobile!' : 'OTP sent! Check your inbox.', 'success');
+            }
+
+            goToStep2(loginPayload, alreadySent ? data.retry_after : (data.resend_after || RESEND_SECONDS_DEFAULT));
             fillDebugOtp(result);
         } else {
             showToast(result.message, 'error');
@@ -89,26 +105,33 @@ async function handleLogin(e) {
 /**
  * Transition to Step 2 (OTP verification)
  */
-function goToStep2(email) {
+function goToStep2(payload, resendSeconds) {
     const step1 = document.getElementById('step1');
     const step2 = document.getElementById('step2');
     const progressLine = document.getElementById('progressLine');
+    const isPhone = !!payload.phone;
 
     // Mark step 1 as completed
     step1.classList.remove('active');
     step1.classList.add('completed');
     step1.querySelector('.step-dot').innerHTML = '<i class="fas fa-check" style="font-size:0.7rem"></i>';
 
-    // Show completed email, hide form
+    // Show completed email / mobile, hide form
     document.getElementById('emailFormContent').style.display = 'none';
     document.getElementById('emailCompleted').style.display = 'block';
-    document.getElementById('completedEmailText').textContent = email;
+    document.getElementById('completedEmailText').textContent = isPhone ? '+91 ' + payload.phone : payload.email;
+
+    // The "check your spam folder" tip only applies to email
+    const spamNote = document.getElementById('emailSpamNote');
+    if (spamNote) spamNote.style.display = isPhone ? 'none' : '';
 
     // Animate progress line
     progressLine.style.height = '100%';
 
     // Activate step 2
     step2.classList.add('active');
+
+    startResendTimer(resendSeconds);
 
     // Focus first OTP input
     setTimeout(() => {
@@ -126,6 +149,7 @@ function goBackToStep1() {
 
     // Reset step 2
     step2.classList.remove('active');
+    clearInterval(resendTimerId);
 
     // Reset progress line
     progressLine.style.height = '0';
@@ -146,6 +170,41 @@ function goBackToStep1() {
     const loginBtn = document.getElementById('loginBtn');
     loginBtn.disabled = false;
     loginBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Send OTP';
+}
+
+/**
+ * Lock the Resend link and count down. Uses an end timestamp rather than
+ * counting ticks, so the timer stays correct when a phone throttles background tabs.
+ */
+function startResendTimer(seconds) {
+    const link = document.getElementById('resendOtp');
+    const label = document.getElementById('resendOtpLabel');
+    if (!link || !label) return;
+
+    clearInterval(resendTimerId);
+
+    const endAt = Date.now() + seconds * 1000;
+    link.classList.add('disabled');
+    link.setAttribute('aria-disabled', 'true');
+
+    const tick = () => {
+        const remaining = Math.ceil((endAt - Date.now()) / 1000);
+
+        if (remaining <= 0) {
+            clearInterval(resendTimerId);
+            link.classList.remove('disabled');
+            link.removeAttribute('aria-disabled');
+            label.textContent = 'Resend OTP';
+            return;
+        }
+
+        const mins = Math.floor(remaining / 60);
+        const secs = String(remaining % 60).padStart(2, '0');
+        label.textContent = 'Resend OTP in ' + mins + ':' + secs;
+    };
+
+    tick();
+    resendTimerId = setInterval(tick, 1000);
 }
 
 /**
@@ -224,7 +283,7 @@ async function handleOTPVerification(e) {
         const response = await fetch('../api/verify-login.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: loginEmail, otp: otp })
+            body: JSON.stringify(Object.assign({}, loginPayload, { otp: otp }))
         });
 
         const result = await response.json();
@@ -235,14 +294,14 @@ async function handleOTPVerification(e) {
             if (result.data && result.data.user) {
                 const user = result.data.user;
                 const expiry = Date.now() + 365 * 24 * 60 * 60 * 1000; // 365 days
-                // Display name: use full_name if set, otherwise email prefix
+                // Display name: full_name if set, otherwise email prefix, otherwise the mobile number
                 const displayName = (user.full_name && user.full_name.trim())
                     ? user.full_name.trim()
-                    : (user.email ? user.email.split('@')[0] : 'User');
+                    : (user.email ? user.email.split('@')[0] : (user.phone || 'User'));
                 localStorage.setItem('user', JSON.stringify(user));
                 localStorage.setItem('isLoggedIn', 'true');
                 localStorage.setItem('userName', displayName);
-                localStorage.setItem('userEmail', user.email);
+                localStorage.setItem('userEmail', user.email || '');
                 localStorage.setItem('loginExpiry', String(expiry));
             }
 
@@ -269,30 +328,40 @@ async function handleOTPVerification(e) {
 }
 
 /**
- * Resend OTP
+ * Resend OTP (the link is locked until the 2-minute timer ends)
  */
 async function resendOTP() {
+    // Lock immediately so a double click cannot send two requests
+    startResendTimer(RESEND_SECONDS_DEFAULT);
     showToast('Resending OTP...', 'success');
 
     try {
         const response = await fetch('../api/login.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: loginEmail })
+            body: JSON.stringify(loginPayload)
         });
 
         const result = await response.json();
+        const data = result.data || {};
 
         if (result.success) {
             showToast('OTP resent successfully!', 'success');
+            startResendTimer(data.resend_after || RESEND_SECONDS_DEFAULT);
             clearOTPInputs();
             fillDebugOtp(result);
             document.getElementById('otp1').focus();
+        } else if (response.status === 429 && data.retry_after) {
+            startResendTimer(data.retry_after);
+            showToast(result.message, 'error');
         } else {
+            // Nothing was sent, so release the lock
+            startResendTimer(0);
             showToast(result.message, 'error');
         }
     } catch (error) {
         console.error('Resend OTP error:', error);
+        startResendTimer(0);
         showToast('Failed to resend OTP', 'error');
     }
 }

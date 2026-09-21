@@ -406,7 +406,7 @@ try {
         $cStmt->bindValue(':id', $customer_id, PDO::PARAM_INT);
         $cStmt->execute();
         $customer_row = $cStmt->fetch(PDO::FETCH_ASSOC);
-        if ($customer_row) {
+        if ($customer_row && !empty($customer_row['email'])) {
             $emailManager->sendOrderConfirmationEmail($customer_row['email'], $customer_row['full_name'], $order_data);
         }
 

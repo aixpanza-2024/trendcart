@@ -80,6 +80,32 @@ class User {
     }
 
     /**
+     * Create customer account with phone only (name and email filled in later).
+     * Used by the unified login flow for first-time customers signing in by SMS OTP.
+     * @return bool|int Returns user_id on success, false on failure
+     */
+    public function createPhoneOnly() {
+        try {
+            $query = "INSERT INTO " . $this->table_name . "
+                     (email, full_name, phone, user_type, is_verified)
+                     VALUES (NULL, '', :phone, 'customer', 1)";
+
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindValue(":phone", $this->phone, PDO::PARAM_STR);
+
+            if ($stmt->execute()) {
+                $this->user_id = $this->conn->lastInsertId();
+                return $this->user_id;
+            }
+
+            return false;
+        } catch (PDOException $e) {
+            error_log("Create phone-only user error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
      * Create new user
      * @return bool|int Returns user_id on success, false on failure
      */
@@ -137,6 +163,30 @@ class User {
             return false;
         } catch(PDOException $e) {
             error_log("Get user error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Get user by phone
+     * @param string $phone
+     * @return bool|array
+     */
+    public function getUserByPhone($phone) {
+        try {
+            $query = "SELECT * FROM " . $this->table_name . " WHERE phone = :phone LIMIT 1";
+
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(":phone", $phone);
+            $stmt->execute();
+
+            if($stmt->rowCount() > 0) {
+                return $stmt->fetch();
+            }
+
+            return false;
+        } catch(PDOException $e) {
+            error_log("Get user by phone error: " . $e->getMessage());
             return false;
         }
     }

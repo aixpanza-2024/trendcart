@@ -9,6 +9,7 @@ require_once '../api/config/database.php';
 require_once '../api/models/User.php';
 require_once '../api/utils/OTPManager.php';
 require_once '../api/utils/EmailManager.php';
+require_once '../api/utils/SMSManager.php';
 require_once '../api/utils/TokenAuth.php';
 require_once '../api/utils/DebugOtp.php';
 
@@ -17,6 +18,7 @@ class AuthController {
     private $user;
     private $otpManager;
     private $emailManager;
+    private $smsManager;
 
     public function __construct() {
         $database = new Database();
@@ -30,6 +32,24 @@ class AuthController {
         $this->user = new User($this->db);
         $this->otpManager = new OTPManager($this->db);
         $this->emailManager = new EmailManager();
+        $this->smsManager = new SMSManager();
+    }
+
+    /**
+     * Normalize an Indian mobile number to 10 digits.
+     * Accepts spaces/dashes, a +91 / 91 prefix, or a leading 0.
+     * @return string|null null when it is not a valid mobile number
+     */
+    private function normalizePhone($raw) {
+        $digits = preg_replace('/\D+/', '', (string)$raw);
+
+        if (strlen($digits) === 12 && strpos($digits, '91') === 0) {
+            $digits = substr($digits, 2);
+        } elseif (strlen($digits) === 11 && $digits[0] === '0') {
+            $digits = substr($digits, 1);
+        }
+
+        return preg_match('/^[6-9]\d{9}$/', $digits) ? $digits : null;
     }
 
     /**
@@ -225,26 +245,45 @@ class AuthController {
         // Get posted data
         $data = json_decode(file_get_contents("php://input"));
 
-        // Validate inputs
-        if (!isset($data->email)) {
-            $this->sendResponse(400, false, "Email is required");
+        $email     = isset($data->email) ? strtolower(trim($data->email)) : '';
+        $phone_raw = isset($data->phone) ? trim($data->phone) : '';
+
+        if ($email === '' && $phone_raw === '') {
+            $this->sendResponse(400, false, "Email or mobile number is required");
             return;
         }
 
-        // Validate email format
-        if (!filter_var($data->email, FILTER_VALIDATE_EMAIL)) {
-            $this->sendResponse(400, false, "Invalid email format");
-            return;
+        $is_phone = ($email === '');
+
+        if ($is_phone) {
+            $identifier = $this->normalizePhone($phone_raw);
+            if ($identifier === null) {
+                $this->sendResponse(400, false, "Enter a valid 10-digit mobile number");
+                return;
+            }
+            $user_data = $this->user->getUserByPhone($identifier);
+            $echo      = ['phone' => $identifier];
+        } else {
+            if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                $this->sendResponse(400, false, "Invalid email format");
+                return;
+            }
+            $identifier = $email;
+            $user_data  = $this->user->getUserByEmail($email);
+            $echo       = ['email' => $email];
         }
-
-        $email = strtolower(trim($data->email));
-
-        // Check if user exists
-        $user_data = $this->user->getUserByEmail($email);
 
         // Block deactivated accounts before sending OTP
         if ($user_data && !$user_data['is_active']) {
             $this->sendResponse(403, false, "Account is deactivated. Please contact support");
+            return;
+        }
+
+        // Enforce the resend cooldown on the server (the browser timer is only for display)
+        $wait = $this->otpManager->getResendWaitSeconds($identifier, 'login');
+        if ($wait > 0) {
+            $this->sendResponse(429, false, "Please wait {$wait} seconds before requesting a new OTP",
+                $echo + ['retry_after' => $wait]);
             return;
         }
 
@@ -256,58 +295,80 @@ class AuthController {
         $full_name = $user_data ? $user_data['full_name'] : '';
 
         // Save OTP to database
-        if ($this->otpManager->saveOTP($user_id, $email, $otp, 'login')) {
-            // Try to send OTP via email
-            $email_sent = $this->emailManager->sendOTPEmail($email, $full_name, $otp, 'login');
-
-            $resp = [
-                'email'      => $email,
-                'email_sent' => $email_sent
-            ];
-            $dbg = DebugOtp::reveal($email, $otp);
-            if ($dbg !== null) { $resp['debug_otp'] = $dbg; }
-
-            $this->sendResponse(200, true, "OTP sent to your email", $resp);
-        } else {
+        if (!$this->otpManager->saveOTP($user_id, $identifier, $otp, 'login')) {
             $this->sendResponse(500, false, "Failed to generate OTP");
+            return;
         }
+
+        if ($is_phone) {
+            if (!$this->smsManager->sendOTP($identifier, $otp)) {
+                // Drop the unsent OTP so the failed attempt does not start a cooldown
+                $this->otpManager->deleteOldOTPs($identifier, 'login');
+                $this->sendResponse(502, false, "Could not send the SMS right now. Please try again shortly");
+                return;
+            }
+
+            $this->sendResponse(200, true, "OTP sent to your mobile number",
+                $echo + ['resend_after' => OTPManager::RESEND_COOLDOWN_SECONDS]);
+            return;
+        }
+
+        // Try to send OTP via email
+        $email_sent = $this->emailManager->sendOTPEmail($email, $full_name, $otp, 'login');
+
+        $resp = $echo + ['email_sent' => $email_sent, 'resend_after' => OTPManager::RESEND_COOLDOWN_SECONDS];
+        $dbg = DebugOtp::reveal($email, $otp);
+        if ($dbg !== null) { $resp['debug_otp'] = $dbg; }
+
+        $this->sendResponse(200, true, "OTP sent to your email", $resp);
     }
 
     /**
      * Verify OTP and complete login (Step 2)
-     * If user doesn't exist yet, auto-creates a customer account with email only.
+     * If user doesn't exist yet, auto-creates a customer account with just the email or phone used.
      */
     public function verifyLoginOTP() {
         // Get posted data
         $data = json_decode(file_get_contents("php://input"));
 
+        $email = isset($data->email) ? strtolower(trim($data->email)) : '';
+        $phone = isset($data->phone) ? $this->normalizePhone($data->phone) : null;
+
         // Validate inputs
-        if (!isset($data->email) || !isset($data->otp)) {
-            $this->sendResponse(400, false, "Missing email or OTP");
+        if (!isset($data->otp) || ($email === '' && $phone === null)) {
+            $this->sendResponse(400, false, "Missing email/mobile number or OTP");
             return;
         }
 
-        $email = strtolower(trim($data->email));
+        $is_phone   = ($email === '');
+        $identifier = $is_phone ? $phone : $email;
 
         // Verify OTP
-        $otp_result = $this->otpManager->verifyOTP($email, $data->otp, 'login');
+        $otp_result = $this->otpManager->verifyOTP($identifier, $data->otp, 'login');
 
         if (!$otp_result) {
             $this->sendResponse(400, false, "Invalid or expired OTP");
             return;
         }
 
-        $user_data = $this->user->getUserByEmail($email);
+        $user_data = $is_phone
+            ? $this->user->getUserByPhone($phone)
+            : $this->user->getUserByEmail($email);
 
         if (!$user_data) {
-            // New user — auto-create customer account with email only
-            $this->user->email     = $email;
-            $this->user->full_name = '';
-            $this->user->phone     = null;
-            $this->user->user_type = 'customer';
+            // New user — auto-create customer account with only the email or phone used
+            $this->user->full_name   = '';
+            $this->user->user_type   = 'customer';
             $this->user->is_verified = true;
 
-            $user_id = $this->user->createEmailOnly();
+            if ($is_phone) {
+                $this->user->phone = $phone;
+                $user_id = $this->user->createPhoneOnly();
+            } else {
+                $this->user->email = $email;
+                $this->user->phone = null;
+                $user_id = $this->user->createEmailOnly();
+            }
 
             if (!$user_id) {
                 $this->sendResponse(500, false, "Failed to create account");
@@ -316,7 +377,9 @@ class AuthController {
 
             $this->user->createCustomerProfile($user_id);
 
-            $user_data = $this->user->getUserByEmail($email);
+            $user_data = $is_phone
+                ? $this->user->getUserByPhone($phone)
+                : $this->user->getUserByEmail($email);
         }
 
         // Update last login
