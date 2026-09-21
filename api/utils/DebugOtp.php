@@ -1,14 +1,18 @@
 <?php
 /**
- * Test-server helper: lets the API hand back the OTP for specific test emails.
+ * Test-server helper: lets the API hand back the OTP so logins work without email.
  *
- * Off by default. A server opts in by defining DEBUG_OTP_EMAILS (an array of
- * emails) in its own gitignored api/config/email_config.php. Only those
- * emails ever get their OTP revealed; every other account behaves normally.
- * Production never defines the constant, so nothing changes there.
+ * Off by default. A server opts in by defining, in its own gitignored
+ * api/config/email_config.php, either:
+ *   define('DEBUG_SHOW_OTP', true);                 // every login/register shows its OTP
+ *   define('DEBUG_OTP_EMAILS', ['a@x.com', ...]);   // only these emails
+ * Production never defines either constant, so nothing changes there.
  */
 class DebugOtp {
     public static function reveal($email, $otp) {
+        if (defined('DEBUG_SHOW_OTP') && DEBUG_SHOW_OTP === true) {
+            return (string)$otp;
+        }
         if (!defined('DEBUG_OTP_EMAILS') || !is_array(DEBUG_OTP_EMAILS)) {
             return null;
         }
