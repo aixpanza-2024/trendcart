@@ -75,8 +75,9 @@ async function handleLogin(e) {
         const result = await response.json();
         const data = result.data || {};
 
-        // 429 = a code was sent moments ago; carry on to step 2 with the time left
-        const alreadySent = response.status === 429 && data.retry_after;
+        // 429 with the email/phone echoed back = a code was sent moments ago; carry on to step 2
+        // with the time left. Any other 429 (rate limit) falls through to the error message.
+        const alreadySent = response.status === 429 && data.retry_after && (data.phone || data.email);
 
         if (result.success || alreadySent) {
             loginPayload = data.phone ? { phone: data.phone } : { email: data.email };

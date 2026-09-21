@@ -12,11 +12,13 @@ require_once '../api/utils/EmailManager.php';
 require_once '../api/utils/SMSManager.php';
 require_once '../api/utils/TokenAuth.php';
 require_once '../api/utils/DebugOtp.php';
+require_once '../api/utils/RateLimiter.php';
 
 class AuthController {
     private $db;
     private $user;
     private $otpManager;
+    private $rateLimiter;
     private $emailManager;
     private $smsManager;
 
@@ -31,8 +33,27 @@ class AuthController {
 
         $this->user = new User($this->db);
         $this->otpManager = new OTPManager($this->db);
+        $this->rateLimiter = new RateLimiter($this->db);
         $this->emailManager = new EmailManager();
         $this->smsManager = new SMSManager();
+    }
+
+    /**
+     * Sends HTTP 429 and returns true when this key (email / phone) or this IP has used up a
+     * rate-limit bucket. Skipped on test servers (DEBUG_SHOW_OTP) so testers can repeat logins.
+     */
+    private function rateLimited($bucket, $key, $maxPerKey, $maxPerIp, $windowSeconds, $message) {
+        if (DebugOtp::isEnabledFor($key)) {
+            return false;
+        }
+
+        $wait = $this->rateLimiter->secondsUntilAllowed($bucket, $key, $maxPerKey, $maxPerIp, $windowSeconds);
+        if ($wait <= 0) {
+            return false;
+        }
+
+        $this->sendResponse(429, false, $message, ['retry_after' => $wait]);
+        return true;
     }
 
     /**
@@ -97,11 +118,19 @@ class AuthController {
             return;
         }
 
+        // Limit how many sign-up emails one address / IP can trigger
+        $rate_key = strtolower(trim($data->email));
+        if ($this->rateLimited('otpsend', $rate_key, 5, 20, 3600, "Too many OTP requests. Please try again later.")) {
+            return;
+        }
+
         // Generate OTP
         $otp = $this->otpManager->generateOTP();
 
         // Save OTP to database
         if ($this->otpManager->saveOTP(null, $data->email, $otp, 'registration')) {
+            $this->rateLimiter->record('otpsend', $rate_key);
+
             // Try to send OTP via email
             $email_sent = $this->emailManager->sendOTPEmail($data->email, $data->full_name, $otp, 'registration');
 
@@ -151,10 +180,18 @@ class AuthController {
             return;
         }
 
+        // Lock out OTP guessing: 5 wrong codes per address (30 per IP) every 15 minutes
+        $rate_key = strtolower(trim($email));
+        if ($this->rateLimited('otpverify', $rate_key, 5, 30, 900, "Too many wrong attempts. Please try again in a few minutes.")) {
+            return;
+        }
+
         // Verify OTP
         $otp_result = $this->otpManager->verifyOTP($email, $data->otp, 'registration');
 
         if ($otp_result) {
+            $this->rateLimiter->clear('otpverify', $rate_key);
+
             // Double-check email is still not taken (edge case: registered between OTP send and verify)
             if ($this->user->emailExists($email)) {
                 $this->sendResponse(409, false, "Email already registered");
@@ -200,6 +237,7 @@ class AuthController {
                 $this->sendResponse(500, false, "Failed to create user account");
             }
         } else {
+            $this->rateLimiter->record('otpverify', $rate_key);
             $this->sendResponse(400, false, "Invalid or expired OTP");
         }
     }
@@ -291,6 +329,11 @@ class AuthController {
             return;
         }
 
+        // Cap OTP requests per number/email (5 an hour) and per IP (20 an hour): stops SMS/email bombing
+        if ($this->rateLimited('otpsend', $identifier, 5, 20, 3600, "Too many OTP requests. Please try again later.")) {
+            return;
+        }
+
         // Generate OTP
         $otp = $this->otpManager->generateOTP();
 
@@ -303,6 +346,7 @@ class AuthController {
             $this->sendResponse(500, false, "Failed to generate OTP");
             return;
         }
+        $this->rateLimiter->record('otpsend', $identifier);
 
         if ($is_phone) {
             $resp = $echo + ['resend_after' => OTPManager::RESEND_COOLDOWN_SECONDS];
@@ -352,13 +396,20 @@ class AuthController {
         $is_phone   = ($email === '');
         $identifier = $is_phone ? $phone : $email;
 
+        // Lock out OTP guessing: 5 wrong codes per number/email (30 per IP) every 15 minutes
+        if ($this->rateLimited('otpverify', $identifier, 5, 30, 900, "Too many wrong attempts. Please try again in a few minutes.")) {
+            return;
+        }
+
         // Verify OTP
         $otp_result = $this->otpManager->verifyOTP($identifier, $data->otp, 'login');
 
         if (!$otp_result) {
+            $this->rateLimiter->record('otpverify', $identifier);
             $this->sendResponse(400, false, "Invalid or expired OTP");
             return;
         }
+        $this->rateLimiter->clear('otpverify', $identifier);
 
         $user_data = $is_phone
             ? $this->user->getUserByPhone($phone)
