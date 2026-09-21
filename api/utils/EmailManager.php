@@ -35,6 +35,7 @@ class EmailManager {
         $mail->Password   = SMTP_PASSWORD;
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
         $mail->Port       = SMTP_PORT;
+        $mail->Timeout    = 10; // seconds; the default (300) lets an unreachable SMTP host hang the whole request
 
         $mail->setFrom(SMTP_FROM, SMTP_FROM_NAME);
         $mail->isHTML(true);
@@ -139,6 +140,10 @@ class EmailManager {
      * Auto-detect development mode based on hostname.
      */
     private function isDevelopmentMode() {
+        // Test servers (DEBUG_SHOW_OTP) show the OTP on the page instead, so never wait on SMTP
+        if (defined('DEBUG_SHOW_OTP') && DEBUG_SHOW_OTP === true) {
+            return true;
+        }
         $host = $_SERVER['HTTP_HOST'] ?? $_SERVER['SERVER_NAME'] ?? 'localhost';
         return $host === 'localhost'
             || $host === '127.0.0.1'
