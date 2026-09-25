@@ -53,6 +53,7 @@ async function loadNewArrivals() {
         }
 
         track.innerHTML = data.data.slice(0, 12).map(p => buildArrivalCard(p)).join('');
+        if (typeof refreshWishlistHearts === 'function') refreshWishlistHearts();
 
     } catch (err) {
         console.error('Load new arrivals error:', err);
@@ -121,6 +122,7 @@ function buildArrivalCard(p) {
                          onerror="this.src='https://placehold.co/300x400/333/fff?text=${encodeURIComponent(p.product_name)}'">
                     <span class="na-badge-new">New</span>
                     ${catBadge}
+                    ${wishlistHeartHtml(pid)}
                 </div>
             </a>
             <div class="na-info">

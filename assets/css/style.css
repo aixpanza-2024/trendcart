@@ -233,6 +233,7 @@ a {
    =================================== */
 .shop-card,
 .product-card {
+    position: relative;
     background-color: var(--card-bg);
     border: 1px solid var(--border-color);
     border-radius: 12px;
@@ -240,6 +241,49 @@ a {
     transition: all var(--transition-speed) ease;
     height: 100%;
     box-shadow: var(--shadow-sm);
+}
+
+/* Wishlist heart — top-right of the card image, matches the discount badge on the opposite corner */
+.wishlist-heart-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 2;
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.92);
+    color: #6b7280;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.95rem;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+    cursor: pointer;
+    transition: transform 0.15s ease, color 0.15s ease;
+}
+
+.wishlist-heart-btn:hover {
+    transform: scale(1.1);
+}
+
+.wishlist-heart-btn.active {
+    color: #dc3545;
+}
+
+.wishlist-heart-btn:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+
+/* Larger heart used on the product detail page, sits beside the main image */
+.wishlist-heart-btn.wishlist-heart-lg {
+    position: static;
+    width: 44px;
+    height: 44px;
+    font-size: 1.2rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
 }
 
 .shop-card:hover,

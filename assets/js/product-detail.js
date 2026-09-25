@@ -99,6 +99,13 @@ function renderProduct(p) {
     document.getElementById('productName').textContent = p.product_name;
     document.title = p.product_name + ' - TrenCart';
 
+    // ── Wishlist heart ──────────────────────────────────────────
+    const wishlistSlot = document.getElementById('productWishlistSlot');
+    if (wishlistSlot) {
+        wishlistSlot.innerHTML = wishlistHeartHtml(p.product_id).replace('wishlist-heart-btn"', 'wishlist-heart-btn wishlist-heart-lg"');
+        refreshWishlistHearts();
+    }
+
     // ── Price ────────────────────────────────────────────────────
     const price    = parseFloat(p.price);
     const origPrice = parseFloat(p.original_price || 0);
@@ -531,6 +538,7 @@ async function loadMoreProducts(shopId, excludeId) {
 
         // Show up to 8 products
         grid.innerHTML = others.slice(0, 8).map(p => buildMoreCard(p)).join('');
+        refreshWishlistHearts();
 
     } catch (e) {
         console.error('More products error:', e);
@@ -562,6 +570,7 @@ function buildMoreCard(p) {
                         ${discountBadge}
                     </div>
                 </a>
+                ${wishlistHeartHtml(p.product_id)}
                 <div class="card-body py-2 px-3">
                     <h6 class="card-title mb-1">
                         <a href="product-detail.html?id=${p.product_id}" class="text-decoration-none text-dark">

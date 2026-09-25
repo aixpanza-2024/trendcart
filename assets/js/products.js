@@ -158,6 +158,7 @@ function renderProducts(products) {
 
     const visible = products.slice(0, displayLimit);
     container.innerHTML = visible.map(p => buildProductCard(p)).join('');
+    refreshWishlistHearts();
 
     if (products.length > displayLimit) {
         const remaining = products.length - displayLimit;
@@ -179,6 +180,7 @@ function loadMore() {
 
     const container = document.getElementById('productsGrid');
     newCards.forEach(p => container.insertAdjacentHTML('beforeend', buildProductCard(p)));
+    refreshWishlistHearts();
 
     if (currentFiltered.length > displayLimit) {
         const remaining = currentFiltered.length - displayLimit;
@@ -271,6 +273,7 @@ function buildProductCard(p) {
                         ${discountBadge}
                     </div>
                 </a>
+                ${wishlistHeartHtml(pid)}
                 <div class="card-body py-2 px-3">
                     <h6 class="card-title mb-1">
                         <a href="product-detail.html?id=${pid}" class="text-decoration-none text-dark">
