@@ -7,6 +7,9 @@ api/config/email_config.php
 # SMS gateway credentials — copy api/config/sms_config.sample.php on the server
 api/config/sms_config.php
 
+# Razorpay API keys — copy api/config/razorpay_config.sample.php on the server
+api/config/razorpay_config.php
+
 # Diagnostic / test scripts — never commit these
 test-mail.php
 
