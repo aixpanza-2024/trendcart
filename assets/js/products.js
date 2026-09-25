@@ -9,10 +9,11 @@ const PAGE_SIZE = 24;
 let displayLimit = PAGE_SIZE;
 
 document.addEventListener('DOMContentLoaded', function () {
-    const urlParams  = new URLSearchParams(window.location.search);
-    const shopId     = urlParams.get('shop_id');
-    const categoryId = urlParams.get('category_id');
-    const searchParam = urlParams.get('search');
+    const urlParams       = new URLSearchParams(window.location.search);
+    const shopId          = urlParams.get('shop_id');
+    const categoryId      = urlParams.get('category_id');
+    const superCategoryId = urlParams.get('super_category_id');
+    const searchParam     = urlParams.get('search');
 
     // Pre-fill search box if a ?search= param was passed (e.g. from navbar search)
     if (searchParam) {
@@ -20,8 +21,8 @@ document.addEventListener('DOMContentLoaded', function () {
         if (searchEl) searchEl.value = searchParam;
     }
 
-    loadCategories(categoryId);
-    loadProducts(shopId, categoryId);
+    loadCategories(categoryId, superCategoryId);
+    loadProducts(shopId, categoryId, superCategoryId);
 
     // Price range — update label and re-filter on every drag
     const priceRange = document.getElementById('priceRange');
@@ -53,7 +54,7 @@ function debounce(fn, delay) {
     };
 }
 
-async function loadProducts(shopId, categoryId) {
+async function loadProducts(shopId, categoryId, superCategoryId) {
     const container = document.getElementById('productsGrid');
     if (!container) return;
 
@@ -61,8 +62,9 @@ async function loadProducts(shopId, categoryId) {
 
     try {
         const params = new URLSearchParams();
-        if (shopId)     params.set('shop_id', shopId);
-        if (categoryId) params.set('category_id', categoryId);
+        if (shopId)          params.set('shop_id', shopId);
+        if (categoryId)      params.set('category_id', categoryId);
+        if (superCategoryId) params.set('super_category_id', superCategoryId);
 
         const res  = await fetch('../api/customer/products.php?' + params);
         const data = await res.json();
@@ -109,8 +111,16 @@ async function loadProducts(shopId, categoryId) {
                     <span class="text-grey small"><i class="fas fa-star text-warning me-1"></i><strong>${rating}</strong> <span class="text-grey">(${reviews} reviews)</span></span>
                     ${city}`;
             }
+        } else if (data.super_category_info) {
+            // Super-category view (e.g. "Cosmetics") — reuse the default header, just retitle it
+            const sc = data.super_category_info;
+            document.title = sc.super_category_name + ' - TrenCart';
+            const titleEl = document.querySelector('#shopHeaderDefault .pb-title');
+            const subEl   = document.querySelector('#shopHeaderDefault .pb-sub');
+            if (titleEl) titleEl.textContent = sc.super_category_name;
+            if (subEl)   subEl.textContent   = `Browse everything in ${sc.super_category_name}`;
         } else {
-            // All-products view (no shop_id)
+            // All-products view (no shop_id / super_category_id)
             document.title = 'All Products - TrenCart';
         }
 
@@ -344,12 +354,15 @@ function cardAddToCartNoSize(productId, productName, productPrice, productImage,
     quickAddToCart(addBtn, productId, productName, productPrice, productImage, shopName, shopId, null, qty);
 }
 
-async function loadCategories(activeCategoryId) {
+async function loadCategories(activeCategoryId, superCategoryId) {
     const container = document.getElementById('categoryFilters');
     if (!container) return;
 
     try {
-        const res  = await fetch('../api/customer/categories.php');
+        const url  = superCategoryId
+            ? '../api/customer/categories.php?super_category_id=' + superCategoryId
+            : '../api/customer/categories.php';
+        const res  = await fetch(url);
         const data = await res.json();
         if (!data.success) return;
 

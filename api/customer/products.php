@@ -11,8 +11,9 @@ try {
     $database = new Database();
     $conn = $database->getConnection();
 
-    $shop_id     = isset($_GET['shop_id'])     ? (int)$_GET['shop_id']       : 0;
-    $category_id = isset($_GET['category_id']) ? (int)$_GET['category_id']   : 0;
+    $shop_id           = isset($_GET['shop_id'])           ? (int)$_GET['shop_id']           : 0;
+    $category_id       = isset($_GET['category_id'])       ? (int)$_GET['category_id']       : 0;
+    $super_category_id = isset($_GET['super_category_id']) ? (int)$_GET['super_category_id'] : 0;
     $max_price   = isset($_GET['max_price'])   ? (float)$_GET['max_price']   : 0;
     $sort        = isset($_GET['sort'])        ? trim($_GET['sort'])          : 'featured';
     $search      = isset($_GET['search'])      ? trim($_GET['search'])        : '';
@@ -56,6 +57,20 @@ try {
         $sql .= " AND p.category_id = :category_id";
         $params[':category_id'] = $category_id;
     }
+    if ($super_category_id > 0) {
+        // A product qualifies if its own category is linked to this super category,
+        // or its category's PARENT is linked (covers products filed under a subcategory
+        // like "Lipstick" whose parent "Makeup" is what's actually linked to "Cosmetics").
+        $sql .= " AND EXISTS (
+                    SELECT 1 FROM super_category_links l
+                    WHERE l.super_category_id = :super_category_id
+                      AND l.category_id IN (
+                          p.category_id,
+                          (SELECT parent_category_id FROM categories WHERE category_id = p.category_id)
+                      )
+                  )";
+        $params[':super_category_id'] = $super_category_id;
+    }
     if ($max_price > 0) {
         $sql .= " AND p.price <= :max_price";
         $params[':max_price'] = $max_price;
@@ -92,11 +107,21 @@ try {
         $shop_info = $sStmt->fetch(PDO::FETCH_ASSOC);
     }
 
+    // Also fetch super-category info (name) if super_category_id provided, for the page header
+    $super_category_info = null;
+    if ($super_category_id > 0) {
+        $scStmt = $conn->prepare("SELECT super_category_id, super_category_name, super_category_image FROM super_categories WHERE super_category_id = :id LIMIT 1");
+        $scStmt->bindValue(':id', $super_category_id, PDO::PARAM_INT);
+        $scStmt->execute();
+        $super_category_info = $scStmt->fetch(PDO::FETCH_ASSOC);
+    }
+
     echo json_encode([
-        'success'   => true,
-        'data'      => $products,
-        'count'     => count($products),
-        'shop_info' => $shop_info
+        'success'             => true,
+        'data'                => $products,
+        'count'               => count($products),
+        'shop_info'           => $shop_info,
+        'super_category_info' => $super_category_info,
     ]);
 
 } catch (Exception $e) {

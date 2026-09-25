@@ -100,6 +100,7 @@
         <div class="cat-scroll-track" id="catScrollTrack">
             <!-- Loaded dynamically -->
         </div>
+        <div class="text-center" id="viewAllSuperCatWrap" style="display:none;"></div>
     </section>
 
     <!-- Hero Banner Carousel -->
@@ -574,7 +575,17 @@
                 .catch(() => {});
         })();
 
-        function loadCategoryCircles(superCategoryId) {
+        function loadCategoryCircles(superCategoryId, superCategoryName) {
+            const viewAllWrap = document.getElementById('viewAllSuperCatWrap');
+            if (superCategoryId && superCategoryName) {
+                viewAllWrap.innerHTML = `<a href="pages/products.html?super_category_id=${superCategoryId}" class="btn btn-outline-dark btn-sm mt-2">
+                    Shop all in ${superCategoryName} <i class="fas fa-arrow-right ms-1"></i>
+                </a>`;
+                viewAllWrap.style.display = '';
+            } else {
+                viewAllWrap.style.display = 'none';
+            }
+
             const url = superCategoryId
                 ? `api/customer/categories.php?super_category_id=${superCategoryId}`
                 : 'api/customer/categories.php';
@@ -636,7 +647,7 @@
                             tabsEl.querySelectorAll('.super-cat-tab').forEach(b => b.classList.remove('active'));
                             this.classList.add('active');
                             const id = parseInt(this.dataset.superCategoryId, 10);
-                            loadCategoryCircles(id || null);
+                            loadCategoryCircles(id || null, this.textContent.trim());
                         });
                     });
                 })
