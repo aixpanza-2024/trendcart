@@ -131,6 +131,7 @@ function renderAdminSidebar() {
         { href: 'customers.html', icon: 'fa-users',          label: 'Customers' },
         { href: 'categories.html',icon: 'fa-tags',           label: 'Categories', badge: 'sidebarCategoryReqs' },
         { href: 'super-categories.html', icon: 'fa-layer-group', label: 'Super Categories' },
+        { href: 'coupons.html',   icon: 'fa-ticket-alt',     label: 'Coupons' },
         { href: 'reviews.html',   icon: 'fa-star',           label: 'Reviews' },
         { section: 'Finance' },
         { href: 'revenue.html',   icon: 'fa-chart-line',     label: 'Revenue' },

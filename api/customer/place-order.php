@@ -10,6 +10,7 @@ require_once __DIR__ . '/../config/session.php';
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../utils/TokenAuth.php';
 require_once __DIR__ . '/../utils/DeliveryCalculator.php';
+require_once __DIR__ . '/../utils/CouponValidator.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
@@ -32,6 +33,7 @@ if (!$input) {
 $shipping       = $input['shipping']       ?? [];
 $cart_items     = $input['items']          ?? [];
 $payment_method = $input['payment_method'] ?? 'cod';
+$coupon_code    = trim($input['coupon_code'] ?? '');
 
 // Validate required shipping fields
 $required_fields = ['full_name', 'phone', 'address', 'city', 'state', 'pincode'];
@@ -198,7 +200,20 @@ try {
         $delivery_zone_name = ($delivery_zone_name ? $delivery_zone_name . ' ' : '') . '(First Order - Free)';
     }
 
-    $total_amount = round($subtotal + $shipping_amount + $handling_fee_amount, 2);
+    // Coupon — re-validated here from scratch; never trust a discount amount sent by the client
+    $applied_coupon  = null;
+    $discount_amount = 0.00;
+    if ($coupon_code !== '') {
+        $couponResult = CouponValidator::validate($conn, $coupon_code, $customer_id, $subtotal);
+        if (!$couponResult['valid']) {
+            echo json_encode(['success' => false, 'message' => $couponResult['message']]);
+            exit;
+        }
+        $applied_coupon  = $couponResult['coupon'];
+        $discount_amount = $couponResult['discount_amount'];
+    }
+
+    $total_amount = round($subtotal + $shipping_amount + $handling_fee_amount - $discount_amount, 2);
 
     // Generate unique order number: TC + YYYYMMDD + 4-digit random
     do {
@@ -258,15 +273,30 @@ try {
         }
     }
 
+    // A coupon can be redeemed by only usage_limit_total slots across all customers — re-check
+    // for that race here, inside the transaction, right before it is actually consumed.
+    if ($applied_coupon && $applied_coupon['usage_limit_total'] !== null) {
+        $raceStmt = $conn->prepare("SELECT times_used FROM coupons WHERE coupon_id = :cid FOR UPDATE");
+        $raceStmt->bindValue(':cid', $applied_coupon['coupon_id'], PDO::PARAM_INT);
+        $raceStmt->execute();
+        if ((int)$raceStmt->fetchColumn() >= (int)$applied_coupon['usage_limit_total']) {
+            $conn->rollBack();
+            echo json_encode(['success' => false, 'message' => 'This coupon has just reached its usage limit']);
+            exit;
+        }
+    }
+
     // Insert order
     $oStmt = $conn->prepare(
         "INSERT INTO orders
-            (order_number, customer_id, subtotal, tax_amount, shipping_amount, delivery_zone, handling_fee, total_amount,
+            (order_number, customer_id, subtotal, tax_amount, shipping_amount, delivery_zone, handling_fee,
+             coupon_code, discount_amount, total_amount,
              order_status, payment_status, payment_method,
              shipping_name, shipping_email, shipping_phone,
              shipping_address, shipping_city, shipping_state, shipping_pincode)
          VALUES
-            (:order_number, :customer_id, :subtotal, :tax, :shipping_amount, :delivery_zone, :handling_fee, :total,
+            (:order_number, :customer_id, :subtotal, :tax, :shipping_amount, :delivery_zone, :handling_fee,
+             :coupon_code, :discount_amount, :total,
              'pending', 'pending', :payment_method,
              :sname, :semail, :sphone,
              :saddress, :scity, :sstate, :spincode)"
@@ -278,6 +308,8 @@ try {
     $oStmt->bindValue(':shipping_amount',$shipping_amount);
     $oStmt->bindValue(':delivery_zone',  $delivery_zone_name ?: null);
     $oStmt->bindValue(':handling_fee',   $handling_fee_amount);
+    $oStmt->bindValue(':coupon_code',    $applied_coupon ? $applied_coupon['code'] : null);
+    $oStmt->bindValue(':discount_amount',$discount_amount);
     $oStmt->bindValue(':total',          $total_amount);
     $oStmt->bindValue(':payment_method', $payment_method);
     $oStmt->bindValue(':sname',          trim($shipping['full_name']));
@@ -290,6 +322,10 @@ try {
     $oStmt->execute();
 
     $order_id = (int)$conn->lastInsertId();
+
+    if ($applied_coupon) {
+        CouponValidator::recordUsage($conn, $applied_coupon['coupon_id'], $customer_id, $order_id, $discount_amount);
+    }
 
     // Insert order items
     $iStmt = $conn->prepare(
@@ -447,6 +483,8 @@ try {
         'order_number'       => $order_number,
         'total'              => $total_amount,
         'shipping_amount'    => $shipping_amount,
+        'discount_amount'    => $discount_amount,
+        'coupon_code'        => $applied_coupon ? $applied_coupon['code'] : null,
         'delivery_breakdown' => $delivery_breakdown,
     ]);
 

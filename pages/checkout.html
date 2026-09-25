@@ -191,6 +191,22 @@
                         <strong id="orderHandling">₹0</strong>
                     </div>
 
+                    <div class="summary-row text-success" id="discountRow" style="display:none;">
+                        <span>Discount <span id="appliedCouponLabel"></span>:</span>
+                        <strong id="orderDiscount">-₹0.00</strong>
+                    </div>
+
+                    <hr class="my-2">
+
+                    <!-- Coupon -->
+                    <div class="mb-3" id="couponBox">
+                        <div class="input-group input-group-sm">
+                            <input type="text" class="form-control text-uppercase" id="couponInput" placeholder="Enter coupon code" style="text-transform:uppercase;">
+                            <button class="btn btn-outline-dark" type="button" id="applyCouponBtn" onclick="applyCoupon()">Apply</button>
+                        </div>
+                        <div id="couponMessage" class="small mt-1"></div>
+                    </div>
+
                     <hr class="my-2">
 
                     <div class="summary-row" style="font-size:1.05rem;">

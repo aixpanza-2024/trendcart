@@ -9,6 +9,7 @@ let isFirstOrder        = false;
 let firstOrderFreeEnabled = false;
 let deliveryCheckTimer  = null;
 let _profileFromDB      = null;
+let appliedCoupon       = null; // { code, discount_amount, description } or null
 
 document.addEventListener('DOMContentLoaded', function () {
     if (localStorage.getItem('isLoggedIn') !== 'true') {
@@ -96,10 +97,22 @@ async function checkDeliveryZone(pincode) {
 
 function updateCheckoutTotals() {
     const { totals } = getCartForCheckout();
-    const deliveryFee = (isFirstOrder && firstOrderFreeEnabled) ? 0 : currentDeliveryFee;
-    const total = totals.subtotal + deliveryFee + currentHandlingFee;
+    const deliveryFee    = (isFirstOrder && firstOrderFreeEnabled) ? 0 : currentDeliveryFee;
+    const discountAmount = appliedCoupon ? appliedCoupon.discount_amount : 0;
+    const total = Math.max(0, totals.subtotal + deliveryFee + currentHandlingFee - discountAmount);
 
     document.getElementById('orderSubtotal').textContent = formatCurrency(totals.subtotal);
+
+    const discountRow = document.getElementById('discountRow');
+    if (discountRow) {
+        if (appliedCoupon) {
+            discountRow.style.display = '';
+            document.getElementById('orderDiscount').textContent = '-' + formatCurrency(discountAmount);
+            document.getElementById('appliedCouponLabel').textContent = '(' + appliedCoupon.code + ')';
+        } else {
+            discountRow.style.display = 'none';
+        }
+    }
 
     // Delivery row
     const shippingEl = document.getElementById('orderShipping');
@@ -120,6 +133,66 @@ function updateCheckoutTotals() {
     }
 
     document.getElementById('orderTotal').textContent = formatCurrency(total);
+}
+
+async function applyCoupon() {
+    const input = document.getElementById('couponInput');
+    const msgEl = document.getElementById('couponMessage');
+    const code  = input.value.trim().toUpperCase();
+
+    if (!code) {
+        msgEl.innerHTML = '<span class="text-danger">Enter a coupon code</span>';
+        return;
+    }
+
+    const { totals } = getCartForCheckout();
+    const btn  = document.getElementById('applyCouponBtn');
+    const orig = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+    try {
+        const res  = await fetch('../api/customer/apply-coupon.php', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify({ code, subtotal: totals.subtotal }),
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            appliedCoupon = data.data;
+            input.disabled = true;
+            btn.textContent = 'Remove';
+            btn.onclick = removeCoupon;
+            msgEl.innerHTML = `<span class="text-success"><i class="fas fa-check-circle"></i> Coupon applied — you saved ${formatCurrency(data.data.discount_amount)}</span>`;
+            updateCheckoutTotals();
+        } else {
+            appliedCoupon = null;
+            msgEl.innerHTML = `<span class="text-danger">${data.message}</span>`;
+            btn.disabled = false;
+            btn.innerHTML = orig;
+            updateCheckoutTotals();
+        }
+    } catch (err) {
+        console.error('Apply coupon error:', err);
+        msgEl.innerHTML = '<span class="text-danger">Could not apply coupon. Please try again.</span>';
+        btn.disabled = false;
+        btn.innerHTML = orig;
+    } finally {
+        if (appliedCoupon) { btn.disabled = false; }
+    }
+}
+
+function removeCoupon() {
+    appliedCoupon = null;
+    const input = document.getElementById('couponInput');
+    const btn   = document.getElementById('applyCouponBtn');
+    input.value = '';
+    input.disabled = false;
+    btn.textContent = 'Apply';
+    btn.onclick = applyCoupon;
+    document.getElementById('couponMessage').textContent = '';
+    updateCheckoutTotals();
 }
 
 async function loadPaymentMethods() {
@@ -303,6 +376,7 @@ async function placeOrder() {
         delivery_fee:   (isFirstOrder && firstOrderFreeEnabled) ? 0 : currentDeliveryFee,
         delivery_zone:  currentDeliveryZone,
         handling_fee:   currentHandlingFee,
+        coupon_code:    appliedCoupon ? appliedCoupon.code : undefined,
     };
 
     try {
