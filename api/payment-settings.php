@@ -14,17 +14,18 @@ try {
 
     $stmt = $conn->query(
         "SELECT setting_key, setting_value FROM platform_settings
-         WHERE setting_key IN ('cod_enabled')"
+         WHERE setting_key IN ('cod_enabled', 'online_payment_enabled')"
     );
     $rows = $stmt->fetchAll(PDO::FETCH_KEY_PAIR);
 
     echo json_encode([
         'success' => true,
-        'cod_enabled' => (int)($rows['cod_enabled'] ?? 1) === 1,
+        'cod_enabled'            => (int)($rows['cod_enabled'] ?? 1) === 1,
+        'online_payment_enabled' => (int)($rows['online_payment_enabled'] ?? 1) === 1,
     ]);
 
 } catch (Exception $e) {
     // Default to enabled on error so checkout doesn't break unexpectedly
-    echo json_encode(['success' => true, 'cod_enabled' => true]);
+    echo json_encode(['success' => true, 'cod_enabled' => true, 'online_payment_enabled' => true]);
 }
 ?>

@@ -91,6 +91,13 @@
                                     <option value="0">Disabled</option>
                                 </select>
                             </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Online Payment (Razorpay)</label>
+                                <select class="form-select" id="s_online_payment_enabled">
+                                    <option value="1">Enabled</option>
+                                    <option value="0">Disabled</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -171,6 +178,7 @@
             document.getElementById('s_order_auto_confirm_hours').value  = s.order_auto_confirm_hours?.value ?? 24;
             document.getElementById('s_max_return_days').value           = s.max_return_days?.value ?? 7;
             document.getElementById('s_cod_enabled').value               = s.cod_enabled?.value ?? 1;
+            document.getElementById('s_online_payment_enabled').value    = s.online_payment_enabled?.value ?? 1;
             document.getElementById('s_handling_fee').value              = s.handling_fee?.value ?? 0;
             document.getElementById('s_first_order_free_delivery').value = s.first_order_free_delivery?.value ?? 1;
             document.getElementById('s_delivery_fee_under_20km').value   = s.delivery_fee_under_20km?.value ?? 29;
@@ -196,6 +204,7 @@
             { key: 'order_auto_confirm_hours',  value: document.getElementById('s_order_auto_confirm_hours').value },
             { key: 'max_return_days',           value: document.getElementById('s_max_return_days').value },
             { key: 'cod_enabled',               value: document.getElementById('s_cod_enabled').value },
+            { key: 'online_payment_enabled',    value: document.getElementById('s_online_payment_enabled').value },
             { key: 'handling_fee',              value: document.getElementById('s_handling_fee').value },
             { key: 'first_order_free_delivery', value: document.getElementById('s_first_order_free_delivery').value },
             { key: 'delivery_fee_under_20km',   value: document.getElementById('s_delivery_fee_under_20km').value },

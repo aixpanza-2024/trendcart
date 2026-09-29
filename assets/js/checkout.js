@@ -203,38 +203,33 @@ async function loadPaymentMethods() {
         const res  = await fetch('../api/payment-settings.php');
         const data = await res.json();
 
-        const codEnabled = data.cod_enabled === true;
-        const anyEnabled = codEnabled;
+        const codEnabled    = data.cod_enabled === true;
+        const onlineEnabled = data.online_payment_enabled === true;
+        const anyEnabled    = codEnabled || onlineEnabled;
 
         let html = '';
 
+        if (onlineEnabled) {
+            html += `
+            <div class="payment-option${!codEnabled ? ' selected' : ''}" id="payment-online" onclick="selectPayment('online')">
+                <input type="radio" name="payment" id="online" value="online" ${!codEnabled ? 'checked' : ''}>
+                <label for="online" class="mb-0" style="cursor:pointer;">
+                    <strong><i class="fas fa-bolt"></i> Pay Online</strong>
+                    <p class="text-grey small mb-0 mt-1">UPI, Cards, Netbanking &amp; Wallets — secured by Razorpay</p>
+                </label>
+            </div>`;
+        }
+
         if (codEnabled) {
             html += `
-            <div class="payment-option selected" id="payment-cod" onclick="selectPayment('cod')">
-                <input type="radio" name="payment" id="cod" value="cod" checked>
+            <div class="payment-option${codEnabled ? ' selected' : ''}" id="payment-cod" onclick="selectPayment('cod')">
+                <input type="radio" name="payment" id="cod" value="cod" ${codEnabled ? 'checked' : ''}>
                 <label for="cod" class="mb-0" style="cursor:pointer;">
                     <strong><i class="fas fa-money-bill-wave"></i> Cash on Delivery</strong>
                     <p class="text-grey small mb-0 mt-1">Pay when you receive your order</p>
                 </label>
             </div>`;
         }
-
-        // Placeholder future options (always shown as coming soon / disabled)
-        html += `
-        <div class="payment-option" style="opacity:0.5;cursor:not-allowed;">
-            <input type="radio" name="payment" id="card" value="card" disabled>
-            <label for="card" class="mb-0">
-                <strong><i class="fas fa-credit-card"></i> Credit/Debit Card</strong>
-                <p class="text-grey small mb-0 mt-1">Coming soon</p>
-            </label>
-        </div>
-        <div class="payment-option" style="opacity:0.5;cursor:not-allowed;">
-            <input type="radio" name="payment" id="upi" value="upi" disabled>
-            <label for="upi" class="mb-0">
-                <strong><i class="fas fa-mobile-alt"></i> UPI</strong>
-                <p class="text-grey small mb-0 mt-1">Coming soon</p>
-            </label>
-        </div>`;
 
         if (!anyEnabled) {
             html = `<div class="alert alert-warning mb-0">
@@ -369,16 +364,20 @@ async function placeOrder() {
     }
 
     const cart = getCart();
-    const payload = {
+    const cartPayload = {
         shipping,
-        items:          cart.map(i => ({ id: i.id, quantity: i.quantity, size: i.size || null, color: i.color || null })),
-        payment_method: selectedPayment.value,
-        delivery_fee:   (isFirstOrder && firstOrderFreeEnabled) ? 0 : currentDeliveryFee,
-        delivery_zone:  currentDeliveryZone,
-        handling_fee:   currentHandlingFee,
-        coupon_code:    appliedCoupon ? appliedCoupon.code : undefined,
+        items:       cart.map(i => ({ id: i.id, quantity: i.quantity, size: i.size || null, color: i.color || null })),
+        coupon_code: appliedCoupon ? appliedCoupon.code : undefined,
     };
 
+    if (selectedPayment.value === 'online') {
+        await startOnlinePayment(cartPayload, shipping, btn, orig);
+    } else {
+        await submitCodOrder({ ...cartPayload, payment_method: 'cod' }, shipping, btn, orig);
+    }
+}
+
+async function submitCodOrder(payload, shipping, btn, orig) {
     try {
         const res  = await fetch('../api/customer/place-order.php', {
             method:  'POST',
@@ -388,42 +387,7 @@ async function placeOrder() {
         const data = await res.json();
 
         if (data.success) {
-            // Save address for next checkout (localStorage backup)
-            localStorage.setItem('shippingAddress', JSON.stringify({
-                phone:   shipping.phone,
-                address: shipping.address,
-                city:    shipping.city,
-                pincode: shipping.pincode,
-            }));
-
-            // Silently fill empty profile fields from shipping details
-            const dbName  = (_profileFromDB?.full_name || '').trim();
-            const dbPhone = (_profileFromDB?.phone      || '').trim();
-            const needsUpdate = (!dbName && shipping.full_name) || (!dbPhone && shipping.phone);
-            if (needsUpdate) {
-                try {
-                    const updatePayload = {};
-                    if (!dbName  && shipping.full_name) updatePayload.full_name = shipping.full_name;
-                    if (!dbPhone && shipping.phone)     updatePayload.phone     = shipping.phone;
-                    await fetch('../api/customer/my-profile.php', {
-                        method:  'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body:    JSON.stringify(updatePayload),
-                    });
-                    // Update localStorage so navbar shows the real name immediately
-                    if (!dbName && shipping.full_name) {
-                        const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
-                        storedUser.full_name = shipping.full_name;
-                        localStorage.setItem('user', JSON.stringify(storedUser));
-                        localStorage.setItem('userName', shipping.full_name.split(' ')[0] || shipping.full_name);
-                    }
-                } catch (e) { /* non-critical — profile can be filled later */ }
-            }
-
-            // Clear cart from localStorage
-            localStorage.removeItem('cart');
-            updateCartBadge();
-            showOrderSuccessOverlay(data.order_number);
+            handleOrderSuccess(data, shipping);
         } else {
             showToast(data.message || 'Failed to place order', 'error');
             if (btn) { btn.disabled = false; btn.innerHTML = orig; }
@@ -434,6 +398,135 @@ async function placeOrder() {
         showToast('Failed to place order. Please try again.', 'error');
         if (btn) { btn.disabled = false; btn.innerHTML = orig; }
     }
+}
+
+/**
+ * Online payment: (1) price the cart and open a Razorpay Order for that amount,
+ * (2) let Razorpay Checkout collect payment, (3) send its signed response to
+ * verify-razorpay-payment.php, which independently confirms the payment with
+ * Razorpay and only then actually creates the order.
+ */
+async function startOnlinePayment(cartPayload, shipping, btn, orig) {
+    if (typeof Razorpay === 'undefined') {
+        showToast('Payment gateway failed to load. Please check your connection and try again.', 'error');
+        if (btn) { btn.disabled = false; btn.innerHTML = orig; }
+        return;
+    }
+
+    try {
+        const res  = await fetch('../api/customer/create-razorpay-order.php', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify(cartPayload),
+        });
+        const data = await res.json();
+
+        if (!data.success) {
+            showToast(data.message || 'Could not start payment', 'error');
+            if (btn) { btn.disabled = false; btn.innerHTML = orig; }
+            return;
+        }
+
+        const order = data.data;
+        const rzp = new Razorpay({
+            key:      order.key_id,
+            amount:   order.amount,
+            currency: order.currency,
+            order_id: order.razorpay_order_id,
+            name:     'TrenCart',
+            description: 'Order payment',
+            prefill: {
+                name:    shipping.full_name,
+                email:   shipping.email,
+                contact: shipping.phone,
+            },
+            theme: { color: '#1a1a1a' },
+            handler: async function (response) {
+                if (btn) btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Confirming Payment...';
+                try {
+                    const verifyRes = await fetch('../api/customer/verify-razorpay-payment.php', {
+                        method:  'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body:    JSON.stringify({
+                            razorpay_order_id:   response.razorpay_order_id,
+                            razorpay_payment_id: response.razorpay_payment_id,
+                            razorpay_signature:  response.razorpay_signature,
+                            ...cartPayload,
+                        }),
+                    });
+                    const verifyData = await verifyRes.json();
+
+                    if (verifyData.success) {
+                        handleOrderSuccess(verifyData, shipping);
+                    } else {
+                        showToast(verifyData.message || 'Payment verification failed', 'error');
+                        if (btn) { btn.disabled = false; btn.innerHTML = orig; }
+                    }
+                } catch (err) {
+                    console.error('Verify payment error:', err);
+                    showToast('Payment succeeded but confirmation failed. Please contact support with payment ID: ' + response.razorpay_payment_id, 'error');
+                    if (btn) { btn.disabled = false; btn.innerHTML = orig; }
+                }
+            },
+            modal: {
+                ondismiss: function () {
+                    if (btn) { btn.disabled = false; btn.innerHTML = orig; }
+                }
+            },
+        });
+
+        rzp.on('payment.failed', function (response) {
+            if (btn) { btn.disabled = false; btn.innerHTML = orig; }
+            showToast('Payment failed: ' + (response.error && response.error.description ? response.error.description : 'Please try again'), 'error');
+        });
+
+        rzp.open();
+
+    } catch (err) {
+        console.error('Create razorpay order error:', err);
+        showToast('Could not start payment. Please try again.', 'error');
+        if (btn) { btn.disabled = false; btn.innerHTML = orig; }
+    }
+}
+
+function handleOrderSuccess(data, shipping) {
+    // Save address for next checkout (localStorage backup)
+    localStorage.setItem('shippingAddress', JSON.stringify({
+        phone:   shipping.phone,
+        address: shipping.address,
+        city:    shipping.city,
+        pincode: shipping.pincode,
+    }));
+
+    // Silently fill empty profile fields from shipping details
+    const dbName  = (_profileFromDB?.full_name || '').trim();
+    const dbPhone = (_profileFromDB?.phone      || '').trim();
+    const needsUpdate = (!dbName && shipping.full_name) || (!dbPhone && shipping.phone);
+    if (needsUpdate) {
+        (async () => {
+            try {
+                const updatePayload = {};
+                if (!dbName  && shipping.full_name) updatePayload.full_name = shipping.full_name;
+                if (!dbPhone && shipping.phone)     updatePayload.phone     = shipping.phone;
+                await fetch('../api/customer/my-profile.php', {
+                    method:  'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body:    JSON.stringify(updatePayload),
+                });
+                if (!dbName && shipping.full_name) {
+                    const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+                    storedUser.full_name = shipping.full_name;
+                    localStorage.setItem('user', JSON.stringify(storedUser));
+                    localStorage.setItem('userName', shipping.full_name.split(' ')[0] || shipping.full_name);
+                }
+            } catch (e) { /* non-critical — profile can be filled later */ }
+        })();
+    }
+
+    // Clear cart from localStorage
+    localStorage.removeItem('cart');
+    updateCartBadge();
+    showOrderSuccessOverlay(data.order_number);
 }
 
 function showOrderSuccessOverlay(orderNumber) {
