@@ -14,6 +14,7 @@ try {
     $shop_id           = isset($_GET['shop_id'])           ? (int)$_GET['shop_id']           : 0;
     $category_id       = isset($_GET['category_id'])       ? (int)$_GET['category_id']       : 0;
     $super_category_id = isset($_GET['super_category_id']) ? (int)$_GET['super_category_id'] : 0;
+    $on_offer    = isset($_GET['on_offer']) && $_GET['on_offer'] == '1';
     $max_price   = isset($_GET['max_price'])   ? (float)$_GET['max_price']   : 0;
     $sort        = isset($_GET['sort'])        ? trim($_GET['sort'])          : 'featured';
     $search      = isset($_GET['search'])      ? trim($_GET['search'])        : '';
@@ -70,6 +71,9 @@ try {
                       )
                   )";
         $params[':super_category_id'] = $super_category_id;
+    }
+    if ($on_offer) {
+        $sql .= " AND p.discount_percentage > 0";
     }
     if ($max_price > 0) {
         $sql .= " AND p.price <= :max_price";

@@ -13,6 +13,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const shopId          = urlParams.get('shop_id');
     const categoryId      = urlParams.get('category_id');
     const superCategoryId = urlParams.get('super_category_id');
+    const onOffer          = urlParams.get('on_offer') === '1';
     const searchParam     = urlParams.get('search');
 
     // Pre-fill search box if a ?search= param was passed (e.g. from navbar search)
@@ -22,7 +23,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     loadCategories(categoryId, superCategoryId);
-    loadProducts(shopId, categoryId, superCategoryId);
+    loadProducts(shopId, categoryId, superCategoryId, onOffer);
 
     // Price range — update label and re-filter on every drag
     const priceRange = document.getElementById('priceRange');
@@ -54,7 +55,7 @@ function debounce(fn, delay) {
     };
 }
 
-async function loadProducts(shopId, categoryId, superCategoryId) {
+async function loadProducts(shopId, categoryId, superCategoryId, onOffer) {
     const container = document.getElementById('productsGrid');
     if (!container) return;
 
@@ -65,6 +66,7 @@ async function loadProducts(shopId, categoryId, superCategoryId) {
         if (shopId)          params.set('shop_id', shopId);
         if (categoryId)      params.set('category_id', categoryId);
         if (superCategoryId) params.set('super_category_id', superCategoryId);
+        if (onOffer)          params.set('on_offer', '1');
 
         const res  = await fetch('../api/customer/products.php?' + params);
         const data = await res.json();
@@ -121,8 +123,15 @@ async function loadProducts(shopId, categoryId, superCategoryId) {
             const subEl   = document.querySelector('#shopHeaderDefault .pb-sub');
             if (titleEl) titleEl.textContent = sc.super_category_name;
             if (subEl)   subEl.textContent   = `Browse everything in ${sc.super_category_name}`;
+        } else if (onOffer) {
+            // Offers view — reuse the default header, just retitle it
+            document.title = "Today's Offers - TrenCart";
+            const titleEl = document.querySelector('#shopHeaderDefault .pb-title');
+            const subEl   = document.querySelector('#shopHeaderDefault .pb-sub');
+            if (titleEl) titleEl.textContent = "Today's Offers";
+            if (subEl)   subEl.textContent   = 'Products currently on a discount, across every shop';
         } else {
-            // All-products view (no shop_id / super_category_id)
+            // All-products view (no shop_id / super_category_id / offer filter)
             document.title = 'All Products - TrenCart';
         }
 
