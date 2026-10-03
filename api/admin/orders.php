@@ -52,6 +52,7 @@ try {
 
     $stmt = $conn->prepare("
         SELECT o.order_id, o.order_number, o.order_date, o.total_amount,
+               o.subtotal, o.shipping_amount, o.handling_fee, o.discount_amount, o.coupon_code,
                o.order_status, o.payment_status, o.payment_method,
                u.full_name as customer_name, u.email as customer_email, u.phone as customer_phone,
                o.shipping_address, o.shipping_city, o.shipping_state, o.shipping_pincode, o.shipping_phone,

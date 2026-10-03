@@ -82,7 +82,14 @@ function renderOrders(orders) {
                 ${(o.shipping_address || o.shipping_city) ? `<small class="text-muted d-block hide-mobile">${[o.shipping_address, o.shipping_city, o.shipping_state, o.shipping_pincode].filter(Boolean).join(', ')}</small>` : ''}
             </td>
             <td class="hide-mobile"><small>${o.shop_names || '-'}</small></td>
-            <td><strong>${formatINR(o.total_amount)}</strong></td>
+            <td>
+                <strong>${formatINR(o.total_amount)}</strong>
+                ${parseFloat(o.discount_amount) > 0
+                    ? `<div class="mt-1"><span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size:10px;font-weight:600;" title="Items total ${formatINR(o.subtotal)}, coupon ${o.coupon_code || ''} took off ${formatINR(o.discount_amount)}">
+                           <i class="fas fa-tag me-1"></i>${o.coupon_code || 'Coupon'} -${formatINR(o.discount_amount)}
+                       </span></div>`
+                    : ''}
+            </td>
             <td>${statusBadge(o.payment_status)}</td>
             <td>${statusBadge(o.order_status)}</td>
             <td onclick="event.stopPropagation()">
@@ -123,10 +130,20 @@ function renderOrders(orders) {
                 </div>`;
             }).join('');
 
+            const breakdownHTML = `
+                <div class="d-flex flex-column align-items-end gap-1 pt-2 mt-1" style="font-size:12px;">
+                    <div class="text-muted">Items total: <strong class="text-dark">${formatINR(o.subtotal)}</strong></div>
+                    ${parseFloat(o.shipping_amount) > 0 ? `<div class="text-muted">Delivery: <strong class="text-dark">${formatINR(o.shipping_amount)}</strong></div>` : ''}
+                    ${parseFloat(o.handling_fee) > 0 ? `<div class="text-muted">Handling: <strong class="text-dark">${formatINR(o.handling_fee)}</strong></div>` : ''}
+                    ${parseFloat(o.discount_amount) > 0 ? `<div class="text-success">Coupon ${o.coupon_code || ''}: <strong>-${formatINR(o.discount_amount)}</strong></div>` : ''}
+                    <div class="pt-1 border-top w-100 text-end">Order total: <strong>${formatINR(o.total_amount)}</strong></div>
+                </div>`;
+
             rows.push(`
         <tr id="items-${o.order_id}" style="display:none;background:#f9f9f9;">
             <td colspan="8" class="px-4 py-2">
                 ${itemsHTML}
+                ${breakdownHTML}
             </td>
         </tr>`);
         }
