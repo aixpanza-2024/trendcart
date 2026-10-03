@@ -37,9 +37,12 @@ if ($order_item_id <= 0 || $rating < 1 || $rating > 5) {
 }
 
 try {
-    // Verify item belongs to this customer and is delivered
+    // Verify item belongs to this customer and is delivered.
+    // shop_id and product_name come from order_items' own snapshot, not a
+    // live join to products — they stay correct even after a product is
+    // later deleted (order_items.product_id can go NULL after that point).
     $stmt = $conn->prepare("
-        SELECT oi.product_id, oi.order_id, oi.item_status
+        SELECT oi.product_id, oi.order_id, oi.item_status, oi.shop_id, oi.product_name
         FROM order_items oi
         INNER JOIN orders o ON oi.order_id = o.order_id
         WHERE oi.order_item_id = :item_id AND o.customer_id = :customer_id
@@ -62,8 +65,28 @@ try {
         exit;
     }
 
-    $product_id = (int)$item['product_id'];
-    $order_id   = (int)$item['order_id'];
+    if ($item['product_id'] === null) {
+        http_response_code(410);
+        echo json_encode(['success' => false, 'message' => 'This product is no longer available and can no longer be reviewed']);
+        exit;
+    }
+
+    // A review may only be started while the product still exists — once
+    // submitted, it survives the product being deleted later (see
+    // database/shop_resilient_reviews_and_orders.sql)
+    $prodStmt = $conn->prepare("SELECT product_id FROM products WHERE product_id = :pid LIMIT 1");
+    $prodStmt->bindValue(':pid', $item['product_id'], PDO::PARAM_INT);
+    $prodStmt->execute();
+    if (!$prodStmt->fetch()) {
+        http_response_code(410);
+        echo json_encode(['success' => false, 'message' => 'This product is no longer available and can no longer be reviewed']);
+        exit;
+    }
+
+    $product_id   = (int)$item['product_id'];
+    $order_id     = (int)$item['order_id'];
+    $shop_id      = (int)$item['shop_id'];
+    $product_name = $item['product_name'];
 
     // Check for duplicate review
     $dupStmt = $conn->prepare("
@@ -85,14 +108,16 @@ try {
     // Insert review (auto-approved, verified purchase)
     $insStmt = $conn->prepare("
         INSERT INTO product_reviews
-            (product_id, user_id, order_id, rating, review_text, is_verified_purchase, is_approved)
+            (product_id, shop_id, product_name, user_id, order_id, rating, review_text, is_verified_purchase, is_approved)
         VALUES
-            (:pid, :uid, :oid, :rating, :text, 1, 1)
+            (:pid, :sid, :pname, :uid, :oid, :rating, :text, 1, 1)
     ");
-    $insStmt->bindValue(':pid',    $product_id,  PDO::PARAM_INT);
-    $insStmt->bindValue(':uid',    $customer_id, PDO::PARAM_INT);
-    $insStmt->bindValue(':oid',    $order_id,    PDO::PARAM_INT);
-    $insStmt->bindValue(':rating', $rating,      PDO::PARAM_INT);
+    $insStmt->bindValue(':pid',    $product_id,   PDO::PARAM_INT);
+    $insStmt->bindValue(':sid',    $shop_id,      PDO::PARAM_INT);
+    $insStmt->bindValue(':pname',  $product_name);
+    $insStmt->bindValue(':uid',    $customer_id,  PDO::PARAM_INT);
+    $insStmt->bindValue(':oid',    $order_id,     PDO::PARAM_INT);
+    $insStmt->bindValue(':rating', $rating,       PDO::PARAM_INT);
     $insStmt->bindValue(':text',   $review_text ?: null,
                         $review_text ? PDO::PARAM_STR : PDO::PARAM_NULL);
     $insStmt->execute();

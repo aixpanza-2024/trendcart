@@ -82,6 +82,8 @@ async function loadProducts(shopId, categoryId, superCategoryId) {
             if (defaultHeader) defaultHeader.style.display = 'none';
             if (shopCard)      shopCard.style.display = '';
 
+            loadShopReviews(shop.shop_id);
+
             const nameEl = document.getElementById('shopTitle');
             const descEl = document.getElementById('shopDescription');
             if (nameEl) nameEl.textContent = shop.shop_name;
@@ -452,4 +454,47 @@ function resetFilters() {
     displayLimit = PAGE_SIZE;
     renderProducts(currentFiltered);
     showToast('Filters reset', 'success');
+}
+
+/* ── Shop Reviews (shown only on a single-shop view, ?shop_id=) ────── */
+async function loadShopReviews(shopId) {
+    const section = document.getElementById('shopReviewsSection');
+    if (!section) return;
+
+    try {
+        const res  = await fetch('../api/customer/shop-reviews.php?shop_id=' + shopId);
+        const data = await res.json();
+        if (!data.success || !data.count) return; // no reviews yet — leave the section hidden
+
+        section.style.display = '';
+        document.getElementById('shopReviewsSummary').innerHTML =
+            `${reviewStars(data.rating_average)} <strong>${data.rating_average.toFixed(1)}</strong>
+             <span class="text-grey">(${data.total_ratings} review${data.total_ratings === 1 ? '' : 's'})</span>`;
+
+        document.getElementById('shopReviewsList').innerHTML = data.data.map(r => `
+            <div class="col-md-6 col-lg-4">
+                <div class="h-100 p-3" style="background:var(--white-secondary,#f8f8f8);border-radius:10px;border:1px solid var(--border-color,#eee);">
+                    <div class="d-flex justify-content-between align-items-start mb-1">
+                        <div>${reviewStars(r.rating)}</div>
+                        <small class="text-grey">${new Date(r.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</small>
+                    </div>
+                    <div class="small fw-semibold mb-1">${r.reviewer_name || 'TrenCart Customer'}</div>
+                    <div class="small text-grey mb-2">
+                        ${r.product_id ? `on ${r.product_name}` : `on <em>${r.product_name}</em> <span class="text-grey">(no longer available)</span>`}
+                    </div>
+                    ${r.review_text ? `<div class="small">${r.review_text}</div>` : ''}
+                </div>
+            </div>`).join('');
+
+    } catch (e) {
+        console.error('Load shop reviews error:', e);
+    }
+}
+
+function reviewStars(rating) {
+    let html = '';
+    for (let i = 1; i <= 5; i++) {
+        html += `<i class="${rating >= i ? 'fas' : 'far'} fa-star text-warning" style="font-size:12px;"></i>`;
+    }
+    return html;
 }
