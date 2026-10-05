@@ -10,16 +10,70 @@ let firstOrderFreeEnabled = false;
 let deliveryCheckTimer  = null;
 let _profileFromDB      = null;
 let appliedCoupon       = null; // { code, discount_amount, description } or null
+let customerLat         = null; // set once real GPS coordinates are known (this page or a prior "use my location")
+let customerLng         = null;
 
 document.addEventListener('DOMContentLoaded', function () {
     if (localStorage.getItem('isLoggedIn') !== 'true') {
         window.location.href = 'login.html';
         return;
     }
+
+    // Reuse coordinates captured earlier (e.g. the "use my location" button
+    // on a shop page) so the customer isn't asked for permission twice
+    const savedLat = localStorage.getItem('customerLat');
+    const savedLng = localStorage.getItem('customerLng');
+    if (savedLat && savedLng) {
+        customerLat = parseFloat(savedLat);
+        customerLng = parseFloat(savedLng);
+    }
+
     loadCheckoutConfig();
     loadCheckoutData();
     loadPaymentMethods();
 });
+
+function useCurrentLocationForCheckout() {
+    const btn = document.getElementById('useLocationBtnCheckout');
+    if (!navigator.geolocation) {
+        showToast('Your browser does not support location detection.', 'error');
+        return;
+    }
+
+    const orig = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Locating...';
+
+    navigator.geolocation.getCurrentPosition(
+        (pos) => {
+            customerLat = pos.coords.latitude;
+            customerLng = pos.coords.longitude;
+            localStorage.setItem('customerLat', customerLat);
+            localStorage.setItem('customerLng', customerLng);
+
+            fetch('../api/customer/update-location.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ latitude: customerLat, longitude: customerLng }),
+            }).catch(() => {});
+
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-check me-1"></i> Location set';
+            showToast('Location set — delivery fee updated', 'success');
+
+            const pincode = document.getElementById('pincode').value.trim();
+            if (pincode.length === 6) checkDeliveryZone(pincode);
+        },
+        (err) => {
+            btn.disabled = false;
+            btn.innerHTML = orig;
+            showToast(err.code === err.PERMISSION_DENIED
+                ? 'Location permission denied — your pincode will be used instead'
+                : 'Could not get your location', 'error');
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+    );
+}
 
 async function loadCheckoutConfig() {
     try {
@@ -60,11 +114,17 @@ async function checkDeliveryZone(pincode) {
     try {
         const cart   = getCart();
         const shopId = cart.length > 0 ? (cart[0].shop_id || '') : '';
-        const res    = await fetch(`../api/customer/check-delivery.php?pincode=${pincode}&shop_id=${shopId}`);
+        let   url    = `../api/customer/check-delivery.php?pincode=${pincode}&shop_id=${shopId}`;
+        if (customerLat !== null && customerLng !== null) {
+            url += `&latitude=${customerLat}&longitude=${customerLng}`;
+        }
+        const res    = await fetch(url);
         const data   = await res.json();
         if (!data.success) return;
 
-        currentDeliveryZone = data.zone_name;
+        // 'distance' responses carry distance_km instead of zone_name/area_name
+        const locationLabel = data.method === 'distance' ? `${data.distance_km}km away` : data.zone_name;
+        currentDeliveryZone = locationLabel;
 
         // First order overrides delivery fee to 0 regardless of zone
         if (isFirstOrder && firstOrderFreeEnabled) {
@@ -72,7 +132,7 @@ async function checkDeliveryZone(pincode) {
             const badge = document.getElementById('deliveryZoneBadge');
             badge.innerHTML = `<span class="badge bg-success px-3 py-2" style="font-size:13px;">
                 <i class="fas fa-gift me-1"></i> First Order — Free Delivery!
-                <span class="opacity-75 ms-1">(${data.zone_name})</span>
+                <span class="opacity-75 ms-1">(${locationLabel})</span>
             </span>`;
             badge.style.display = 'block';
         } else {
@@ -80,12 +140,12 @@ async function checkDeliveryZone(pincode) {
             const badge = document.getElementById('deliveryZoneBadge');
             if (data.is_free) {
                 badge.innerHTML = `<span class="badge bg-success px-3 py-2" style="font-size:13px;">
-                    <i class="fas fa-check-circle me-1"></i> Free Delivery — ${data.zone_name}
+                    <i class="fas fa-check-circle me-1"></i> Free Delivery — ${locationLabel}
                     ${data.area_name ? `<span class="opacity-75 ms-1">(${data.area_name})</span>` : ''}
                 </span>`;
             } else {
                 badge.innerHTML = `<span class="badge bg-warning text-dark px-3 py-2" style="font-size:13px;">
-                    <i class="fas fa-truck me-1"></i> Delivery: ₹${data.delivery_fee} — ${data.zone_name}
+                    <i class="fas fa-truck me-1"></i> Delivery: ₹${data.delivery_fee} — ${locationLabel}
                 </span>`;
             }
             badge.style.display = 'block';
@@ -354,6 +414,8 @@ async function placeOrder() {
         city:      document.getElementById('city').value.trim(),
         state:     document.getElementById('state').value.trim(),
         pincode:   document.getElementById('pincode').value.trim(),
+        latitude:  customerLat,
+        longitude: customerLng,
     };
 
     const selectedPayment = document.querySelector('input[name="payment"]:checked');

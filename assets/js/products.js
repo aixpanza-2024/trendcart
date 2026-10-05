@@ -3,6 +3,7 @@
  */
 
 let allProducts = [];
+let currentShopId = null; // set when viewing a single shop — used by "use my location"
 let allCategories = [];
 let currentFiltered = [];
 const PAGE_SIZE = 24;
@@ -77,6 +78,7 @@ async function loadProducts(shopId, categoryId, superCategoryId, onOffer) {
         if (data.shop_info) {
             // Shop-specific view
             const shop = data.shop_info;
+            currentShopId = shop.shop_id;
             document.title = shop.shop_name + ' Products - TrenCart';
 
             const defaultHeader = document.getElementById('shopHeaderDefault');
@@ -506,4 +508,70 @@ function reviewStars(rating) {
         html += `<i class="${rating >= i ? 'fas' : 'far'} fa-star text-warning" style="font-size:12px;"></i>`;
     }
     return html;
+}
+
+/* ── "Use my location" — estimates this shop's delivery fee from the
+   customer's real GPS position, using the same distance tiers (under/over
+   20km) checkout uses for the real order. Only fetches lat/long — no map UI. */
+function useCurrentLocationForShop() {
+    const btn = document.getElementById('useLocationBtn');
+    const out = document.getElementById('shopDeliveryEstimate');
+    if (!currentShopId || !btn || !out) return;
+
+    if (!navigator.geolocation) {
+        out.innerHTML = '<span class="text-warning small">Your browser does not support location detection.</span>';
+        return;
+    }
+
+    const origHTML = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Locating...';
+
+    navigator.geolocation.getCurrentPosition(
+        async (pos) => {
+            const lat = pos.coords.latitude;
+            const lng = pos.coords.longitude;
+
+            // Save for checkout (and anywhere else) to reuse without asking again
+            if (typeof _isAuthValid === 'function' ? _isAuthValid() : localStorage.getItem('isLoggedIn') === 'true') {
+                fetch('../api/customer/update-location.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ latitude: lat, longitude: lng }),
+                }).catch(() => {});
+            }
+            localStorage.setItem('customerLat', lat);
+            localStorage.setItem('customerLng', lng);
+
+            try {
+                const res  = await fetch(`../api/customer/check-delivery.php?shop_id=${currentShopId}&latitude=${lat}&longitude=${lng}`);
+                const data = await res.json();
+
+                if (!data.success) {
+                    out.innerHTML = `<span class="text-warning small">${data.message}</span>`;
+                } else if (data.method === 'distance') {
+                    out.innerHTML = data.is_free
+                        ? `<span class="badge bg-success">Free delivery — ${data.distance_km}km away</span>`
+                        : `<span class="badge bg-warning text-dark">Delivery: ₹${data.delivery_fee} — ${data.distance_km}km away</span>`;
+                } else {
+                    out.innerHTML = data.is_free
+                        ? `<span class="badge bg-success">Free delivery — ${data.zone_name}</span>`
+                        : `<span class="badge bg-warning text-dark">Delivery: ₹${data.delivery_fee} — ${data.zone_name}</span>`;
+                }
+            } catch (e) {
+                out.innerHTML = '<span class="text-warning small">Could not check delivery fee.</span>';
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-check me-1"></i> Location used';
+            }
+        },
+        (err) => {
+            btn.disabled = false;
+            btn.innerHTML = origHTML;
+            out.innerHTML = err.code === err.PERMISSION_DENIED
+                ? '<span class="text-warning small">Location permission denied — enter your pincode at checkout instead.</span>'
+                : '<span class="text-warning small">Could not get your location.</span>';
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+    );
 }
