@@ -8,11 +8,14 @@ async function loadSubscription() {
         const data = await res.json();
         if (!data.success) return;
 
-        const { plans, active } = data.data;
+        const { plans, active, paused } = data.data;
         badge.style.display = active ? '' : 'none';
         box.style.display = '';
 
-        if (active) {
+        if (!active && paused) {
+            box.innerHTML = `
+                <div class="small mb-2" style="color:#f5c542;"><i class="fas fa-pause-circle me-1"></i> Your subscription is paused. Contact support to resume.</div>`;
+        } else if (active) {
             const until = new Date(active.expires_at.replace(' ', 'T')).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
             box.innerHTML = `
                 <div class="small mb-2" style="color:#f5c542;"><i class="fas fa-crown me-1"></i> Subscriber — free delivery until ${until}</div>

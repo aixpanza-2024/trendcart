@@ -30,6 +30,7 @@ try {
                 'yearly'  => SubscriptionService::planPrice($conn, 'yearly'),
             ],
             'active' => SubscriptionService::activeSubscription($conn, $customer_id),
+            'paused' => SubscriptionService::pausedSubscription($conn, $customer_id),
         ],
     ]);
 } catch (Exception $e) {

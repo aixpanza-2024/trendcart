@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Subscriptions - Admin - TrenCart</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../assets/css/theme.css">
+    <link rel="stylesheet" href="../assets/css/admin.css">
+</head>
+<body class="admin-body">
+
+    <nav class="admin-sidebar" id="sidebar"></nav>
+
+    <div class="admin-overlay" id="overlay"></div>
+
+    <div class="admin-main">
+        <div class="admin-topbar">
+            <div class="d-flex align-items-center gap-3">
+                <button class="menu-toggle" id="menuToggle"><i class="fas fa-bars"></i></button>
+                <h5 class="page-title">Subscriptions</h5>
+            </div>
+        </div>
+
+        <div class="admin-content">
+            <div class="admin-card">
+                <div class="admin-card-header d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0"><i class="fas fa-crown me-2"></i>Customer Subscriptions</h6>
+                    <span class="small text-muted">Prices are set on the Settings page</span>
+                </div>
+                <div class="admin-card-body p-0">
+                    <div class="admin-table-responsive">
+                        <table class="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>Customer</th>
+                                    <th>Plan</th>
+                                    <th>Paid</th>
+                                    <th>Period</th>
+                                    <th>Status</th>
+                                    <th class="text-end">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="subscriptionsBody">
+                                <tr><td colspan="6" class="text-center py-4"><i class="fas fa-spinner fa-spin"></i></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../assets/js/admin-common.js"></script>
+    <script src="../assets/js/admin-subscriptions.js"></script>
+</body>
+</html>

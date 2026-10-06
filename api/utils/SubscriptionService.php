@@ -18,8 +18,20 @@ class SubscriptionService {
     public static function activeSubscription($conn, $user_id) {
         $stmt = $conn->prepare(
             "SELECT plan, amount, starts_at, expires_at FROM customer_subscriptions
-             WHERE user_id = :uid AND expires_at > NOW()
+             WHERE user_id = :uid AND expires_at > NOW() AND paused_at IS NULL
              ORDER BY expires_at DESC LIMIT 1"
+        );
+        $stmt->bindValue(':uid', $user_id, PDO::PARAM_INT);
+        $stmt->execute();
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $row ?: null;
+    }
+
+    public static function pausedSubscription($conn, $user_id) {
+        $stmt = $conn->prepare(
+            "SELECT plan, expires_at, paused_at FROM customer_subscriptions
+             WHERE user_id = :uid AND paused_at IS NOT NULL
+             ORDER BY paused_at DESC LIMIT 1"
         );
         $stmt->bindValue(':uid', $user_id, PDO::PARAM_INT);
         $stmt->execute();

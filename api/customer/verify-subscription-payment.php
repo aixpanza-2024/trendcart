@@ -100,7 +100,7 @@ try {
                 DATE_ADD(base.start_at, INTERVAL {$interval})
          FROM (SELECT COALESCE(
                   (SELECT MAX(expires_at) FROM customer_subscriptions
-                    WHERE user_id = :uid_base AND expires_at > NOW()),
+                    WHERE user_id = :uid_base AND expires_at > NOW() AND paused_at IS NULL),
                   NOW()) AS start_at) base"
     );
     $insert->bindValue(':uid',      $customer_id, PDO::PARAM_INT);
