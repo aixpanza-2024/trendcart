@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Offers & Push - Admin - TrenCart</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../assets/css/theme.css">
+    <link rel="stylesheet" href="../assets/css/admin.css">
+</head>
+<body class="admin-body">
+
+    <nav class="admin-sidebar" id="sidebar"></nav>
+
+    <div class="admin-overlay" id="overlay"></div>
+
+    <div class="admin-main">
+        <div class="admin-topbar">
+            <div class="d-flex align-items-center gap-3">
+                <button class="menu-toggle" id="menuToggle"><i class="fas fa-bars"></i></button>
+                <h5 class="page-title">Offers & Push Notifications</h5>
+            </div>
+        </div>
+
+        <div class="admin-content">
+            <div class="admin-card mb-4">
+                <div class="admin-card-header">
+                    <h6 class="mb-0"><i class="fas fa-bullhorn me-2"></i>Post an offer</h6>
+                </div>
+                <div class="admin-card-body">
+                    <form id="offerForm" style="max-width: 720px;">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold" for="offerTitle">Title</label>
+                            <input type="text" class="form-control" id="offerTitle" maxlength="120" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold" for="offerBody">Message</label>
+                            <textarea class="form-control" id="offerBody" rows="3" maxlength="500" required></textarea>
+                            <div class="form-text"><span id="bodyCount">0</span>/500</div>
+                        </div>
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold" for="offerCoupon">Coupon code (optional)</label>
+                                <input type="text" class="form-control text-uppercase" id="offerCoupon" maxlength="50" placeholder="e.g. SAVE10">
+                                <div class="form-text">Must be an active coupon.</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold" for="offerLink">Link (optional)</label>
+                                <input type="text" class="form-control" id="offerLink" maxlength="255" placeholder="https://… or pages/products.html">
+                            </div>
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold" for="offerAudience">Send to</label>
+                            <select class="form-select" id="offerAudience">
+                                <option value="all">All active customers</option>
+                                <option value="subscribers">Subscribers only</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary px-4" id="sendOfferBtn">
+                            <i class="fas fa-paper-plane me-2"></i>Publish & send
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="admin-card">
+                <div class="admin-card-header">
+                    <h6 class="mb-0"><i class="fas fa-history me-2"></i>Recent offers</h6>
+                </div>
+                <div class="admin-card-body p-0">
+                    <div class="admin-table-responsive">
+                        <table class="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>Offer</th>
+                                    <th>Audience</th>
+                                    <th class="text-end">Inbox</th>
+                                    <th class="text-end">Push sent</th>
+                                    <th>Push status</th>
+                                    <th>Posted</th>
+                                </tr>
+                            </thead>
+                            <tbody id="offersBody">
+                                <tr><td colspan="6" class="text-center py-4"><i class="fas fa-spinner fa-spin"></i></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../assets/js/admin-common.js"></script>
+    <script src="../assets/js/admin-notifications.js"></script>
+</body>
+</html>

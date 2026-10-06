@@ -10,6 +10,9 @@ api/config/sms_config.php
 # Razorpay API keys — copy api/config/razorpay_config.sample.php on the server
 api/config/razorpay_config.php
 
+# Firebase service account (push notifications) — download from Firebase console, never commit
+api/config/firebase_service_account.json
+
 # Diagnostic / test scripts — never commit these
 test-mail.php
 

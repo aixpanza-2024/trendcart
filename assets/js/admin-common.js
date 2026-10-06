@@ -130,6 +130,7 @@ function renderAdminSidebar() {
         { href: 'orders.html',    icon: 'fa-shopping-bag',   label: 'Orders', badge: 'sidebarPendingOrders' },
         { href: 'customers.html', icon: 'fa-users',          label: 'Customers' },
         { href: 'subscriptions.html', icon: 'fa-crown',      label: 'Subscriptions' },
+        { href: 'notifications.html', icon: 'fa-bullhorn',  label: 'Offers & Push' },
         { href: 'categories.html',icon: 'fa-tags',           label: 'Categories', badge: 'sidebarCategoryReqs' },
         { href: 'super-categories.html', icon: 'fa-layer-group', label: 'Super Categories' },
         { href: 'coupons.html',   icon: 'fa-ticket-alt',     label: 'Coupons' },
