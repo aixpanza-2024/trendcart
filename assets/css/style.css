@@ -1489,6 +1489,32 @@ a {
     color: rgba(255, 255, 255, 0.75);
 }
 
+.profile-avatar-card .avatar-wrap {
+    position: relative;
+    width: 76px;
+    margin: 0 auto 1rem;
+}
+
+.profile-avatar-card .avatar-wrap .avatar-circle {
+    margin: 0;
+}
+
+.profile-avatar-card .sub-badge {
+    position: absolute;
+    right: -4px;
+    bottom: -4px;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: linear-gradient(145deg, #f5c542 0%, #d89b00 100%);
+    color: #1a1a1a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    border: 2px solid #1a1a1a;
+}
+
 .profile-avatar-card h4 {
     font-weight: 700;
     margin-bottom: 0.2rem;

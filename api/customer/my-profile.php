@@ -8,6 +8,7 @@ header('Content-Type: application/json');
 require_once __DIR__ . '/../config/session.php';
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../utils/TokenAuth.php';
+require_once __DIR__ . '/../utils/SubscriptionService.php';
 
 $database = new Database();
 $conn = $database->getConnection();
@@ -41,6 +42,8 @@ try {
         $addrStmt->bindValue(':uid', $user_id, PDO::PARAM_INT);
         $addrStmt->execute();
         $profile['default_address'] = $addrStmt->fetch(PDO::FETCH_ASSOC) ?: null;
+
+        $profile['subscription'] = SubscriptionService::activeSubscription($conn, $user_id);
 
         echo json_encode(['success' => true, 'data' => $profile]);
         exit;

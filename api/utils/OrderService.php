@@ -9,6 +9,7 @@
 
 require_once __DIR__ . '/DeliveryCalculator.php';
 require_once __DIR__ . '/CouponValidator.php';
+require_once __DIR__ . '/SubscriptionService.php';
 
 class OrderService {
 
@@ -152,6 +153,11 @@ class OrderService {
         if ($is_first_order && $first_order_free_delivery) {
             $shipping_amount    = 0.00;
             $delivery_zone_name = ($delivery_zone_name ? $delivery_zone_name . ' ' : '') . '(First Order - Free)';
+        }
+
+        if (SubscriptionService::activeSubscription($conn, $customer_id)) {
+            $shipping_amount    = 0.00;
+            $delivery_zone_name = ($delivery_zone_name ? $delivery_zone_name . ' ' : '') . '(Subscriber - Free)';
         }
 
         // Coupon — never trust a discount amount from the client

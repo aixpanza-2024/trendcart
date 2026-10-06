@@ -10,8 +10,11 @@
  * Otherwise falls back to the pincode/zone system, which does need one.
  */
 header('Content-Type: application/json');
+require_once __DIR__ . '/../config/session.php';
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../utils/TokenAuth.php';
 require_once __DIR__ . '/../utils/DeliveryCalculator.php';
+require_once __DIR__ . '/../utils/SubscriptionService.php';
 
 $pincode   = trim($_GET['pincode'] ?? '');
 $shop_id   = (int)($_GET['shop_id'] ?? 0);
@@ -41,15 +44,19 @@ try {
         }
     }
 
+    $is_subscriber = (bool)SubscriptionService::activeSubscription($conn, TokenAuth::getUser($conn)['user_id'] ?? 0);
+
     $result = DeliveryCalculator::distanceFee($conn, $shopLat, $shopLng, $latitude, $longitude);
 
     if ($result) {
+        $fee = $is_subscriber ? 0.0 : $result['fee'];
         echo json_encode([
-            'success'      => true,
-            'method'       => 'distance',
-            'distance_km'  => $result['distance_km'],
-            'delivery_fee' => $result['fee'],
-            'is_free'      => $result['fee'] === 0.0,
+            'success'       => true,
+            'method'        => 'distance',
+            'distance_km'   => $result['distance_km'],
+            'delivery_fee'  => $fee,
+            'is_free'       => $fee === 0.0,
+            'is_subscriber' => $is_subscriber,
         ]);
         exit;
     }
@@ -64,14 +71,16 @@ try {
     }
 
     $zone = DeliveryCalculator::zoneFee($conn, $shop_id, $pincode);
+    $fee  = $is_subscriber ? 0.0 : $zone['fee'];
 
     echo json_encode([
-        'success'      => true,
-        'method'       => 'zone',
-        'zone_name'    => $zone['zone_name'],
-        'area_name'    => $zone['area_name'],
-        'delivery_fee' => $zone['fee'],
-        'is_free'      => $zone['fee'] === 0.0,
+        'success'       => true,
+        'method'        => 'zone',
+        'zone_name'     => $zone['zone_name'],
+        'area_name'     => $zone['area_name'],
+        'delivery_fee'  => $fee,
+        'is_free'       => $fee === 0.0,
+        'is_subscriber' => $is_subscriber,
     ]);
 
 } catch (Exception $e) {

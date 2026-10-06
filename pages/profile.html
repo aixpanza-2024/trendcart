@@ -103,12 +103,18 @@
                 <!-- Profile Avatar Card -->
                 <div class="col-lg-3 col-md-4">
                     <div class="profile-avatar-card">
-                        <div class="avatar-circle">
-                            <i class="fas fa-user"></i>
+                        <div class="avatar-wrap">
+                            <div class="avatar-circle">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <span class="sub-badge" id="subscriberBadge" style="display:none;" title="Subscriber">
+                                <i class="fas fa-crown"></i>
+                            </span>
                         </div>
                         <h4 id="displayName">Loading...</h4>
                         <p id="displayEmail"></p>
                         <p id="displayPhone"></p>
+                        <div class="subscription-box mb-3" id="subscriptionBox" style="display:none;"></div>
                         <div class="d-flex flex-column gap-2 align-items-stretch">
                             <a href="orders.html" class="btn btn-outline-light btn-sm">
                                 <i class="fas fa-box me-1"></i> My Orders
@@ -291,5 +297,7 @@
     <script src="../assets/js/auth.js"></script>
     <script src="../assets/js/customer-profile.js"></script>
     <script src="../assets/js/address-book.js"></script>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <script src="../assets/js/subscription.js"></script>
 </body>
 </html>

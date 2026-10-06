@@ -141,6 +141,22 @@
                                 </div>
                                 <div class="form-text">Same as above, for 20km or more. Falls back to the pincode/zone fee if either side has no map location.</div>
                             </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Subscription — Monthly (₹)</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">₹</span>
+                                    <input type="number" class="form-control" id="s_subscription_monthly_price" min="1" step="1" value="99">
+                                </div>
+                                <div class="form-text">Subscribers get free delivery on every order while active.</div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Subscription — Yearly (₹)</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">₹</span>
+                                    <input type="number" class="form-control" id="s_subscription_yearly_price" min="1" step="1" value="999">
+                                </div>
+                                <div class="form-text">One year of free delivery. Renewing early adds to the remaining time.</div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -183,6 +199,8 @@
             document.getElementById('s_first_order_free_delivery').value = s.first_order_free_delivery?.value ?? 1;
             document.getElementById('s_delivery_fee_under_20km').value   = s.delivery_fee_under_20km?.value ?? 29;
             document.getElementById('s_delivery_fee_above_20km').value   = s.delivery_fee_above_20km?.value ?? 49;
+            document.getElementById('s_subscription_monthly_price').value = s.subscription_monthly_price?.value ?? 99;
+            document.getElementById('s_subscription_yearly_price').value  = s.subscription_yearly_price?.value ?? 999;
 
             document.getElementById('settingsLoader').style.display = 'none';
             document.getElementById('settingsForm').style.display   = '';
@@ -209,6 +227,8 @@
             { key: 'first_order_free_delivery', value: document.getElementById('s_first_order_free_delivery').value },
             { key: 'delivery_fee_under_20km',   value: document.getElementById('s_delivery_fee_under_20km').value },
             { key: 'delivery_fee_above_20km',   value: document.getElementById('s_delivery_fee_above_20km').value },
+            { key: 'subscription_monthly_price', value: document.getElementById('s_subscription_monthly_price').value },
+            { key: 'subscription_yearly_price',  value: document.getElementById('s_subscription_yearly_price').value },
         ];
 
         try {
