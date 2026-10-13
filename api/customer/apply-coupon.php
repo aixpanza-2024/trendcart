@@ -46,6 +46,10 @@ try {
     echo json_encode([
         'success' => true,
         'message' => 'Coupon applied',
+        // Top-level fields for the Flutter app's contract:
+        'discount_amount' => $result['discount_amount'],
+        'final_total'     => round($subtotal - $result['discount_amount'], 2),
+        // Nested for the existing web checkout flow — unchanged shape:
         'data' => [
             'code'            => $result['coupon']['code'],
             'discount_amount' => $result['discount_amount'],

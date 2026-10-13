@@ -1,8 +1,11 @@
 <?php
 /**
  * Customer - Wishlist
- * GET: list the logged-in customer's wishlisted products, with live product data
- * Requires customer session/token
+ * GET    : list the logged-in customer's wishlisted products, with live product data
+ * POST   : { product_id } — add (idempotent; already-wishlisted is still success)
+ * DELETE : { product_id } — remove
+ * Requires customer session/token. POST/DELETE are the Flutter app's contract;
+ * the web widget still uses the separate wishlist-toggle.php.
  */
 
 header('Content-Type: application/json');
@@ -10,16 +13,52 @@ require_once __DIR__ . '/../config/session.php';
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../utils/TokenAuth.php';
 
+$database = new Database();
+$conn = $database->getConnection();
+
+$user_id = TokenAuth::requireCustomer($conn, 'Please login to use your wishlist');
+
+if (in_array($_SERVER['REQUEST_METHOD'], ['POST', 'DELETE'], true)) {
+    $data = json_decode(file_get_contents('php://input'), true);
+    $product_id = (int)($data['product_id'] ?? 0);
+
+    if ($product_id <= 0) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'product_id is required']);
+        exit;
+    }
+
+    try {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $prod = $conn->prepare("SELECT product_id FROM products WHERE product_id = :pid LIMIT 1");
+            $prod->bindValue(':pid', $product_id, PDO::PARAM_INT);
+            $prod->execute();
+            if (!$prod->fetch()) {
+                http_response_code(404);
+                echo json_encode(['success' => false, 'message' => 'Product not found']);
+                exit;
+            }
+
+            $conn->prepare("INSERT IGNORE INTO wishlist (user_id, product_id) VALUES (:uid, :pid)")
+                 ->execute([':uid' => $user_id, ':pid' => $product_id]);
+            echo json_encode(['success' => true, 'message' => 'Added to wishlist']);
+        } else {
+            $conn->prepare("DELETE FROM wishlist WHERE user_id = :uid AND product_id = :pid")
+                 ->execute([':uid' => $user_id, ':pid' => $product_id]);
+            echo json_encode(['success' => true, 'message' => 'Removed from wishlist']);
+        }
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+    }
+    exit;
+}
+
 if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
     http_response_code(405);
     echo json_encode(['success' => false, 'message' => 'Method not allowed']);
     exit;
 }
-
-$database = new Database();
-$conn = $database->getConnection();
-
-$user_id = TokenAuth::requireCustomer($conn, 'Please login to view your wishlist');
 
 try {
     $stmt = $conn->prepare(

@@ -45,8 +45,15 @@ try {
         }));
     }
 
-    // usage_limit_per_user was only needed for the filter above — not customer-facing info
-    foreach ($coupons as &$c) { unset($c['usage_limit_per_user']); }
+    // usage_limit_per_user was only needed for the filter above — not customer-facing info.
+    // discount/type/min_order are aliases for the Flutter app's field names, alongside
+    // the original discount_type/discount_value/min_order_value fields the web uses.
+    foreach ($coupons as &$c) {
+        unset($c['usage_limit_per_user']);
+        $c['discount']  = (float)$c['discount_value'];
+        $c['type']      = $c['discount_type'] === 'percentage' ? 'percent' : 'flat';
+        $c['min_order'] = (float)$c['min_order_value'];
+    }
     unset($c);
 
     echo json_encode(['success' => true, 'data' => $coupons, 'count' => count($coupons)]);

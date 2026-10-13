@@ -6,8 +6,13 @@
  * Prices the cart (same validated pricing as Cash on Delivery) and opens a
  * Razorpay Order for that amount. Nothing is written to our own `orders`
  * table here — if the customer abandons the payment, nothing is left behind.
- * The real order is only created by verify-razorpay-payment.php once a
- * payment has actually been confirmed.
+ * The real order is only created once a payment has actually been confirmed,
+ * by either verify-razorpay-payment.php (web) or verify-payment.php (app).
+ *
+ * A priced snapshot of the cart is saved to pending_payment_orders so the
+ * app can hand back just its id (internal_order_id) at the verify step
+ * instead of resending the whole cart. The web flow ignores this id and
+ * keeps resending the cart to verify-razorpay-payment.php as before.
  */
 
 header('Content-Type: application/json');
@@ -64,8 +69,34 @@ try {
         'customer_id' => (string)$customer_id,
     ]);
 
+    // Lazy cleanup: stale reservations (abandoned payments) never block
+    // anything since verify-payment.php checks its own age, but there's no
+    // reason to let old rows pile up.
+    $conn->exec("DELETE FROM pending_payment_orders WHERE created_at < DATE_SUB(NOW(), INTERVAL 1 HOUR)");
+
+    $reserve = $conn->prepare(
+        "INSERT INTO pending_payment_orders (customer_id, razorpay_order_id, shipping_json, items_json, coupon_code, total_amount)
+         VALUES (:cid, :rzp_id, :shipping, :items, :coupon, :total)"
+    );
+    $reserve->execute([
+        ':cid'      => $customer_id,
+        ':rzp_id'   => $rzpOrder['id'],
+        ':shipping' => json_encode($shipping),
+        ':items'    => json_encode($cart_items),
+        ':coupon'   => $coupon_code !== '' ? $coupon_code : null,
+        ':total'    => $priced['total_amount'],
+    ]);
+    $internal_order_id = (int)$conn->lastInsertId();
+
     echo json_encode([
         'success' => true,
+        // Top-level fields for the Flutter app's contract:
+        'internal_order_id' => $internal_order_id,
+        'razorpay_order_id' => $rzpOrder['id'],
+        'amount_paise'      => $rzpOrder['amount'],
+        'currency'          => $rzpOrder['currency'],
+        'key_id'            => $razorpay->getKeyId(),
+        // Nested for the existing web checkout flow — unchanged shape:
         'data' => [
             'razorpay_order_id' => $rzpOrder['id'],
             'amount'            => $rzpOrder['amount'],   // paise, exactly what Razorpay expects in Checkout
