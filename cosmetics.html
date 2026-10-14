@@ -60,6 +60,11 @@
                     <li class="nav-item">
                         <a class="nav-link" href="pages/shops.html?vertical=cosmetics">Shops</a>
                     </li>
+                    <li class="nav-item">
+                        <a class="vertical-switch-pill" href="index.html">
+                            <i class="fas fa-tshirt me-1"></i>Dress
+                        </a>
+                    </li>
                 </ul>
                 <form class="navbar-search-form d-flex" onsubmit="navProductSearch(event)">
                     <div class="input-group">
@@ -95,14 +100,6 @@
         </div>
     </nav>
 
-    <!-- Vertical Switcher -->
-    <div class="vertical-switch">
-        <div class="vs-pill">
-            <a href="index.html" class="vs-tab"><i class="fas fa-tshirt"></i> Dress</a>
-            <a href="cosmetics.html" class="vs-tab active"><i class="fas fa-magic"></i> Cosmetics</a>
-        </div>
-    </div>
-
     <!-- Super Category Tabs (All / Skincare / Makeup ...) -->
     <section class="super-cat-tabs-section" id="superCatTabsSection" style="display:none;">
         <div class="super-cat-tabs" id="superCatTabs"></div>
@@ -111,9 +108,6 @@
     <!-- Category Circles Section -->
     <section class="cat-circles-section">
         <div class="container-xl px-4">
-            <div class="cat-section-head">
-                <h2>Shop by Category</h2>
-            </div>
             <div class="cat-scroll-row">
                 <div class="cat-scroll-track" id="catScrollTrack">
                     <!-- Loaded dynamically -->
@@ -325,18 +319,10 @@
         /* ── Category Circles ── */
         .cat-circles-section {
             background: #fff;
-            padding: 24px 0 18px;
+            padding: 20px 0 22px;
             border-bottom: 1px solid #f0f0f0;
             position: relative;
-        }
-        .cat-section-head {
-            margin-bottom: 14px;
-        }
-        .cat-section-head h2 {
-            font-size: 1.15rem;
-            font-weight: 800;
-            margin: 0;
-            color: #1a1a1a;
+            transition: background 0.3s;
         }
         .cat-scroll-row {
             position: relative;
@@ -429,12 +415,12 @@
             .cat-circle { width: 56px; height: 56px; }
             .cat-circle-item { width: 70px; }
             .cat-scroll-btn { display: none; }
-            .cat-section-head h2 { font-size: 1.02rem; }
         }
 
         /* ── Super Category Tabs ── */
         .super-cat-tabs-section {
-            background: #1a1a1a;
+            background: #f7f3ef;
+            transition: background 0.3s;
         }
         .super-cat-tabs {
             display: flex;
@@ -448,61 +434,114 @@
         .super-cat-tabs::-webkit-scrollbar { display: none; }
         .super-cat-tab {
             flex: 0 0 auto;
-            border: 1px solid rgba(255,255,255,0.18);
-            background: transparent;
-            color: #fff;
+            border: 1px solid rgba(26,26,26,0.12);
+            background: #fff;
+            color: #4a4038;
             font-size: 12.5px;
             font-weight: 700;
             letter-spacing: 0.4px;
             text-transform: uppercase;
-            padding: 8px 22px;
+            padding: 9px 24px;
             border-radius: 20px;
             cursor: pointer;
             white-space: nowrap;
             transition: background 0.15s, color 0.15s, border-color 0.15s;
         }
-        .super-cat-tab:hover { background: rgba(255,255,255,0.1); }
+        .super-cat-tab:hover { background: #f0ebe5; }
         .super-cat-tab.active {
-            background: #fff;
-            color: #1a1a1a;
-            border-color: #fff;
-        }
-
-        /* ── Vertical switcher (Dress / Cosmetics) ── */
-        .vertical-switch {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 14px 12px;
-            background: #fff;
-        }
-        .vs-pill {
-            display: inline-flex;
-            background: #f0ebe5;
-            border-radius: 50px;
-            padding: 4px;
-            gap: 2px;
-        }
-        .vs-tab {
-            display: flex;
-            align-items: center;
-            gap: 7px;
-            padding: 9px 26px;
-            border-radius: 50px;
-            font-size: 13px;
-            font-weight: 700;
-            text-decoration: none;
-            color: #8a7a6a;
-            transition: background 0.2s, color 0.2s, box-shadow 0.2s;
-        }
-        .vs-tab:hover:not(.active) { color: #5a4a3a; }
-        .vs-tab.active {
             background: #1a1a1a;
             color: #fff;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.18);
+            border-color: #1a1a1a;
         }
-        @media (max-width: 575px) {
-            .vs-tab { padding: 8px 18px; font-size: 12px; }
+
+        /* ── Vertical switcher (Dress / Cosmetics), lives in the navbar ── */
+        .vertical-switch-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: linear-gradient(135deg, #e8c48a 0%, #c9995c 100%);
+            color: #1a1a1a !important;
+            font-size: 0.78rem;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            padding: 0.42rem 1rem !important;
+            border-radius: 50px;
+            white-space: nowrap;
+            transition: transform 0.15s, box-shadow 0.15s;
+        }
+        .vertical-switch-pill:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 3px 10px rgba(0,0,0,0.25);
+        }
+        .vertical-switch-pill::after { display: none !important; }
+
+        /* ── Category mood themes — nav + tabs + circles only, this page ── */
+        body.theme-men nav.navbar,
+        body.theme-men .super-cat-tabs-section,
+        body.theme-men .cat-circles-section {
+            background: linear-gradient(120deg, #7EC8E3 0%, #ffffff 100%) !important;
+        }
+        body.theme-women nav.navbar,
+        body.theme-women .super-cat-tabs-section,
+        body.theme-women .cat-circles-section {
+            background: linear-gradient(120deg, #F48FB1 0%, #ffffff 100%) !important;
+        }
+        body.theme-kids nav.navbar,
+        body.theme-kids .super-cat-tabs-section,
+        body.theme-kids .cat-circles-section {
+            background: linear-gradient(120deg, #FFD54F 0%, #ffffff 100%) !important;
+        }
+        body.theme-men nav.navbar,
+        body.theme-women nav.navbar,
+        body.theme-kids nav.navbar {
+            border-bottom-color: rgba(0,0,0,0.08);
+        }
+        body.theme-men .navbar-nav .nav-link,
+        body.theme-women .navbar-nav .nav-link,
+        body.theme-kids .navbar-nav .nav-link,
+        body.theme-men .navbar-brand,
+        body.theme-women .navbar-brand,
+        body.theme-kids .navbar-brand {
+            color: #1a1a1a !important;
+        }
+        body.theme-men .nav-cart-link .cart-icon,
+        body.theme-women .nav-cart-link .cart-icon,
+        body.theme-kids .nav-cart-link .cart-icon,
+        body.theme-men .navbar-nav .nav-link i,
+        body.theme-women .navbar-nav .nav-link i,
+        body.theme-kids .navbar-nav .nav-link i {
+            color: #1a1a1a;
+        }
+        body.theme-men .nav-search-input,
+        body.theme-women .nav-search-input,
+        body.theme-kids .nav-search-input {
+            background: rgba(255,255,255,0.65);
+            border-color: rgba(0,0,0,0.15);
+            color: #1a1a1a;
+        }
+        body.theme-men .nav-search-input::placeholder,
+        body.theme-women .nav-search-input::placeholder,
+        body.theme-kids .nav-search-input::placeholder {
+            color: rgba(26,26,26,0.55);
+        }
+        body.theme-men .nav-search-btn,
+        body.theme-women .nav-search-btn,
+        body.theme-kids .nav-search-btn {
+            background: rgba(255,255,255,0.65);
+            border-color: rgba(0,0,0,0.15);
+            color: #1a1a1a;
+        }
+        body.theme-men .navbar-toggler-icon,
+        body.theme-women .navbar-toggler-icon,
+        body.theme-kids .navbar-toggler-icon {
+            filter: invert(1);
+        }
+        body.theme-men .super-cat-tab,
+        body.theme-women .super-cat-tab,
+        body.theme-kids .super-cat-tab {
+            background: rgba(255,255,255,0.75);
+            border-color: rgba(26,26,26,0.12);
         }
     </style>
 
@@ -689,6 +728,15 @@
         }
         loadCategoryCircles();
 
+        // Men -> sky blue, Women -> pink, Kids -> yellow, anything else (All) -> back to black.
+        function setMoodTheme(categoryName) {
+            document.body.classList.remove('theme-men', 'theme-women', 'theme-kids');
+            const key = (categoryName || '').trim().toLowerCase();
+            if (key === 'men' || key === 'women' || key === 'kids') {
+                document.body.classList.add('theme-' + key);
+            }
+        }
+
         (function loadSuperCategoryTabs() {
             fetch(`api/customer/super-categories.php?vertical=${PAGE_VERTICAL}`)
                 .then(r => r.json())
@@ -707,7 +755,9 @@
                             tabsEl.querySelectorAll('.super-cat-tab').forEach(b => b.classList.remove('active'));
                             this.classList.add('active');
                             const id = parseInt(this.dataset.superCategoryId, 10);
-                            loadCategoryCircles(id || null, this.textContent.trim());
+                            const name = this.textContent.trim();
+                            loadCategoryCircles(id || null, name);
+                            setMoodTheme(name);
                         });
                     });
                 })
