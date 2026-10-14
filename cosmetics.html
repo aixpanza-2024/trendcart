@@ -254,6 +254,12 @@
     <script src="assets/js/home.js"></script>
 
     <style>
+        /* Subtle WhatsApp-style doodle texture — tiny dots/semicircles, tiled.
+           Reused as the first background layer on the tabs and circles strips. */
+        :root {
+            --doodle-pattern: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='56'%3E%3Ccircle cx='10' cy='12' r='2.2' fill='%23fff' fill-opacity='0.16'/%3E%3Cpath d='M40 44a8 8 0 1 1 0-16' stroke='%23fff' stroke-opacity='0.13' stroke-width='2' fill='none'/%3E%3Ccircle cx='46' cy='10' r='1.4' fill='%23fff' fill-opacity='0.22'/%3E%3Ccircle cx='22' cy='40' r='1.6' fill='%23fff' fill-opacity='0.14'/%3E%3C/svg%3E");
+        }
+
         /* ── Hero Banner Carousel ── */
         .hb-section {
             padding: 0;
@@ -321,7 +327,8 @@
            above it, so the whole top area reads as one consistent block.
            Men/Women/Kids override this to their light gradient further down. */
         .cat-circles-section {
-            background: #1a1a1a;
+            background: var(--doodle-pattern) repeat, #1a1a1a;
+            background-size: 56px 56px, auto;
             padding: 14px 0 20px;
             border-bottom: 1px solid rgba(255,255,255,0.08);
             position: relative;
@@ -438,7 +445,8 @@
         /* Default ("All") is black, same as the navbar and the circles strip
            below — Men/Women/Kids override this further down to their gradient. */
         .super-cat-tabs-section {
-            background: #1a1a1a;
+            background: var(--doodle-pattern) repeat, #1a1a1a;
+            background-size: 56px 56px, auto;
             transition: background 0.3s;
         }
         .super-cat-tabs {
@@ -496,20 +504,31 @@
         .vertical-switch-pill::after { display: none !important; }
 
         /* ── Category mood themes — nav + tabs + circles only, this page ── */
-        body.theme-men nav.navbar,
-        body.theme-men .super-cat-tabs-section,
-        body.theme-men .cat-circles-section {
+        /* Nav stays a plain gradient (search bar/icons need a clean backdrop);
+           the tabs and circles strips layer the doodle pattern on top. */
+        body.theme-men nav.navbar {
             background: linear-gradient(120deg, #7EC8E3 0%, #ffffff 100%) !important;
         }
-        body.theme-women nav.navbar,
-        body.theme-women .super-cat-tabs-section,
-        body.theme-women .cat-circles-section {
+        body.theme-women nav.navbar {
             background: linear-gradient(120deg, #F48FB1 0%, #ffffff 100%) !important;
         }
-        body.theme-kids nav.navbar,
+        body.theme-kids nav.navbar {
+            background: linear-gradient(120deg, #FFD54F 0%, #ffffff 100%) !important;
+        }
+        body.theme-men .super-cat-tabs-section,
+        body.theme-men .cat-circles-section {
+            background: var(--doodle-pattern) repeat, linear-gradient(120deg, #7EC8E3 0%, #ffffff 100%) !important;
+            background-size: 56px 56px, auto !important;
+        }
+        body.theme-women .super-cat-tabs-section,
+        body.theme-women .cat-circles-section {
+            background: var(--doodle-pattern) repeat, linear-gradient(120deg, #F48FB1 0%, #ffffff 100%) !important;
+            background-size: 56px 56px, auto !important;
+        }
         body.theme-kids .super-cat-tabs-section,
         body.theme-kids .cat-circles-section {
-            background: linear-gradient(120deg, #FFD54F 0%, #ffffff 100%) !important;
+            background: var(--doodle-pattern) repeat, linear-gradient(120deg, #FFD54F 0%, #ffffff 100%) !important;
+            background-size: 56px 56px, auto !important;
         }
         body.theme-men nav.navbar,
         body.theme-women nav.navbar,
