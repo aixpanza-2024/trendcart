@@ -10,8 +10,10 @@ let firstOrderFreeEnabled = false;
 let deliveryCheckTimer  = null;
 let _profileFromDB      = null;
 let appliedCoupon       = null; // { code, discount_amount, description } or null
-let customerLat         = null; // set once real GPS coordinates are known (this page or a prior "use my location")
+let customerLat         = null; // pin of the address being delivered to (saved address pin, or "use my current location")
 let customerLng         = null;
+let savedAddresses      = [];
+let selectedAddressId   = null; // saved address being delivered to; null = address typed into the form
 
 document.addEventListener('DOMContentLoaded', function () {
     if (localStorage.getItem('isLoggedIn') !== 'true') {
@@ -19,14 +21,9 @@ document.addEventListener('DOMContentLoaded', function () {
         return;
     }
 
-    // Reuse coordinates captured earlier (e.g. the "use my location" button
-    // on a shop page) so the customer isn't asked for permission twice
-    const savedLat = localStorage.getItem('customerLat');
-    const savedLng = localStorage.getItem('customerLng');
-    if (savedLat && savedLng) {
-        customerLat = parseFloat(savedLat);
-        customerLng = parseFloat(savedLng);
-    }
+    // Phone: accept "+91 98765 43210" etc. and keep just the 10 digits
+    const phoneEl = document.getElementById('phone');
+    if (phoneEl) phoneEl.addEventListener('input', () => { phoneEl.value = normalizeMobile(phoneEl.value); });
 
     loadCheckoutConfig();
     loadCheckoutData();
@@ -48,6 +45,8 @@ function useCurrentLocationForCheckout() {
         (pos) => {
             customerLat = pos.coords.latitude;
             customerLng = pos.coords.longitude;
+            selectedAddressId = null; // the server would otherwise use the saved address's pin
+            renderSavedAddresses();
             localStorage.setItem('customerLat', customerLat);
             localStorage.setItem('customerLng', customerLng);
 
@@ -103,6 +102,12 @@ async function loadCheckoutConfig() {
 
 function onPincodeInput(val) {
     clearTimeout(deliveryCheckTimer);
+    const sel = savedAddresses.find(a => a.address_id == selectedAddressId);
+    if (sel && val !== sel.pincode) {
+        selectedAddressId = null;
+        customerLat = customerLng = null;
+        renderSavedAddresses();
+    }
     if (val.length === 6) {
         deliveryCheckTimer = setTimeout(() => checkDeliveryZone(val), 400);
     } else {
@@ -378,18 +383,99 @@ async function loadCheckoutData() {
         if (data.success && data.data) {
             const p = data.data;
             _profileFromDB = p;
-            if (p.phone)    document.getElementById('phone').value   = p.phone;
-            if (p.default_address) {
-                const a = p.default_address;
-                if (a.address_line1) document.getElementById('address').value = a.address_line1;
-                if (a.city)          document.getElementById('city').value    = a.city;
-                if (a.pincode) {
-                    document.getElementById('pincode').value = a.pincode;
-                    if (a.pincode.length === 6) checkDeliveryZone(a.pincode);
-                }
-            }
+            if (p.phone)    document.getElementById('phone').value   = normalizeMobile(p.phone);
         }
     } catch (e) { /* pre-fill is optional */ }
+
+    await loadSavedAddresses();
+}
+
+// ── Saved addresses ─────────────────────────────────────────────────
+async function loadSavedAddresses(preferId) {
+    try {
+        const res  = await fetch('../api/customer/addresses.php');
+        const data = await res.json();
+        if (!data.success) return;
+        savedAddresses = data.data;
+        // address-book.js edits by id from this cache
+        _addressCache = {};
+        savedAddresses.forEach(a => { _addressCache[a.address_id] = a; });
+    } catch (e) { return; }
+
+    document.getElementById('savedAddressSection').style.display = '';
+    const pick = savedAddresses.find(a => a.address_id == preferId)
+              || savedAddresses.find(a => a.address_id == selectedAddressId)
+              || savedAddresses.find(a => parseInt(a.is_default));
+    if (pick) selectSavedAddress(pick.address_id);
+    else      renderSavedAddresses();
+}
+
+// Called by address-book.js after the add/edit modal saves
+function onAddressSaved(addressId) {
+    loadSavedAddresses(addressId);
+}
+
+function renderSavedAddresses() {
+    const list = document.getElementById('savedAddressList');
+    if (!list) return;
+
+    const cards = savedAddresses.map(a => {
+        const checked = a.address_id == selectedAddressId;
+        const line2   = a.address_line2 ? `, ${escapeHtml(a.address_line2)}` : '';
+        const pinInfo = hasPin(a)
+            ? '<span class="text-success"><i class="fas fa-location-dot me-1"></i>Pinned on map</span>'
+            : `<a href="#" class="text-warning-emphasis" onclick="editAddress(${a.address_id}); return false;">
+                   <i class="fas fa-triangle-exclamation me-1"></i>Pin on map for an exact delivery charge</a>`;
+        return `
+            <label class="border rounded-3 p-2 d-flex gap-2 align-items-start mb-0 ${checked ? 'border-dark' : ''}" style="cursor:pointer;">
+                <input type="radio" class="form-check-input mt-1" name="savedAddress" ${checked ? 'checked' : ''}
+                       onchange="selectSavedAddress(${a.address_id})">
+                <div class="small flex-grow-1">
+                    <div class="fw-semibold"><span class="text-uppercase text-grey me-1">${escapeHtml(a.address_type)}</span> ${escapeHtml(a.full_name)}</div>
+                    <div class="text-grey">${escapeHtml(a.address_line1)}${line2}, ${escapeHtml(a.city)} - ${escapeHtml(a.pincode)}</div>
+                    <div>${pinInfo}</div>
+                </div>
+            </label>`;
+    });
+
+    cards.push(`
+        <label class="border rounded-3 p-2 d-flex gap-2 align-items-center mb-0 ${selectedAddressId === null ? 'border-dark' : ''}" style="cursor:pointer;">
+            <input type="radio" class="form-check-input mt-0" name="savedAddress" ${selectedAddressId === null ? 'checked' : ''}
+                   onchange="selectSavedAddress(null)">
+            <span class="small">${savedAddresses.length ? 'Deliver to a different address (fill in below)' : 'No saved addresses yet — fill in below, or add one with a map pin for an exact delivery charge'}</span>
+        </label>`);
+
+    list.innerHTML = cards.join('');
+}
+
+function selectSavedAddress(addressId) {
+    const a = savedAddresses.find(x => x.address_id == addressId);
+    selectedAddressId = a ? a.address_id : null;
+
+    if (a) {
+        const [first, ...rest] = (a.full_name || '').trim().split(/\s+/);
+        if (first)       document.getElementById('firstName').value = first;
+        if (rest.length) document.getElementById('lastName').value  = rest.join(' ');
+        document.getElementById('phone').value   = normalizeMobile(a.phone);
+        document.getElementById('address').value = a.address_line1 + (a.address_line2 ? ', ' + a.address_line2 : '');
+        document.getElementById('city').value    = a.city || '';
+        document.getElementById('state').value   = a.state || document.getElementById('state').value;
+        document.getElementById('pincode').value = a.pincode || '';
+        customerLat = hasPin(a) ? parseFloat(a.latitude)  : null;
+        customerLng = hasPin(a) ? parseFloat(a.longitude) : null;
+    } else {
+        // A typed address starts empty and gets the pincode-based charge
+        // unless "Use my current location" is pressed
+        document.getElementById('address').value = '';
+        document.getElementById('city').value    = '';
+        document.getElementById('pincode').value = '';
+        customerLat = customerLng = null;
+        document.getElementById('deliveryZoneBadge').style.display = 'none';
+    }
+
+    renderSavedAddresses();
+    const pincode = document.getElementById('pincode').value.trim();
+    if (pincode.length === 6) checkDeliveryZone(pincode);
 }
 
 async function placeOrder() {
@@ -416,6 +502,7 @@ async function placeOrder() {
         pincode:   document.getElementById('pincode').value.trim(),
         latitude:  customerLat,
         longitude: customerLng,
+        address_id: selectedAddressId,
     };
 
     const selectedPayment = document.querySelector('input[name="payment"]:checked');

@@ -35,6 +35,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="../assets/css/theme.css">
     <link rel="stylesheet" href="../assets/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 </head>
 <body>
 
@@ -213,53 +214,79 @@
         </div>
     </div>
 
-    <!-- Add / Edit Address Modal -->
+    <!-- Add / Edit Address Modal (map picker: assets/js/address-map.js) -->
     <div class="modal fade" id="addressModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="addressModalTitle"><i class="fas fa-map-marker-alt me-2"></i>Add Address</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <form id="addressForm">
+                <form id="addressForm" autocomplete="on">
                     <div class="modal-body">
                         <input type="hidden" id="addrId">
                         <div class="row g-3">
-                            <div class="col-12">
-                                <label class="form-label small fw-semibold">Address Type</label>
+                            <div class="col-md-4">
+                                <label class="form-label small fw-semibold" for="addrType">Address Type</label>
                                 <select class="form-select" id="addrType">
                                     <option value="home">Home</option>
                                     <option value="work">Work</option>
                                     <option value="other">Other</option>
                                 </select>
                             </div>
-                            <div class="col-md-6">
-                                <label class="form-label small fw-semibold">Full Name</label>
-                                <input type="text" class="form-control" id="addrFullName" required>
+                            <div class="col-md-4">
+                                <label class="form-label small fw-semibold" for="addrFullName">Full Name</label>
+                                <input type="text" class="form-control" id="addrFullName" autocomplete="name" placeholder="Receiver's name" required>
                             </div>
-                            <div class="col-md-6">
-                                <label class="form-label small fw-semibold">Phone</label>
-                                <input type="tel" class="form-control" id="addrPhone" maxlength="10" required>
+                            <div class="col-md-4">
+                                <label class="form-label small fw-semibold" for="addrPhone">Mobile Number</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">+91</span>
+                                    <input type="tel" class="form-control" id="addrPhone" inputmode="numeric" autocomplete="tel-national"
+                                           placeholder="10-digit mobile number" pattern="[6-9][0-9]{9}"
+                                           title="10-digit mobile number starting with 6, 7, 8 or 9" required>
+                                </div>
+                            </div>
+
+                            <!-- Delivery location pin -->
+                            <div class="col-12">
+                                <label class="form-label small fw-semibold mb-1">Delivery Location on Map</label>
+                                <div class="d-flex flex-wrap gap-2 mb-2">
+                                    <button type="button" class="btn btn-outline-dark btn-sm" onclick="AddressMap.useMyLocation(this)">
+                                        <i class="fas fa-location-crosshairs me-1"></i> Use my current location
+                                    </button>
+                                    <div class="input-group input-group-sm flex-grow-1" style="min-width:220px;">
+                                        <input type="text" class="form-control" id="addrMapSearch" placeholder="Search area, landmark or place"
+                                               onkeydown="if (event.key === 'Enter') { event.preventDefault(); AddressMap.search(); }">
+                                        <button type="button" class="btn btn-outline-secondary" onclick="AddressMap.search()" aria-label="Search on map">
+                                            <i class="fas fa-search"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div id="addrMap" style="height:240px;border-radius:10px;border:1px solid var(--border-color);"></div>
+                                <div class="small mt-1" id="addrMapStatus"></div>
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label small fw-semibold" for="addrLine1">House / Flat / Building, Street</label>
+                                <input type="text" class="form-control" id="addrLine1" autocomplete="address-line1" required>
                             </div>
                             <div class="col-12">
-                                <label class="form-label small fw-semibold">Address Line 1</label>
-                                <input type="text" class="form-control" id="addrLine1" required>
-                            </div>
-                            <div class="col-12">
-                                <label class="form-label small fw-semibold">Address Line 2 <span class="text-muted">(optional)</span></label>
-                                <input type="text" class="form-control" id="addrLine2">
+                                <label class="form-label small fw-semibold" for="addrLine2">Landmark / Area <span class="text-muted">(optional)</span></label>
+                                <input type="text" class="form-control" id="addrLine2" autocomplete="address-line2">
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label small fw-semibold">City</label>
-                                <input type="text" class="form-control" id="addrCity" required>
+                                <label class="form-label small fw-semibold" for="addrCity">City</label>
+                                <input type="text" class="form-control" id="addrCity" autocomplete="address-level2" required>
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label small fw-semibold">State</label>
-                                <input type="text" class="form-control" id="addrState" required>
+                                <label class="form-label small fw-semibold" for="addrState">State</label>
+                                <input type="text" class="form-control" id="addrState" autocomplete="address-level1" required>
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label small fw-semibold">Pincode</label>
-                                <input type="text" class="form-control" id="addrPincode" maxlength="6" required>
+                                <label class="form-label small fw-semibold" for="addrPincode">Pincode</label>
+                                <input type="text" class="form-control" id="addrPincode" inputmode="numeric" autocomplete="postal-code"
+                                       maxlength="6" pattern="[0-9]{6}" title="6-digit pincode" required>
                             </div>
                             <div class="col-12">
                                 <div class="form-check">
@@ -317,6 +344,8 @@
     <script src="../assets/js/cart.js"></script>
     <script src="../assets/js/auth.js"></script>
     <script src="../assets/js/customer-profile.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+    <script src="../assets/js/address-map.js"></script>
     <script src="../assets/js/address-book.js"></script>
     <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
     <script src="../assets/js/subscription.js"></script>

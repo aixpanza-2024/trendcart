@@ -10,6 +10,7 @@ header('Content-Type: application/json');
 require_once __DIR__ . '/../config/session.php';
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../utils/TokenAuth.php';
+require_once __DIR__ . '/../utils/AddressInput.php';
 
 $database = new Database();
 $conn = $database->getConnection();
@@ -22,7 +23,7 @@ try {
     if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $stmt = $conn->prepare(
             "SELECT address_id, address_type, full_name, phone, address_line1, address_line2,
-                    city, state, pincode, is_default, created_at
+                    city, state, pincode, latitude, longitude, is_default, created_at
              FROM addresses
              WHERE user_id = :uid
              ORDER BY is_default DESC, created_at DESC"
@@ -42,7 +43,7 @@ try {
         }
 
         $full_name     = trim($data['full_name'] ?? '');
-        $phone         = trim($data['phone'] ?? '');
+        $phone         = AddressInput::mobile($data['phone'] ?? '');
         $address_line1 = trim($data['address_line1'] ?? '');
         $address_line2 = trim($data['address_line2'] ?? '');
         $city          = trim($data['city'] ?? '');
@@ -51,12 +52,14 @@ try {
         $address_type_in = $data['address_type'] ?? 'home';
         $address_type    = in_array($address_type_in, ['home', 'work', 'other'], true) ? $address_type_in : 'home';
         $make_default  = !empty($data['is_default']);
+        // Optional map pin — delivery fee is distance-based when present
+        [$latitude, $longitude] = AddressInput::coords($data);
 
         if ($full_name === '' || $address_line1 === '' || $city === '' || $state === '') {
             echo json_encode(['success' => false, 'message' => 'Name, address line 1, city and state are required']);
             exit;
         }
-        if (!preg_match('/^[6-9]\d{9}$/', $phone)) {
+        if ($phone === null) {
             echo json_encode(['success' => false, 'message' => 'Enter a valid 10-digit mobile number']);
             exit;
         }
@@ -88,9 +91,9 @@ try {
 
         $ins = $conn->prepare(
             "INSERT INTO addresses
-                (user_id, address_type, full_name, phone, address_line1, address_line2, city, state, pincode, is_default)
+                (user_id, address_type, full_name, phone, address_line1, address_line2, city, state, pincode, latitude, longitude, is_default)
              VALUES
-                (:uid, :type, :name, :phone, :line1, :line2, :city, :state, :pincode, :is_default)"
+                (:uid, :type, :name, :phone, :line1, :line2, :city, :state, :pincode, :lat, :lng, :is_default)"
         );
         $ins->bindValue(':uid', $user_id, PDO::PARAM_INT);
         $ins->bindValue(':type', $address_type);
@@ -101,6 +104,8 @@ try {
         $ins->bindValue(':city', $city);
         $ins->bindValue(':state', $state);
         $ins->bindValue(':pincode', $pincode);
+        $ins->bindValue(':lat', $latitude);
+        $ins->bindValue(':lng', $longitude);
         $ins->bindValue(':is_default', $is_default ? 1 : 0, PDO::PARAM_INT);
         $ins->execute();
 
