@@ -36,7 +36,7 @@ try {
         }
 
         if ($search !== '') {
-            $where[] = '(p.product_name LIKE :search OR u.full_name LIKE :search OR pr.review_text LIKE :search)';
+            $where[] = '(COALESCE(p.product_name, pr.product_name) LIKE :search OR u.full_name LIKE :search OR pr.review_text LIKE :search)';
             $params[':search'] = '%' . $search . '%';
         }
 
@@ -45,7 +45,7 @@ try {
         // Total count
         $countStmt = $conn->prepare("
             SELECT COUNT(*) FROM product_reviews pr
-            JOIN products p ON pr.product_id = p.product_id
+            LEFT JOIN products p ON pr.product_id = p.product_id
             JOIN users u ON pr.user_id = u.user_id
             WHERE $whereSQL
         ");
@@ -57,13 +57,14 @@ try {
         $stmt = $conn->prepare("
             SELECT pr.review_id, pr.rating, pr.review_title, pr.review_text,
                    pr.is_approved, pr.is_verified_purchase, pr.helpful_count, pr.created_at,
-                   p.product_id, p.product_name,
+                   pr.product_id, COALESCE(p.product_name, pr.product_name) AS product_name,
                    u.user_id, u.full_name AS customer_name, u.email AS customer_email,
-                   sp.shop_name
+                   s.shop_name
             FROM product_reviews pr
-            JOIN products p  ON pr.product_id = p.product_id
+            -- LEFT: reviews of since-deleted products (product_id NULL) still listed
+            LEFT JOIN products p ON pr.product_id = p.product_id
             JOIN users u     ON pr.user_id = u.user_id
-            LEFT JOIN shop_profiles sp ON p.shop_id = sp.shop_id
+            LEFT JOIN shops s ON pr.shop_id = s.shop_id
             WHERE $whereSQL
             ORDER BY pr.created_at DESC
             LIMIT :limit OFFSET :offset

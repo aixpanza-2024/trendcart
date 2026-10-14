@@ -41,9 +41,11 @@ if (!$order) {
 }
 
 // ── Helper: recalculate product + shop ratings after a review change ──
-function recalcRatings(PDO $conn, int $product_id): void {
+// product_id is NULL once the product has been deleted; the shop rating is
+// read from product_reviews.shop_id so it still counts those reviews.
+function recalcRatings(PDO $conn, ?int $product_id, int $shop_id): void {
     // Product
-    $conn->prepare("
+    if ($product_id !== null) $conn->prepare("
         UPDATE products
         SET rating_average = COALESCE(
                 (SELECT AVG(rating) FROM product_reviews
@@ -54,24 +56,14 @@ function recalcRatings(PDO $conn, int $product_id): void {
     ")->execute([':pid' => $product_id, ':pid2' => $product_id, ':pid3' => $product_id]);
 
     // Shop
-    $shopRow = $conn->prepare("SELECT shop_id FROM products WHERE product_id = :pid LIMIT 1");
-    $shopRow->execute([':pid' => $product_id]);
-    $shop = $shopRow->fetch();
-    if (!$shop) return;
-
-    $shop_id = (int)$shop['shop_id'];
     $conn->prepare("
         UPDATE shops
         SET rating_average = COALESCE(
-                (SELECT AVG(pr.rating)
-                 FROM product_reviews pr
-                 INNER JOIN products p ON pr.product_id = p.product_id
-                 WHERE p.shop_id = :sid AND pr.is_approved = 1), 0),
+                (SELECT AVG(rating) FROM product_reviews
+                 WHERE shop_id = :sid AND is_approved = 1), 0),
             total_ratings  = (
-                SELECT COUNT(*)
-                FROM product_reviews pr
-                INNER JOIN products p ON pr.product_id = p.product_id
-                WHERE p.shop_id = :sid2 AND pr.is_approved = 1)
+                SELECT COUNT(*) FROM product_reviews
+                WHERE shop_id = :sid2 AND is_approved = 1)
         WHERE shop_id = :sid3
     ")->execute([':sid' => $shop_id, ':sid2' => $shop_id, ':sid3' => $shop_id]);
 }
@@ -84,7 +76,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delet
 
     // Fetch review — must belong to this customer
     $revStmt = $conn->prepare("
-        SELECT pr.review_id, pr.product_id
+        SELECT pr.review_id, pr.product_id, pr.shop_id
         FROM product_reviews pr
         WHERE pr.review_id = :rid AND pr.user_id = :uid
         LIMIT 1
@@ -98,7 +90,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delet
         $conn->prepare("DELETE FROM product_reviews WHERE review_id = :rid AND user_id = :uid")
              ->execute([':rid' => (int)$rev['review_id'], ':uid' => $customer_id]);
 
-        recalcRatings($conn, (int)$rev['product_id']);
+        recalcRatings($conn, $rev['product_id'] !== null ? (int)$rev['product_id'] : null, (int)$rev['shop_id']);
         $flash = ['type' => 'success', 'msg' => 'Your rating has been removed.'];
     } else {
         $flash = ['type' => 'danger', 'msg' => 'Rating not found or already removed.'];
@@ -118,7 +110,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'rate'
 
         // Verify item: delivered, belongs to this customer & order
         $verifyStmt = $conn->prepare("
-            SELECT oi.product_id, oi.order_id
+            SELECT oi.product_id, oi.order_id, oi.shop_id, oi.product_name
             FROM order_items oi
             INNER JOIN orders o ON oi.order_id = o.order_id
             WHERE oi.order_item_id = :iid
@@ -132,7 +124,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'rate'
         $verifyStmt->bindValue(':oid', $order_id,      PDO::PARAM_INT);
         $verifyStmt->execute();
         $item = $verifyStmt->fetch();
-        if (!$item) continue;
+        if (!$item || $item['product_id'] === null) continue; // product since deleted
 
         $product_id    = (int)$item['product_id'];
         $item_order_id = (int)$item['order_id'];
@@ -151,10 +143,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'rate'
 
         $insStmt = $conn->prepare("
             INSERT INTO product_reviews
-                (product_id, user_id, order_id, rating, review_text, is_verified_purchase, is_approved)
-            VALUES (:pid, :uid, :oid, :rating, :text, 1, 1)
+                (product_id, shop_id, product_name, user_id, order_id, rating, review_text, is_verified_purchase, is_approved)
+            VALUES (:pid, :sid, :pname, :uid, :oid, :rating, :text, 1, 1)
         ");
         $insStmt->bindValue(':pid',    $product_id,    PDO::PARAM_INT);
+        $insStmt->bindValue(':sid',    (int)$item['shop_id'], PDO::PARAM_INT);
+        $insStmt->bindValue(':pname',  $item['product_name']);
         $insStmt->bindValue(':uid',    $customer_id,   PDO::PARAM_INT);
         $insStmt->bindValue(':oid',    $item_order_id, PDO::PARAM_INT);
         $insStmt->bindValue(':rating', $rating,        PDO::PARAM_INT);
@@ -170,19 +164,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'rate'
 
 // ── Fetch ALL delivered items + existing review for each ──────────────
 $itemsStmt = $conn->prepare("
-    SELECT oi.order_item_id, oi.product_id, p.product_name, s.shop_name,
-           (SELECT image_url FROM product_images
-            WHERE product_id = p.product_id
-            ORDER BY is_primary DESC, display_order ASC
-            LIMIT 1) AS product_image,
+    SELECT oi.order_item_id, oi.product_id, oi.product_name, s.shop_name,
+           COALESCE(oi.product_image,
+               (SELECT image_url FROM product_images
+                WHERE product_id = oi.product_id
+                ORDER BY is_primary DESC, display_order ASC
+                LIMIT 1)) AS product_image,
            pr.review_id, pr.rating AS review_rating, pr.review_text AS review_comment
     FROM order_items oi
-    INNER JOIN products p ON oi.product_id = p.product_id
     INNER JOIN shops   s ON oi.shop_id     = s.shop_id
     LEFT JOIN product_reviews pr
-           ON pr.product_id = oi.product_id
-          AND pr.user_id    = :cid
-          AND pr.order_id   = oi.order_id
+           ON pr.user_id  = :cid
+          AND pr.order_id = oi.order_id
+          AND (pr.product_id = oi.product_id
+               OR (oi.product_id IS NULL AND pr.product_id IS NULL
+                   AND pr.product_name = oi.product_name))
     WHERE oi.order_id    = :oid
       AND oi.item_status = 'delivered'
     ORDER BY oi.order_item_id ASC
@@ -199,7 +195,13 @@ if (!$allItems) {
 }
 
 $ratedItems   = array_filter($allItems, fn($i) => $i['review_id'] !== null);
-$unratedItems = array_filter($allItems, fn($i) => $i['review_id'] === null);
+// A deleted product (product_id NULL) can no longer be rated, only its existing rating shown
+$unratedItems = array_filter($allItems, fn($i) => $i['review_id'] === null && $i['product_id'] !== null);
+
+if (!$ratedItems && !$unratedItems) {
+    header('Location: orders.html');
+    exit;
+}
 
 $LABELS = ['', 'Poor', 'Fair', 'Good', 'Very Good', 'Excellent'];
 $STARS  = ['', '★', '★★', '★★★', '★★★★', '★★★★★'];

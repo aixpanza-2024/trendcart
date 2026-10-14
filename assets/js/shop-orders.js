@@ -142,6 +142,10 @@ function renderOrders(orders) {
             const sizeTag = item.selected_size
                 ? `<span class="badge bg-light text-dark border ms-1" style="font-size:10px;">${esc(item.selected_size)}</span>`
                 : '';
+            // SKU as it was when ordered, so staff can match it to the QR label
+            const skuTag = item.product_code
+                ? `<span class="badge bg-light text-dark border ms-1" style="font-size:10px;"><i class="fas fa-barcode me-1"></i>${esc(item.product_code)}</span>`
+                : '';
             const actions = nextActions(item.item_status);
 
             html += `<tr>
@@ -150,7 +154,7 @@ function renderOrders(orders) {
                         ${img}
                         <div>
                             <div style="font-size:13px;max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${esc(item.product_name)}">${esc(item.product_name)}</div>
-                            ${(colorTag || sizeTag) ? `<div class="mt-1">${colorTag}${sizeTag}</div>` : ''}
+                            ${(colorTag || sizeTag || skuTag) ? `<div class="mt-1">${colorTag}${sizeTag}${skuTag}</div>` : ''}
                         </div>
                     </div>
                 </td>

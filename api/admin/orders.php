@@ -78,11 +78,12 @@ try {
         $itemStmt = $conn->prepare("
             SELECT oi.order_id, oi.product_name, oi.quantity, oi.price, oi.subtotal,
                    oi.selected_size, oi.selected_color, oi.item_status,
-                   s.shop_name,
-                   (SELECT image_url FROM product_images
-                    WHERE product_id = oi.product_id
-                    ORDER BY is_primary DESC, display_order ASC
-                    LIMIT 1) AS product_image
+                   oi.product_code, s.shop_name,
+                   COALESCE(oi.product_image,
+                       (SELECT image_url FROM product_images
+                        WHERE product_id = oi.product_id
+                        ORDER BY is_primary DESC, display_order ASC
+                        LIMIT 1)) AS product_image
             FROM order_items oi
             LEFT JOIN shops s ON oi.shop_id = s.shop_id
             WHERE oi.order_id IN ($placeholders)

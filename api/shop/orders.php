@@ -76,14 +76,15 @@ try {
             o.shipping_phone,
             u.full_name as customer_name,
             u.phone as customer_phone,
-            p.product_name,
-            p.product_id,
-            pi.image_url as product_image
+            oi.product_name,
+            oi.product_id,
+            oi.product_code,
+            COALESCE(oi.product_image, pi.image_url) as product_image
         FROM order_items oi
         INNER JOIN orders o ON oi.order_id = o.order_id
         INNER JOIN users u ON o.customer_id = u.user_id
-        INNER JOIN products p ON oi.product_id = p.product_id
-        LEFT JOIN product_images pi ON p.product_id = pi.product_id AND pi.is_primary = 1
+        -- Snapshot fields above keep the line visible after its product is deleted
+        LEFT JOIN product_images pi ON oi.product_id = pi.product_id AND pi.is_primary = 1
         WHERE $where_clause
         ORDER BY o.order_date DESC
         LIMIT 100

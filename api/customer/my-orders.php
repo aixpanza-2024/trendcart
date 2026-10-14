@@ -35,25 +35,30 @@ try {
     if (isset($_GET['order_id'])) {
         $orderId = (int)$_GET['order_id'];
 
+        // Name, SKU and image come from the order line's own snapshot, so a
+        // line stays visible (product_id NULL) after its product is deleted.
         $itemSql = "SELECT oi.order_item_id, oi.quantity, oi.price, oi.subtotal,
-                           oi.selected_size, oi.item_status,
-                           p.product_name, p.product_id,
+                           oi.selected_size, oi.selected_color, oi.item_status,
+                           oi.product_name, oi.product_id, oi.product_code,
                            s.shop_name,
-                           (SELECT image_url FROM product_images
-                            WHERE product_id = p.product_id
-                            ORDER BY is_primary DESC, display_order ASC
-                            LIMIT 1) AS product_image,
+                           COALESCE(oi.product_image,
+                               (SELECT image_url FROM product_images
+                                WHERE product_id = oi.product_id
+                                ORDER BY is_primary DESC, display_order ASC
+                                LIMIT 1)) AS product_image,
                            CASE WHEN pr.review_id IS NOT NULL THEN 1 ELSE 0 END AS has_reviewed,
                            pr.rating AS review_rating
                     FROM order_items oi
                     INNER JOIN orders o ON oi.order_id = o.order_id
-                    INNER JOIN products p ON oi.product_id = p.product_id
-                    INNER JOIN shops s ON oi.shop_id = s.shop_id
+                    LEFT JOIN shops s ON oi.shop_id = s.shop_id
                     LEFT JOIN product_reviews pr
-                           ON pr.product_id = p.product_id
-                          AND pr.user_id    = :customer_id_r
-                          AND pr.order_id   = oi.order_id
-                    WHERE oi.order_id = :order_id AND o.customer_id = :customer_id";
+                           ON pr.user_id  = :customer_id_r
+                          AND pr.order_id = oi.order_id
+                          AND (pr.product_id = oi.product_id
+                               OR (oi.product_id IS NULL AND pr.product_id IS NULL
+                                   AND pr.product_name = oi.product_name))
+                    WHERE oi.order_id = :order_id AND o.customer_id = :customer_id
+                    ORDER BY oi.order_item_id ASC";
 
         $iStmt = $conn->prepare($itemSql);
         $iStmt->bindValue(':order_id',     $orderId,     PDO::PARAM_INT);

@@ -37,7 +37,11 @@ class OrderService {
         $subtotal        = 0.0;
 
         $pStmt = $conn->prepare(
-            "SELECT p.product_id, p.product_name, p.price, p.shop_id
+            "SELECT p.product_id, p.product_name, p.product_code, p.price, p.shop_id,
+                    (SELECT pi.image_url FROM product_images pi
+                     WHERE pi.product_id = p.product_id
+                     ORDER BY pi.is_primary DESC, pi.display_order ASC
+                     LIMIT 1) AS product_image
              FROM products p
              INNER JOIN shops s ON p.shop_id = s.shop_id
              WHERE p.product_id = :pid AND p.product_status = 'active' AND s.shop_status = 'open'
@@ -80,6 +84,8 @@ class OrderService {
             $validated_items[] = [
                 'product_id'     => $product['product_id'],
                 'product_name'   => $product['product_name'],
+                'product_code'   => $product['product_code'],
+                'product_image'  => $product['product_image'],
                 'shop_id'        => $product['shop_id'],
                 'selected_size'  => $selected_size,
                 'selected_color' => $selected_color,
@@ -360,12 +366,13 @@ class OrderService {
             CouponValidator::recordUsage($conn, $applied_coupon['coupon_id'], $customer_id, $order_id, $discount_amount);
         }
 
-        // Insert order items
+        // Insert order items. Name, SKU and image are snapshotted so the line
+        // still reads correctly after the product is deleted or its SKU reused.
         $iStmt = $conn->prepare(
             "INSERT INTO order_items
-                (order_id, shop_id, product_id, product_name, selected_size, selected_color, quantity, price, subtotal)
+                (order_id, shop_id, product_id, product_name, product_code, product_image, selected_size, selected_color, quantity, price, subtotal)
              VALUES
-                (:order_id, :shop_id, :product_id, :product_name, :selected_size, :selected_color, :quantity, :price, :subtotal)"
+                (:order_id, :shop_id, :product_id, :product_name, :product_code, :product_image, :selected_size, :selected_color, :quantity, :price, :subtotal)"
         );
         $ocStmt = $conn->prepare(
             "UPDATE products SET orders_count = orders_count + :qty WHERE product_id = :pid"
@@ -375,6 +382,8 @@ class OrderService {
             $iStmt->bindValue(':shop_id',        $item['shop_id'],           PDO::PARAM_INT);
             $iStmt->bindValue(':product_id',     $item['product_id'],        PDO::PARAM_INT);
             $iStmt->bindValue(':product_name',   $item['product_name']);
+            $iStmt->bindValue(':product_code',   $item['product_code']);
+            $iStmt->bindValue(':product_image',  $item['product_image']);
             $iStmt->bindValue(':selected_size',  $item['selected_size']);
             $iStmt->bindValue(':selected_color', $item['selected_color']);
             $iStmt->bindValue(':quantity',      $item['quantity'],           PDO::PARAM_INT);
