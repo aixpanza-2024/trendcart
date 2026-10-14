@@ -9,7 +9,10 @@ require_once __DIR__ . '/SubscriptionService.php';
 class NotificationService {
 
     public static function publish($conn, array $post, $created_by) {
-        $audienceWhere = "u.user_type = 'customer' AND u.is_active = 1";
+        // LEFT JOIN: a customer with no profile row yet has never opted out,
+        // so COALESCE treats a missing row the same as notifications_enabled = 1.
+        $audienceJoin  = "LEFT JOIN customer_profiles cp ON cp.user_id = u.user_id";
+        $audienceWhere = "u.user_type = 'customer' AND u.is_active = 1 AND COALESCE(cp.notifications_enabled, 1) = 1";
         if ($post['audience'] === 'subscribers') {
             $audienceWhere .= " AND u.user_id IN (
                 SELECT user_id FROM customer_subscriptions
@@ -34,7 +37,7 @@ class NotificationService {
         $fanout = $conn->prepare(
             "INSERT INTO notifications (user_id, notification_type, title, message, related_id, related_type)
              SELECT u.user_id, 'offer', :title, :message, :nid, 'admin_notification'
-             FROM users u WHERE {$audienceWhere}"
+             FROM users u {$audienceJoin} WHERE {$audienceWhere}"
         );
         $fanout->execute([':title' => $post['title'], ':message' => $inboxMessage, ':nid' => $notification_id]);
         $recipients = $fanout->rowCount();
@@ -42,6 +45,7 @@ class NotificationService {
         $tokenStmt = $conn->query(
             "SELECT dt.token FROM device_tokens dt
              JOIN users u ON u.user_id = dt.user_id
+             {$audienceJoin}
              WHERE {$audienceWhere}"
         );
         $tokens = $tokenStmt->fetchAll(PDO::FETCH_COLUMN);
