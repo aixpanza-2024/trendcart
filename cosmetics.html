@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-4K7BXN8VK9"></script>
+    <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'G-4K7BXN8VK9');
+    </script>
+
+    <!-- Meta Pixel Code -->
+    <script>
+    !function(f,b,e,v,n,t,s)
+    {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+    n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+    if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+    n.queue=[];t=b.createElement(e);t.async=!0;
+    t.src=v;s=b.getElementsByTagName(e)[0];
+    s.parentNode.insertBefore(t,s)}(window, document,'script',
+    'https://connect.facebook.net/en_US/fbevents.js');
+    fbq('init', '1819310779236907');
+    fbq('track', 'PageView');
+    </script>
+    <noscript><img height="1" width="1" style="display:none"
+    src="https://www.facebook.com/tr?id=1819310779236907&ev=PageView&noscript=1"
+    /></noscript>
+    <!-- End Meta Pixel Code -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="TrenCart Cosmetics - Your destination for quality beauty and cosmetic products">
+    <meta name="keywords" content="cosmetics, beauty, skincare, makeup, online shopping">
+    <title>TrenCart Cosmetics - Beauty & Cosmetic Products</title>
+
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="assets/css/theme.css">
+    <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body data-vertical="cosmetics">
+
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+        <div class="container-fluid px-4">
+            <a class="navbar-brand" href="cosmetics.html">
+                <img src="assets/images/trencartlogo.png" alt="TrenCart" style="height: 36px;">
+            </a>
+            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-2">
+                    <li class="nav-item">
+                        <a class="nav-link" href="pages/shops.html?vertical=cosmetics">Shops</a>
+                    </li>
+                </ul>
+                <form class="navbar-search-form d-flex" onsubmit="navProductSearch(event)">
+                    <div class="input-group">
+                        <input type="text" class="form-control nav-search-input" id="navSearchInput"
+                               placeholder="Search cosmetics..." autocomplete="off">
+                        <button class="nav-search-btn" type="submit">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </form>
+                <ul class="navbar-nav align-items-center ms-2">
+                    <li class="nav-item">
+                        <a class="nav-link" href="pages/products.html?vertical=cosmetics">Products</a>
+                    </li>
+                    <li class="nav-item auth-buttons">
+                        <a class="nav-link" href="pages/login.html">
+                            <i class="fas fa-user me-1"></i>Login
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="pages/wishlist.html" title="Wishlist">
+                            <i class="fas fa-heart"></i>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link nav-cart-link" href="pages/cart.html">
+                            <i class="fas fa-shopping-bag cart-icon"></i>
+                            <span class="cart-badge">0</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Vertical Switcher -->
+    <div class="vertical-switch">
+        <i class="fas fa-magic"></i>&nbsp;Shopping Cosmetics &mdash;
+        <a href="index.html"><i class="fas fa-tshirt me-1"></i>Switch to Dress <i class="fas fa-arrow-right ms-1"></i></a>
+    </div>
+
+    <!-- Hero Banner Carousel -->
+    <section class="hb-section" id="heroBannerSection">
+        <div class="hb-wrap" id="hbWrap">
+            <div class="hb-track" id="hbTrack">
+                <div class="hb-slide hb-fallback">
+                    <div class="hb-fallback-inner">
+                        <img src="assets/images/trencartlogo.png" alt="TrenCart" style="max-height:90px;max-width:70%;object-fit:contain;">
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="hb-dots" id="hbDots"></div>
+    </section>
+
+    <!-- Super Category Tabs (All / Skincare / Makeup ...) -->
+    <section class="super-cat-tabs-section" id="superCatTabsSection" style="display:none;">
+        <div class="super-cat-tabs" id="superCatTabs"></div>
+    </section>
+
+    <!-- Category Circles Section -->
+    <section class="cat-circles-section">
+        <div class="container-xl px-4">
+            <div class="cat-section-head">
+                <h2>Shop by Category</h2>
+            </div>
+            <div class="cat-scroll-row">
+                <div class="cat-scroll-track" id="catScrollTrack">
+                    <!-- Loaded dynamically -->
+                </div>
+            </div>
+            <div class="text-center" id="viewAllSuperCatWrap" style="display:none;"></div>
+        </div>
+    </section>
+
+    <!-- New Arrivals Section -->
+    <section class="na-section">
+        <div class="container">
+            <div class="section-title">
+            <h2>New Arrivals - Just Released</h2>
+                <p>Fresh beauty picks just added &mdash; be the first to explore</p>
+            </div>
+
+            <div class="na-scroll-track" id="newArrivalsTrack">
+                <!-- Loaded dynamically by home.js -->
+            </div>
+
+            <div class="text-center mt-4">
+                <a href="pages/products.html?sort=newest&vertical=cosmetics" class="btn btn-outline-primary btn-lg">
+                    Explore All Products <i class="fas fa-arrow-right ms-2"></i>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Featured Shops Section -->
+    <section class="section">
+        <div class="container">
+            <div class="section-title">
+                <h2>Featured Shops</h2>
+                <p>Browse our curated collection of premium cosmetics shops</p>
+            </div>
+
+            <div class="row g-4" id="featuredShops">
+                <!-- Loaded dynamically by home.js -->
+            </div>
+
+            <div class="text-center mt-5">
+                <a href="pages/shops.html?vertical=cosmetics" class="btn btn-outline-primary btn-lg">
+                    View All Shops <i class="fas fa-store ms-2"></i>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Strip -->
+    <div class="features-strip">
+        <div class="container-xl px-4">
+            <div class="features-row">
+                <div class="feature-item">
+                    <div class="feature-icon"><i class="fas fa-truck"></i></div>
+                    <div class="feature-text">
+                        <strong>Free Shipping</strong>
+                        <span>On every order, always</span>
+                    </div>
+                </div>
+                <div class="feature-divider"></div>
+                <div class="feature-item">
+                    <div class="feature-icon"><i class="fas fa-shield-alt"></i></div>
+                    <div class="feature-text">
+                        <strong>Secure Payment</strong>
+                        <span>100% safe cash on delivery</span>
+                    </div>
+                </div>
+                <div class="feature-divider"></div>
+                <div class="feature-item">
+                    <div class="feature-icon"><i class="fas fa-headset"></i></div>
+                    <div class="feature-text">
+                        <strong>24/7 Support</strong>
+                        <span>Dedicated customer care</span>
+                    </div>
+                </div>
+                <div class="feature-divider"></div>
+                <div class="feature-item">
+                    <div class="feature-icon"><i class="fas fa-map-marker-alt"></i></div>
+                    <div class="feature-text">
+                        <strong>Trivandrum</strong>
+                        <span>Delivery across Kazhakootam and Kaniyapuram</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-4 mb-4">
+                    <h5><img src="assets/images/trencartlogo.png" alt="TrenCart Logo" style="height: 35px; margin-bottom: 10px;"></h5>
+                    <p>Your destination for quality beauty and cosmetic products. Experience the perfect blend of care and confidence.</p>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <h5>Quick Links</h5>
+                    <ul>
+                        <li><a href="cosmetics.html">Home</a></li>
+                        <li><a href="pages/shops.html?vertical=cosmetics">All Shops</a></li>
+                        <li><a href="pages/cart.html">Shopping Cart</a></li>
+                        <li><a href="pages/login.html">Login / Register</a></li>
+                        <li><a href="pages/terms.html">Terms &amp; Conditions</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <h5>Contact</h5>
+                    <ul>
+                        <li><i class="fas fa-envelope me-2"></i> trencarrt@gmail.com</li>
+                        <li><i class="fas fa-phone me-2"></i> +91 8089970014</li>
+                        <li><i class="fas fa-map-marker-alt me-2"></i> Kazhakootam</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 TrenCart. All rights reserved. | Designed with <i class="fas fa-heart text-danger"></i></p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap 5 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Custom JavaScript -->
+    <script src="assets/js/main.js"></script>
+    <script src="assets/js/wishlist-widget.js"></script>
+    <script src="assets/js/cart.js"></script>
+    <script src="assets/js/auth.js"></script>
+    <script src="assets/js/home.js"></script>
+
+    <style>
+        /* ── Hero Banner Carousel ── */
+        .hb-section {
+            padding: 0;
+        }
+        .hb-wrap {
+            overflow: hidden;
+            width: 100%;
+        }
+        .hb-track {
+            display: flex;
+            transition: transform 0.5s cubic-bezier(.4,0,.2,1);
+            will-change: transform;
+        }
+        .hb-slide {
+            flex: 0 0 100%;
+            box-sizing: border-box;
+        }
+        .hb-slide-inner {
+            overflow: hidden;
+            position: relative;
+            height: 280px;
+        }
+        .hb-slide a { display: block; height: 100%; }
+        .hb-slide img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        .hb-caption {
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            padding: 10px 14px;
+            background: linear-gradient(transparent, rgba(0,0,0,0.52));
+            color: #fff;
+        }
+        .hb-caption h6    { font-size: 13px; font-weight: 700; margin: 0 0 2px; text-shadow: 0 1px 3px rgba(0,0,0,.5); }
+        .hb-caption small { font-size: 11px; opacity: .9; }
+        .hb-fallback { flex: 0 0 100%; }
+        .hb-fallback-inner {
+            height: 280px;
+            background: #111;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .hb-dots {
+            display: flex; justify-content: center; gap: 6px;
+            padding: 8px 0 2px;
+        }
+        .hb-dot {
+            width: 20px; height: 4px; border-radius: 2px;
+            background: #ccc; border: none; cursor: pointer; padding: 0;
+            transition: background .25s, width .25s;
+        }
+        .hb-dot.active { background: #8B5E3C; width: 32px; }
+        @media (max-width: 575px) {
+            .hb-slide-inner, .hb-fallback-inner { height: 190px; }
+            .hb-fallback-inner h1 { font-size: 1.3rem; }
+            .hb-fallback-inner p  { font-size: 0.88rem; }
+        }
+
+        /* ── Category Circles ── */
+        .cat-circles-section {
+            background: #fff;
+            padding: 24px 0 18px;
+            border-bottom: 1px solid #f0f0f0;
+            position: relative;
+        }
+        .cat-section-head {
+            margin-bottom: 14px;
+        }
+        .cat-section-head h2 {
+            font-size: 1.15rem;
+            font-weight: 800;
+            margin: 0;
+            color: #1a1a1a;
+        }
+        .cat-scroll-row {
+            position: relative;
+        }
+        .cat-scroll-track {
+            display: flex;
+            overflow-x: auto;
+            scroll-behavior: smooth;
+            gap: 10px;
+            padding: 4px 2px 8px;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+        .cat-scroll-track::-webkit-scrollbar { display: none; }
+        .cat-circle-item {
+            flex: 0 0 auto;
+            width: 84px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-decoration: none;
+            color: inherit;
+            cursor: pointer;
+            padding: 4px 2px;
+        }
+        .cat-circle-item:hover .cat-circle {
+            border-color: var(--primary-color, #8B5E3C);
+            transform: scale(1.06);
+        }
+        .cat-circle {
+            width: 68px;
+            height: 68px;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 2px solid #e8e8e8;
+            background: #f5f5f5;
+            transition: border-color 0.2s, transform 0.2s;
+            flex-shrink: 0;
+        }
+        .cat-circle img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .cat-circle-placeholder {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f0ebe5;
+            color: #a08060;
+            font-size: 24px;
+        }
+        .cat-name {
+            margin-top: 7px;
+            font-size: 12px;
+            font-weight: 600;
+            text-align: center;
+            color: #333;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 82px;
+            line-height: 1.2;
+        }
+        .cat-scroll-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 2;
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 50%;
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+            font-size: 11px;
+            color: #555;
+            transition: background 0.2s;
+        }
+        .cat-scroll-btn:hover { background: #f5f5f5; }
+        .cat-scroll-left { left: 8px; }
+        .cat-scroll-right { right: 8px; }
+        @media (max-width: 767px) {
+            .cat-circle { width: 56px; height: 56px; }
+            .cat-circle-item { width: 70px; }
+            .cat-scroll-btn { display: none; }
+            .cat-section-head h2 { font-size: 1.02rem; }
+        }
+
+        /* ── Super Category Tabs ── */
+        .super-cat-tabs-section {
+            background: #1a1a1a;
+        }
+        .super-cat-tabs {
+            display: flex;
+            justify-content: center;
+            overflow-x: auto;
+            gap: 10px;
+            padding: 16px 12px;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+        .super-cat-tabs::-webkit-scrollbar { display: none; }
+        .super-cat-tab {
+            flex: 0 0 auto;
+            border: 1px solid rgba(255,255,255,0.18);
+            background: transparent;
+            color: #fff;
+            font-size: 12.5px;
+            font-weight: 700;
+            letter-spacing: 0.4px;
+            text-transform: uppercase;
+            padding: 8px 22px;
+            border-radius: 20px;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background 0.15s, color 0.15s, border-color 0.15s;
+        }
+        .super-cat-tab:hover { background: rgba(255,255,255,0.1); }
+        .super-cat-tab.active {
+            background: #fff;
+            color: #1a1a1a;
+            border-color: #fff;
+        }
+
+        /* ── Vertical switcher (Dress / Cosmetics) ── */
+        .vertical-switch {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 10px 12px;
+            background: #f7f3ef;
+            font-size: 13px;
+            font-weight: 600;
+        }
+        .vertical-switch a {
+            color: #8B5E3C;
+            text-decoration: none;
+        }
+        .vertical-switch a:hover { text-decoration: underline; }
+    </style>
+
+    <script>
+        const PAGE_VERTICAL = document.body.dataset.vertical === 'cosmetics' ? 'cosmetics' : 'dress';
+
+        (function initHeroBanners() {
+            const wrap   = document.getElementById('hbWrap');
+            const track  = document.getElementById('hbTrack');
+            const dotsEl = document.getElementById('hbDots');
+            let original = [], current = 0, autoTimer;
+
+            function slideHTML(b) {
+                const src   = b.image_url.replace(/^\//, '');
+                const img   = `<img src="${src}" alt="${b.title || 'Banner'}" loading="lazy">`;
+                const inner = b.link_url ? `<a href="${b.link_url}">${img}</a>` : img;
+                return `<div class="hb-slide"><div class="hb-slide-inner">${inner}</div></div>`;
+            }
+
+            function render() {
+                const list = [...original, original[0]];
+                track.innerHTML = list.map(b => slideHTML(b)).join('');
+                renderDots();
+                jumpTo(0);
+            }
+
+            function renderDots() {
+                dotsEl.innerHTML = original.map((_, i) =>
+                    `<button class="hb-dot${i === 0 ? ' active' : ''}" data-i="${i}"></button>`
+                ).join('');
+                dotsEl.querySelectorAll('.hb-dot').forEach(d =>
+                    d.addEventListener('click', () => { animateTo(+d.dataset.i); startAuto(); })
+                );
+            }
+
+            function jumpTo(page) {
+                current = page;
+                track.style.transition = 'none';
+                track.style.transform  = `translateX(-${current * wrap.offsetWidth}px)`;
+                updateDots();
+            }
+
+            function animateTo(page) {
+                current = page;
+                track.style.transition = 'transform 0.5s cubic-bezier(.4,0,.2,1)';
+                track.style.transform  = `translateX(-${current * wrap.offsetWidth}px)`;
+                updateDots();
+            }
+
+            function updateDots() {
+                const dot = current % original.length;
+                dotsEl.querySelectorAll('.hb-dot').forEach((d, i) =>
+                    d.classList.toggle('active', i === dot)
+                );
+            }
+
+            track.addEventListener('transitionend', () => {
+                if (current >= original.length) jumpTo(0);
+            });
+
+            function startAuto() {
+                clearInterval(autoTimer);
+                autoTimer = setInterval(() => animateTo(current + 1), 4500);
+            }
+
+            window.addEventListener('resize', () => jumpTo(current % original.length));
+
+            let dragStartX = null, dragStartY = null, dragging = false;
+            const SWIPE_THRESHOLD = 50;
+
+            function onDragStart(x, y) {
+                dragStartX = x;
+                dragStartY = y;
+                dragging   = false;
+                clearInterval(autoTimer);
+                track.style.transition = 'none';
+            }
+
+            function onDragMove(x) {
+                if (dragStartX === null) return;
+                dragging = true;
+                const delta = x - dragStartX;
+                track.style.transform = `translateX(${-current * wrap.offsetWidth + delta}px)`;
+            }
+
+            function onDragEnd(x, y) {
+                if (dragStartX === null) return;
+                const dx   = x - dragStartX;
+                const dy   = y - (dragStartY || y);
+                dragStartX = null;
+                dragStartY = null;
+
+                if (Math.abs(dy) > Math.abs(dx)) {
+                    jumpTo(current);
+                    startAuto();
+                    return;
+                }
+
+                if (dx < -SWIPE_THRESHOLD) {
+                    animateTo(current + 1);
+                } else if (dx > SWIPE_THRESHOLD) {
+                    animateTo(current > 0 ? current - 1 : original.length - 1);
+                } else {
+                    jumpTo(current);
+                }
+                startAuto();
+            }
+
+            wrap.addEventListener('touchstart', e => onDragStart(e.touches[0].clientX, e.touches[0].clientY), { passive: true });
+            wrap.addEventListener('touchmove',  e => {
+                if (dragStartX !== null && Math.abs(e.touches[0].clientX - dragStartX) > Math.abs(e.touches[0].clientY - (dragStartY||0))) {
+                    e.preventDefault();
+                }
+                onDragMove(e.touches[0].clientX);
+            }, { passive: false });
+            wrap.addEventListener('touchend',   e => onDragEnd(e.changedTouches[0].clientX, e.changedTouches[0].clientY));
+
+            wrap.addEventListener('mousedown',  e => { onDragStart(e.clientX, e.clientY); wrap.style.cursor = 'grabbing'; });
+            window.addEventListener('mousemove', e => { if (dragStartX !== null) onDragMove(e.clientX); });
+            window.addEventListener('mouseup',   e => { if (dragStartX !== null) { onDragEnd(e.clientX, e.clientY); wrap.style.cursor = ''; } });
+            wrap.style.cursor = 'grab';
+            wrap.addEventListener('dragstart', e => e.preventDefault());
+
+            fetch('api/customer/banners.php')
+                .then(r => r.json())
+                .then(res => {
+                    if (!res.success || !res.data.length) return;
+                    original = res.data;
+                    render();
+                    startAuto();
+                })
+                .catch(() => {});
+        })();
+
+        function loadCategoryCircles(superCategoryId, superCategoryName) {
+            const viewAllWrap = document.getElementById('viewAllSuperCatWrap');
+            if (superCategoryId && superCategoryName) {
+                viewAllWrap.innerHTML = `<a href="pages/products.html?super_category_id=${superCategoryId}&vertical=${PAGE_VERTICAL}" class="btn btn-outline-dark btn-sm mt-2">
+                    Shop all in ${superCategoryName} <i class="fas fa-arrow-right ms-1"></i>
+                </a>`;
+                viewAllWrap.style.display = '';
+            } else {
+                viewAllWrap.style.display = 'none';
+            }
+
+            const url = superCategoryId
+                ? `api/customer/categories.php?super_category_id=${superCategoryId}&vertical=${PAGE_VERTICAL}`
+                : `api/customer/categories.php?vertical=${PAGE_VERTICAL}`;
+            fetch(url)
+                .then(r => r.json())
+                .then(res => {
+                    const track = document.getElementById('catScrollTrack');
+                    if (!res.success || !res.data.length) {
+                        if (!superCategoryId) document.querySelector('.cat-circles-section').style.display = 'none';
+                        else track.innerHTML = '';
+                        return;
+                    }
+                    document.querySelector('.cat-circles-section').style.display = '';
+                    const avatarColors = ['#E53935','#8E24AA','#1E88E5','#00897B','#F4511E','#6D4C41','#3949AB','#039BE5','#43A047','#D81B60','#F9A825','#546E7A'];
+                    function catAvatar(name) {
+                        const color = avatarColors[name.charCodeAt(0) % avatarColors.length];
+                        return `<div class="cat-circle-placeholder" style="background:${color};color:#fff;font-size:22px;font-weight:700;font-family:sans-serif;">${name.charAt(0).toUpperCase()}</div>`;
+                    }
+                    const items = res.data.map(cat => {
+                        const inner = cat.category_image
+                            ? `<img src="${cat.category_image.replace(/^\//, '')}" alt="${cat.category_name}" loading="lazy" data-fallback="${cat.category_name}">`
+                            : catAvatar(cat.category_name);
+                        return `
+                            <a class="cat-circle-item" href="pages/products.html?category_id=${cat.category_id}&vertical=${PAGE_VERTICAL}">
+                                <div class="cat-circle">${inner}</div>
+                                <span class="cat-name">${cat.category_name}</span>
+                            </a>`;
+                    });
+                    track.innerHTML = items.join('');
+                    track.querySelectorAll('img[data-fallback]').forEach(img => {
+                        img.addEventListener('error', function() {
+                            this.replaceWith(document.createRange().createContextualFragment(catAvatar(this.dataset.fallback)));
+                        });
+                    });
+                })
+                .catch(() => {
+                    if (!superCategoryId) document.querySelector('.cat-circles-section').style.display = 'none';
+                });
+        }
+        loadCategoryCircles();
+
+        (function loadSuperCategoryTabs() {
+            fetch(`api/customer/super-categories.php?vertical=${PAGE_VERTICAL}`)
+                .then(r => r.json())
+                .then(res => {
+                    if (!res.success || !res.data.length) return;
+                    const tabsEl = document.getElementById('superCatTabs');
+                    const tabs = [{ super_category_id: 0, super_category_name: 'All' }, ...res.data];
+                    tabsEl.innerHTML = tabs.map((t, i) => `
+                        <button class="super-cat-tab${i === 0 ? ' active' : ''}" data-super-category-id="${t.super_category_id}">
+                            ${t.super_category_name}
+                        </button>`).join('');
+                    document.getElementById('superCatTabsSection').style.display = '';
+
+                    tabsEl.querySelectorAll('.super-cat-tab').forEach(btn => {
+                        btn.addEventListener('click', function () {
+                            tabsEl.querySelectorAll('.super-cat-tab').forEach(b => b.classList.remove('active'));
+                            this.classList.add('active');
+                            const id = parseInt(this.dataset.superCategoryId, 10);
+                            loadCategoryCircles(id || null, this.textContent.trim());
+                        });
+                    });
+                })
+                .catch(() => {});
+        })();
+
+        function scrollCategories(dir) {
+            const track = document.getElementById('catScrollTrack');
+            track.scrollBy({ left: dir * 300, behavior: 'smooth' });
+        }
+    </script>
+
+</body>
+</html>

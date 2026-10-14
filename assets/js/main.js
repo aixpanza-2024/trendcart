@@ -338,6 +338,13 @@ function checkAuthStatus() {
 /* ===================================
    NAVBAR PRODUCT SEARCH
    =================================== */
+/* Dress and Cosmetics are separate storefronts — read whichever one the
+   current page is already scoped to, so navigating via search stays in it. */
+function currentVertical() {
+    if (document.body.dataset.vertical === 'cosmetics') return 'cosmetics';
+    return new URLSearchParams(window.location.search).get('vertical') === 'cosmetics' ? 'cosmetics' : 'dress';
+}
+
 function navProductSearch(e) {
     e.preventDefault();
     const q = (document.getElementById('navSearchInput')?.value || '').trim();
@@ -345,7 +352,7 @@ function navProductSearch(e) {
     // Detect path depth: pages/ subfolder vs root
     const inPages = window.location.pathname.replace(/\\/g, '/').includes('/pages/');
     const base    = inPages ? 'products.html' : 'pages/products.html';
-    window.location.href = base + '?search=' + encodeURIComponent(q);
+    window.location.href = base + '?search=' + encodeURIComponent(q) + '&vertical=' + currentVertical();
 }
 
 /* Mobile search bar submit */
@@ -355,7 +362,7 @@ function mobileProductSearch(e) {
     if (!q) return;
     const inPages = window.location.pathname.replace(/\\/g, '/').includes('/pages/');
     const base = inPages ? 'products.html' : 'pages/products.html';
-    window.location.href = base + '?search=' + encodeURIComponent(q);
+    window.location.href = base + '?search=' + encodeURIComponent(q) + '&vertical=' + currentVertical();
 }
 
 /* ===================================

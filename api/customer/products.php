@@ -18,6 +18,10 @@ try {
     $max_price   = isset($_GET['max_price'])   ? (float)$_GET['max_price']   : 0;
     $sort        = isset($_GET['sort'])        ? trim($_GET['sort'])          : 'featured';
     $search      = isset($_GET['search'])      ? trim($_GET['search'])        : '';
+    // Dress and Cosmetics are separate storefronts. A specific shop_id already
+    // disambiguates on its own, so the vertical filter only applies when
+    // browsing broadly (no shop_id) — defaults to 'dress'.
+    $vertical    = in_array($_GET['vertical'] ?? '', ['dress', 'cosmetics'], true) ? $_GET['vertical'] : 'dress';
 
     // Check whether `size` column exists in products table (may be absent on older DBs)
     $size_expr = "'' AS size";
@@ -53,6 +57,9 @@ try {
     if ($shop_id > 0) {
         $sql .= " AND p.shop_id = :shop_id";
         $params[':shop_id'] = $shop_id;
+    } else {
+        $sql .= " AND s.business_vertical = :vertical";
+        $params[':vertical'] = $vertical;
     }
     if ($category_id > 0) {
         $sql .= " AND p.category_id = :category_id";

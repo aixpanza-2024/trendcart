@@ -13,8 +13,10 @@ try {
 
     $search = isset($_GET['search']) ? trim($_GET['search']) : '';
     $limit  = isset($_GET['limit'])  ? min((int)$_GET['limit'], 100) : 20;
+    // Dress and Cosmetics are separate storefronts — defaults to 'dress'.
+    $vertical = in_array($_GET['vertical'] ?? '', ['dress', 'cosmetics'], true) ? $_GET['vertical'] : 'dress';
 
-    $sql = "SELECT s.shop_id, s.shop_name, s.shop_description, s.shop_logo,
+    $sql = "SELECT s.shop_id, s.shop_name, s.business_vertical, s.shop_description, s.shop_logo,
                    s.shop_city, s.rating_average, s.total_ratings, s.total_products,
                    s.shop_status, s.created_at,
                    MIN(p.price) AS min_price,
@@ -23,9 +25,9 @@ try {
                    GROUP_CONCAT(DISTINCT p.category_id ORDER BY p.category_id SEPARATOR ',') AS category_ids
             FROM shops s
             LEFT JOIN products p ON p.shop_id = s.shop_id AND p.product_status = 'active'
-            WHERE s.shop_status = 'open'";
+            WHERE s.shop_status = 'open' AND s.business_vertical = :vertical";
 
-    $params = [];
+    $params = [':vertical' => $vertical];
 
     if ($search !== '') {
         $sql .= " AND (s.shop_name LIKE :search OR s.shop_description LIKE :search)";

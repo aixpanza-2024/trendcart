@@ -44,7 +44,7 @@
     <link rel="stylesheet" href="assets/css/theme.css">
     <link rel="stylesheet" href="assets/css/style.css">
 </head>
-<body>
+<body data-vertical="dress">
 
     <!-- Navigation Bar -->
     <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
@@ -95,18 +95,11 @@
         </div>
     </nav>
 
-    <!-- Super Category Tabs (All / Men / Women / Kids ...) -->
-    <section class="super-cat-tabs-section" id="superCatTabsSection" style="display:none;">
-        <div class="super-cat-tabs" id="superCatTabs"></div>
-    </section>
-
-    <!-- Category Circles Section -->
-    <section class="cat-circles-section">
-        <div class="cat-scroll-track" id="catScrollTrack">
-            <!-- Loaded dynamically -->
-        </div>
-        <div class="text-center" id="viewAllSuperCatWrap" style="display:none;"></div>
-    </section>
+    <!-- Vertical Switcher -->
+    <div class="vertical-switch">
+        <i class="fas fa-tshirt"></i>&nbsp;Shopping Dress &mdash;
+        <a href="cosmetics.html"><i class="fas fa-magic me-1"></i>Switch to Cosmetics <i class="fas fa-arrow-right ms-1"></i></a>
+    </div>
 
     <!-- Hero Banner Carousel -->
     <section class="hb-section" id="heroBannerSection">
@@ -122,6 +115,26 @@
         <div class="hb-dots" id="hbDots"></div>
     </section>
 
+    <!-- Super Category Tabs (All / Men / Women / Kids ...) -->
+    <section class="super-cat-tabs-section" id="superCatTabsSection" style="display:none;">
+        <div class="super-cat-tabs" id="superCatTabs"></div>
+    </section>
+
+    <!-- Category Circles Section -->
+    <section class="cat-circles-section">
+        <div class="container-xl px-4">
+            <div class="cat-section-head">
+                <h2>Shop by Category</h2>
+            </div>
+            <div class="cat-scroll-row">
+                <div class="cat-scroll-track" id="catScrollTrack">
+                    <!-- Loaded dynamically -->
+                </div>
+            </div>
+            <div class="text-center" id="viewAllSuperCatWrap" style="display:none;"></div>
+        </div>
+    </section>
+
     <!-- New Arrivals Section -->
     <section class="na-section">
         <div class="container">
@@ -135,7 +148,7 @@
             </div>
 
             <div class="text-center mt-4">
-                <a href="pages/products.html?sort=newest" class="btn btn-outline-primary btn-lg">
+                <a href="pages/products.html?sort=newest&vertical=dress" class="btn btn-outline-primary btn-lg">
                     Explore All Products <i class="fas fa-arrow-right ms-2"></i>
                 </a>
             </div>
@@ -155,7 +168,7 @@
             </div>
 
             <div class="text-center mt-5">
-                <a href="pages/shops.html" class="btn btn-outline-primary btn-lg">
+                <a href="pages/shops.html?vertical=dress" class="btn btn-outline-primary btn-lg">
                     View All Shops <i class="fas fa-store ms-2"></i>
                 </a>
             </div>
@@ -302,34 +315,44 @@
         }
         .hb-dot.active { background: #8B5E3C; width: 32px; }
         @media (max-width: 575px) {
-            .hb-slide-inner, .hb-fallback-inner { height: 155px; }
+            .hb-slide-inner, .hb-fallback-inner { height: 190px; }
             .hb-fallback-inner h1 { font-size: 1.3rem; }
             .hb-fallback-inner p  { font-size: 0.88rem; }
         }
+        .hb-slide-inner, .hb-fallback-inner { height: 280px; }
 
         /* ── Category Circles ── */
         .cat-circles-section {
             background: #fff;
-            padding: 10px 0;
+            padding: 24px 0 18px;
             border-bottom: 1px solid #f0f0f0;
             position: relative;
-            display: flex;
-            align-items: center;
+        }
+        .cat-section-head {
+            margin-bottom: 14px;
+        }
+        .cat-section-head h2 {
+            font-size: 1.15rem;
+            font-weight: 800;
+            margin: 0;
+            color: #1a1a1a;
+        }
+        .cat-scroll-row {
+            position: relative;
         }
         .cat-scroll-track {
             display: flex;
             overflow-x: auto;
             scroll-behavior: smooth;
-            gap: 4px;
-            padding: 4px 12px;
+            gap: 10px;
+            padding: 4px 2px 8px;
             scrollbar-width: none;
             -ms-overflow-style: none;
-            flex: 1;
         }
         .cat-scroll-track::-webkit-scrollbar { display: none; }
         .cat-circle-item {
             flex: 0 0 auto;
-            width: 76px;
+            width: 84px;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -343,8 +366,8 @@
             transform: scale(1.06);
         }
         .cat-circle {
-            width: 60px;
-            height: 60px;
+            width: 68px;
+            height: 68px;
             border-radius: 50%;
             overflow: hidden;
             border: 2px solid #e8e8e8;
@@ -365,18 +388,18 @@
             justify-content: center;
             background: #f0ebe5;
             color: #a08060;
-            font-size: 22px;
+            font-size: 24px;
         }
         .cat-name {
-            margin-top: 5px;
-            font-size: 10.5px;
+            margin-top: 7px;
+            font-size: 12px;
             font-weight: 600;
             text-align: center;
             color: #333;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            max-width: 74px;
+            max-width: 82px;
             line-height: 1.2;
         }
         .cat-scroll-btn {
@@ -402,49 +425,69 @@
         .cat-scroll-left { left: 8px; }
         .cat-scroll-right { right: 8px; }
         @media (max-width: 767px) {
-            .cat-circle { width: 52px; height: 52px; }
-            .cat-circle-item { width: 66px; }
+            .cat-circle { width: 56px; height: 56px; }
+            .cat-circle-item { width: 70px; }
             .cat-scroll-btn { display: none; }
-            .cat-scroll-track { padding: 4px 10px; }
+            .cat-section-head h2 { font-size: 1.02rem; }
         }
 
         /* ── Super Category Tabs (All / Men / Women / Kids ...) ── */
         .super-cat-tabs-section {
-            background: #000;
+            background: #1a1a1a;
         }
         .super-cat-tabs {
             display: flex;
             justify-content: center;
             overflow-x: auto;
-            gap: 8px;
-            padding: 14px 12px;
+            gap: 10px;
+            padding: 16px 12px;
             scrollbar-width: none;
             -ms-overflow-style: none;
         }
         .super-cat-tabs::-webkit-scrollbar { display: none; }
         .super-cat-tab {
             flex: 0 0 auto;
-            border: none;
+            border: 1px solid rgba(255,255,255,0.18);
             background: transparent;
             color: #fff;
             font-size: 12.5px;
             font-weight: 700;
             letter-spacing: 0.4px;
             text-transform: uppercase;
-            padding: 8px 20px;
+            padding: 8px 22px;
             border-radius: 20px;
             cursor: pointer;
             white-space: nowrap;
-            transition: background 0.15s, color 0.15s;
+            transition: background 0.15s, color 0.15s, border-color 0.15s;
         }
         .super-cat-tab:hover { background: rgba(255,255,255,0.1); }
         .super-cat-tab.active {
             background: #fff;
-            color: #000;
+            color: #1a1a1a;
+            border-color: #fff;
         }
+
+        /* ── Vertical switcher (Dress / Cosmetics) ── */
+        .vertical-switch {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 10px 12px;
+            background: #f7f3ef;
+            font-size: 13px;
+            font-weight: 600;
+        }
+        .vertical-switch a {
+            color: #8B5E3C;
+            text-decoration: none;
+        }
+        .vertical-switch a:hover { text-decoration: underline; }
     </style>
 
     <script>
+        const PAGE_VERTICAL = document.body.dataset.vertical === 'cosmetics' ? 'cosmetics' : 'dress';
+
         (function initHeroBanners() {
             const wrap   = document.getElementById('hbWrap');
             const track  = document.getElementById('hbTrack');
@@ -583,7 +626,7 @@
         function loadCategoryCircles(superCategoryId, superCategoryName) {
             const viewAllWrap = document.getElementById('viewAllSuperCatWrap');
             if (superCategoryId && superCategoryName) {
-                viewAllWrap.innerHTML = `<a href="pages/products.html?super_category_id=${superCategoryId}" class="btn btn-outline-dark btn-sm mt-2">
+                viewAllWrap.innerHTML = `<a href="pages/products.html?super_category_id=${superCategoryId}&vertical=${PAGE_VERTICAL}" class="btn btn-outline-dark btn-sm mt-2">
                     Shop all in ${superCategoryName} <i class="fas fa-arrow-right ms-1"></i>
                 </a>`;
                 viewAllWrap.style.display = '';
@@ -592,8 +635,8 @@
             }
 
             const url = superCategoryId
-                ? `api/customer/categories.php?super_category_id=${superCategoryId}`
-                : 'api/customer/categories.php';
+                ? `api/customer/categories.php?super_category_id=${superCategoryId}&vertical=${PAGE_VERTICAL}`
+                : `api/customer/categories.php?vertical=${PAGE_VERTICAL}`;
             fetch(url)
                 .then(r => r.json())
                 .then(res => {
@@ -616,7 +659,7 @@
                             ? `<img src="${cat.category_image.replace(/^\//, '')}" alt="${cat.category_name}" loading="lazy" data-fallback="${cat.category_name}">`
                             : catAvatar(cat.category_name);
                         return `
-                            <a class="cat-circle-item" href="pages/products.html?category_id=${cat.category_id}">
+                            <a class="cat-circle-item" href="pages/products.html?category_id=${cat.category_id}&vertical=${PAGE_VERTICAL}">
                                 <div class="cat-circle">${inner}</div>
                                 <span class="cat-name">${cat.category_name}</span>
                             </a>`;
@@ -635,7 +678,7 @@
         loadCategoryCircles();
 
         (function loadSuperCategoryTabs() {
-            fetch('api/customer/super-categories.php')
+            fetch(`api/customer/super-categories.php?vertical=${PAGE_VERTICAL}`)
                 .then(r => r.json())
                 .then(res => {
                     if (!res.success || !res.data.length) return; // no super categories set up — leave tabs hidden

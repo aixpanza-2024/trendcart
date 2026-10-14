@@ -1,6 +1,10 @@
 /**
  * Home Page - Dynamic Featured Shops + New Arrivals
+ * Shared by index.html (Dress) and cosmetics.html (Cosmetics) — the page sets
+ * <body data-vertical="dress|cosmetics"> and every fetch here is scoped to it.
  */
+
+const HOME_VERTICAL = document.body.dataset.vertical === 'cosmetics' ? 'cosmetics' : 'dress';
 
 document.addEventListener('DOMContentLoaded', () => {
     loadFeaturedShops();
@@ -14,7 +18,7 @@ async function loadFeaturedShops(retry = true) {
     container.innerHTML = '<div class="col-12 text-center py-4"><i class="fas fa-spinner fa-spin fa-2x"></i></div>';
 
     try {
-        const res  = await fetch('api/customer/shops.php?limit=6');
+        const res  = await fetch(`api/customer/shops.php?limit=6&vertical=${HOME_VERTICAL}`);
         const data = await res.json();
 
         if (!data.success || !data.data.length) {
@@ -44,7 +48,7 @@ async function loadNewArrivals() {
     track.innerHTML = '<div class="text-center py-4 w-100" style="color:#888"><i class="fas fa-spinner fa-spin fa-2x"></i></div>';
 
     try {
-        const res  = await fetch('api/customer/products.php?sort=newest');
+        const res  = await fetch(`api/customer/products.php?sort=newest&vertical=${HOME_VERTICAL}`);
         const data = await res.json();
 
         if (!data.success || !data.data.length) {

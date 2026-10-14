@@ -5,6 +5,10 @@
 let allShops      = [];
 let allCategories = [];
 
+// Dress and Cosmetics are separate storefronts — carried through from the
+// homepage link or any other page that already knows which one we're in.
+const PAGE_VERTICAL = new URLSearchParams(window.location.search).get('vertical') === 'cosmetics' ? 'cosmetics' : 'dress';
+
 document.addEventListener('DOMContentLoaded', function () {
     loadCategories();
     loadShops();
@@ -29,7 +33,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 async function loadCategories() {
     try {
-        const res  = await fetch('../api/customer/categories.php');
+        const res  = await fetch(`../api/customer/categories.php?vertical=${PAGE_VERTICAL}`);
         const data = await res.json();
         if (!data.success) return;
 
@@ -66,7 +70,7 @@ async function loadShops() {
     container.innerHTML = '<div class="col-12 text-center py-5"><i class="fas fa-spinner fa-spin fa-2x"></i></div>';
 
     try {
-        const res  = await fetch('../api/customer/shops.php?limit=100');
+        const res  = await fetch(`../api/customer/shops.php?limit=100&vertical=${PAGE_VERTICAL}`);
         const data = await res.json();
 
         if (!data.success || !data.data.length) {

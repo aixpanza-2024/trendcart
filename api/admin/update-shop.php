@@ -58,6 +58,7 @@ try {
     $stmt = $conn->prepare("
         UPDATE shops SET
             shop_name        = :shop_name,
+            business_vertical = :business_vertical,
             shop_description = :shop_desc,
             shop_city        = :shop_city,
             shop_pincode     = :shop_pincode,
@@ -67,6 +68,8 @@ try {
         WHERE shop_id = :shop_id
     ");
     $stmt->bindValue(':shop_name',    $data['shop_name'], PDO::PARAM_STR);
+    $vertical = in_array($data['business_vertical'] ?? '', ['dress', 'cosmetics'], true) ? $data['business_vertical'] : 'dress';
+    $stmt->bindValue(':business_vertical', $vertical, PDO::PARAM_STR);
     $stmt->bindValue(':shop_desc',    $data['shop_description'] ?? '', PDO::PARAM_STR);
     $stmt->bindValue(':shop_city',    $data['shop_city'] ?? '', PDO::PARAM_STR);
     $stmt->bindValue(':shop_pincode', $data['shop_pincode'] ?? '', PDO::PARAM_STR);

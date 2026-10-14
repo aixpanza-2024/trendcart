@@ -104,6 +104,14 @@
                             <input type="text" class="form-control" id="shopName" required>
                         </div>
                         <div class="mb-3">
+                            <label class="form-label">Store Type *</label>
+                            <select class="form-select" id="shopVertical" required>
+                                <option value="dress">Dress</option>
+                                <option value="cosmetics">Cosmetics</option>
+                            </select>
+                            <div class="form-text">Which storefront this shop appears in — Dress and Cosmetics are kept fully separate.</div>
+                        </div>
+                        <div class="mb-3">
                             <label class="form-label">Shop Description</label>
                             <textarea class="form-control" id="shopDescription" rows="2"></textarea>
                         </div>
@@ -167,6 +175,13 @@
                         <div class="col-md-6">
                             <label class="form-label">Shop Name *</label>
                             <input type="text" class="form-control" id="editShopName">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Store Type *</label>
+                            <select class="form-select" id="editShopVertical">
+                                <option value="dress">Dress</option>
+                                <option value="cosmetics">Cosmetics</option>
+                            </select>
                         </div>
                         <div class="col-md-3">
                             <label class="form-label">Shop City</label>

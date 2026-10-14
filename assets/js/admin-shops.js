@@ -99,7 +99,10 @@ function renderShops(shops) {
                         ? `<img src="../${s.shop_logo.replace(/^\//, '')}" alt="" style="width:32px;height:32px;border-radius:6px;object-fit:cover;">`
                         : `<div style="width:32px;height:32px;border-radius:6px;background:#e9ecef;display:flex;align-items:center;justify-content:center;"><i class="fas fa-store text-muted" style="font-size:12px;"></i></div>`
                     }
-                    <strong>${s.shop_name}</strong>
+                    <div>
+                        <strong>${s.shop_name}</strong>
+                        <div><span class="badge ${s.business_vertical === 'cosmetics' ? 'bg-info text-dark' : 'bg-secondary'}" style="font-size:10px;">${s.business_vertical === 'cosmetics' ? 'Cosmetics' : 'Dress'}</span></div>
+                    </div>
                 </div>
             </td>
             <td>${s.email || '-'}</td>
@@ -146,6 +149,7 @@ async function addShop() {
         email: document.getElementById('shopOwnerEmail').value.trim(),
         phone: document.getElementById('shopOwnerPhone').value.trim(),
         shop_name: document.getElementById('shopName').value.trim(),
+        business_vertical: document.getElementById('shopVertical').value,
         shop_description: document.getElementById('shopDescription').value.trim(),
         shop_city: document.getElementById('shopCity').value.trim(),
         shop_pincode: document.getElementById('shopPincode').value.trim(),
@@ -246,6 +250,7 @@ function openEditModal(shopId) {
     document.getElementById('editOwnerEmail').value      = shop.email         || '';
     document.getElementById('editOwnerPhone').value      = shop.phone         || '';
     document.getElementById('editShopName').value        = shop.shop_name     || '';
+    document.getElementById('editShopVertical').value    = shop.business_vertical || 'dress';
     document.getElementById('editShopCity').value        = shop.shop_city     || '';
     document.getElementById('editShopPincode').value     = shop.shop_pincode  || '';
     document.getElementById('editShopPhone').value       = shop.shop_phone    || '';
@@ -274,6 +279,7 @@ async function saveShop() {
         owner_name:       document.getElementById('editOwnerName').value.trim(),
         owner_phone:      document.getElementById('editOwnerPhone').value.trim(),
         shop_name:        document.getElementById('editShopName').value.trim(),
+        business_vertical: document.getElementById('editShopVertical').value,
         shop_city:        document.getElementById('editShopCity').value.trim(),
         shop_pincode:     document.getElementById('editShopPincode').value.trim(),
         shop_phone:       document.getElementById('editShopPhone').value.trim(),

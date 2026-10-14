@@ -66,11 +66,13 @@ try {
 
     // Create shops table entry
     $stmt = $conn->prepare("
-        INSERT INTO shops (user_id, shop_name, shop_description, shop_city, shop_pincode, shop_phone, shop_email, shop_status)
-        VALUES (:uid, :name, :desc, :city, :pincode, :phone, :email, 'open')
+        INSERT INTO shops (user_id, shop_name, business_vertical, shop_description, shop_city, shop_pincode, shop_phone, shop_email, shop_status)
+        VALUES (:uid, :name, :vertical, :desc, :city, :pincode, :phone, :email, 'open')
     ");
     $stmt->bindParam(':uid', $user_id);
     $stmt->bindParam(':name', $data['shop_name']);
+    $vertical = in_array($data['business_vertical'] ?? '', ['dress', 'cosmetics'], true) ? $data['business_vertical'] : 'dress';
+    $stmt->bindParam(':vertical', $vertical);
     $stmt->bindParam(':desc', $desc);
     $city = $data['shop_city'] ?? '';
     $stmt->bindParam(':city', $city);

@@ -12,6 +12,9 @@ try {
     // Optional: restrict to categories linked to a given super category (Men/Women/Kids...).
     // Omitted or 0 = today's default behaviour (all top-level categories), unchanged.
     $super_category_id = isset($_GET['super_category_id']) ? (int)$_GET['super_category_id'] : 0;
+    // Dress and Cosmetics are separate storefronts — only show categories that
+    // actually have a product from a shop of this vertical. Defaults to 'dress'.
+    $vertical = in_array($_GET['vertical'] ?? '', ['dress', 'cosmetics'], true) ? $_GET['vertical'] : 'dress';
 
     $sql = "
         SELECT c.category_id, c.category_name, c.parent_category_id, c.category_image
@@ -21,8 +24,10 @@ try {
           AND EXISTS (
               SELECT 1 FROM products p
               INNER JOIN categories sc ON p.category_id = sc.category_id
+              INNER JOIN shops s ON s.shop_id = p.shop_id
               WHERE (sc.category_id = c.category_id OR sc.parent_category_id = c.category_id)
                 AND p.product_status = 'active'
+                AND s.business_vertical = :vertical
           )";
     if ($super_category_id > 0) {
         $sql .= " AND EXISTS (
@@ -33,6 +38,7 @@ try {
     $sql .= " ORDER BY c.category_name ASC";
 
     $stmt = $conn->prepare($sql);
+    $stmt->bindValue(':vertical', $vertical);
     if ($super_category_id > 0) {
         $stmt->bindValue(':scid', $super_category_id, PDO::PARAM_INT);
     }

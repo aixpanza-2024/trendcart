@@ -9,6 +9,10 @@ let currentFiltered = [];
 const PAGE_SIZE = 24;
 let displayLimit = PAGE_SIZE;
 
+// Dress and Cosmetics are separate storefronts — carried through from the
+// homepage link or any other page that already knows which one we're in.
+const PAGE_VERTICAL = new URLSearchParams(window.location.search).get('vertical') === 'cosmetics' ? 'cosmetics' : 'dress';
+
 document.addEventListener('DOMContentLoaded', function () {
     const urlParams       = new URLSearchParams(window.location.search);
     const shopId          = urlParams.get('shop_id');
@@ -68,6 +72,7 @@ async function loadProducts(shopId, categoryId, superCategoryId, onOffer) {
         if (categoryId)      params.set('category_id', categoryId);
         if (superCategoryId) params.set('super_category_id', superCategoryId);
         if (onOffer)          params.set('on_offer', '1');
+        params.set('vertical', PAGE_VERTICAL);
 
         const res  = await fetch('../api/customer/products.php?' + params);
         const data = await res.json();
@@ -373,8 +378,8 @@ async function loadCategories(activeCategoryId, superCategoryId) {
 
     try {
         const url  = superCategoryId
-            ? '../api/customer/categories.php?super_category_id=' + superCategoryId
-            : '../api/customer/categories.php';
+            ? `../api/customer/categories.php?super_category_id=${superCategoryId}&vertical=${PAGE_VERTICAL}`
+            : `../api/customer/categories.php?vertical=${PAGE_VERTICAL}`;
         const res  = await fetch(url);
         const data = await res.json();
         if (!data.success) return;
