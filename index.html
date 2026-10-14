@@ -323,10 +323,24 @@
            Men/Women/Kids override this to their light gradient further down. */
         .cat-circles-section {
             background: #1a1a1a;
-            padding: 20px 0 22px;
+            padding: 14px 0 20px;
             border-bottom: 1px solid rgba(255,255,255,0.08);
             position: relative;
             transition: background 0.3s;
+        }
+        .cat-circles-section::before {
+            content: '';
+            display: block;
+            width: 72px;
+            height: 3px;
+            margin: 0 auto 16px;
+            border-radius: 3px;
+            background: rgba(255,255,255,0.18);
+        }
+        body.theme-men .cat-circles-section::before,
+        body.theme-women .cat-circles-section::before,
+        body.theme-kids .cat-circles-section::before {
+            background: rgba(26,26,26,0.15);
         }
         .cat-scroll-row {
             position: relative;
@@ -433,7 +447,7 @@
             justify-content: center;
             overflow-x: auto;
             gap: 10px;
-            padding: 16px 12px;
+            padding: 16px 12px 12px;
             scrollbar-width: none;
             -ms-overflow-style: none;
         }
@@ -465,8 +479,8 @@
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            background: linear-gradient(135deg, #e8c48a 0%, #c9995c 100%);
-            color: #1a1a1a !important;
+            background: linear-gradient(135deg, #e89fc2 0%, #b4567f 100%);
+            color: #fff !important;
             font-size: 0.78rem;
             font-weight: 700;
             letter-spacing: 0.04em;
