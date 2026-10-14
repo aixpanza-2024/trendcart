@@ -97,27 +97,15 @@
 
     <!-- Vertical Switcher -->
     <div class="vertical-switch">
-        <i class="fas fa-magic"></i>&nbsp;Shopping Cosmetics &mdash;
-        <a href="index.html"><i class="fas fa-tshirt me-1"></i>Switch to Dress <i class="fas fa-arrow-right ms-1"></i></a>
+        <div class="vs-pill">
+            <a href="index.html" class="vs-tab"><i class="fas fa-tshirt"></i> Dress</a>
+            <a href="cosmetics.html" class="vs-tab active"><i class="fas fa-magic"></i> Cosmetics</a>
+        </div>
     </div>
 
     <!-- Super Category Tabs (All / Skincare / Makeup ...) -->
     <section class="super-cat-tabs-section" id="superCatTabsSection" style="display:none;">
         <div class="super-cat-tabs" id="superCatTabs"></div>
-    </section>
-
-    <!-- Hero Banner Carousel -->
-    <section class="hb-section" id="heroBannerSection">
-        <div class="hb-wrap" id="hbWrap">
-            <div class="hb-track" id="hbTrack">
-                <div class="hb-slide hb-fallback">
-                    <div class="hb-fallback-inner">
-                        <img src="assets/images/trencartlogo.png" alt="TrenCart" style="max-height:90px;max-width:70%;object-fit:contain;">
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="hb-dots" id="hbDots"></div>
     </section>
 
     <!-- Category Circles Section -->
@@ -133,6 +121,20 @@
             </div>
             <div class="text-center" id="viewAllSuperCatWrap" style="display:none;"></div>
         </div>
+    </section>
+
+    <!-- Hero Banner Carousel -->
+    <section class="hb-section" id="heroBannerSection">
+        <div class="hb-wrap" id="hbWrap">
+            <div class="hb-track" id="hbTrack">
+                <div class="hb-slide hb-fallback">
+                    <div class="hb-fallback-inner">
+                        <img src="assets/images/trencartlogo.png" alt="TrenCart" style="max-height:90px;max-width:70%;object-fit:contain;">
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="hb-dots" id="hbDots"></div>
     </section>
 
     <!-- New Arrivals Section -->
@@ -471,17 +473,37 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
-            padding: 10px 12px;
-            background: #f7f3ef;
+            padding: 14px 12px;
+            background: #fff;
+        }
+        .vs-pill {
+            display: inline-flex;
+            background: #f0ebe5;
+            border-radius: 50px;
+            padding: 4px;
+            gap: 2px;
+        }
+        .vs-tab {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            padding: 9px 26px;
+            border-radius: 50px;
             font-size: 13px;
-            font-weight: 600;
-        }
-        .vertical-switch a {
-            color: #8B5E3C;
+            font-weight: 700;
             text-decoration: none;
+            color: #8a7a6a;
+            transition: background 0.2s, color 0.2s, box-shadow 0.2s;
         }
-        .vertical-switch a:hover { text-decoration: underline; }
+        .vs-tab:hover:not(.active) { color: #5a4a3a; }
+        .vs-tab.active {
+            background: #1a1a1a;
+            color: #fff;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.18);
+        }
+        @media (max-width: 575px) {
+            .vs-tab { padding: 8px 18px; font-size: 12px; }
+        }
     </style>
 
     <script>
