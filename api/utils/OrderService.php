@@ -104,6 +104,21 @@ class OrderService {
         $cust_lat      = isset($shipping['latitude'])  && $shipping['latitude']  !== '' ? (float)$shipping['latitude']  : null;
         $cust_lng      = isset($shipping['longitude']) && $shipping['longitude'] !== '' ? (float)$shipping['longitude'] : null;
 
+        // Delivering to a saved address: its own map pin decides the distance
+        // fee (not wherever the customer's device happens to be right now)
+        $address_id = (int)($shipping['address_id'] ?? 0);
+        if ($address_id > 0) {
+            $addrStmt = $conn->prepare("SELECT latitude, longitude FROM addresses WHERE address_id = :aid AND user_id = :uid LIMIT 1");
+            $addrStmt->execute([':aid' => $address_id, ':uid' => $customer_id]);
+            $addr = $addrStmt->fetch(PDO::FETCH_ASSOC);
+            if (!$addr) {
+                $address_id = 0;
+            } elseif ($addr['latitude'] !== null && $addr['longitude'] !== null) {
+                $cust_lat = (float)$addr['latitude'];
+                $cust_lng = (float)$addr['longitude'];
+            }
+        }
+
         $psStmt2 = $conn->query(
             "SELECT setting_key, setting_value FROM platform_settings
              WHERE setting_key IN ('handling_fee', 'first_order_free_delivery')"
@@ -196,6 +211,7 @@ class OrderService {
             'total_amount'        => $total_amount,
             'cust_lat'            => $cust_lat,
             'cust_lng'            => $cust_lng,
+            'address_id'          => $address_id,
         ];
     }
 
@@ -233,6 +249,7 @@ class OrderService {
         $total_amount        = $priced['total_amount'];
         $cust_lat            = $priced['cust_lat'];
         $cust_lng            = $priced['cust_lng'];
+        $address_id          = $priced['address_id'];
 
         do {
             $order_number = 'TC' . date('Ymd') . str_pad(rand(1, 9999), 4, '0', STR_PAD_LEFT);
@@ -427,38 +444,45 @@ class OrderService {
 
         $conn->commit();
 
-        // Save/update shipping address as the customer's default for next checkout
-        try {
-            $chkAddr = $conn->prepare("SELECT address_id FROM addresses WHERE user_id = :uid AND is_default = 1 LIMIT 1");
-            $chkAddr->bindValue(':uid', $customer_id, PDO::PARAM_INT);
-            $chkAddr->execute();
-            $existingAddr = $chkAddr->fetch(PDO::FETCH_ASSOC);
+        // Remember a newly typed shipping address for next checkout. A saved
+        // address picked at checkout (address_id) is left exactly as it is —
+        // this used to overwrite the default address (and its map pin) with
+        // whatever was delivered to, even when that was a different address.
+        if (!$address_id) {
+            try {
+                $cntStmt = $conn->prepare(
+                    "SELECT COUNT(*) AS total,
+                            SUM(address_line1 = :addr AND pincode = :pincode) AS same
+                     FROM addresses WHERE user_id = :uid"
+                );
+                $cntStmt->execute([
+                    ':uid'     => $customer_id,
+                    ':addr'    => trim($shipping['address']),
+                    ':pincode' => trim($shipping['pincode']),
+                ]);
+                $cnt = $cntStmt->fetch(PDO::FETCH_ASSOC);
 
-            if ($existingAddr) {
-                $upd = $conn->prepare(
-                    "UPDATE addresses SET full_name=:name, phone=:phone, address_line1=:addr,
-                     city=:city, state=:state, pincode=:pincode, latitude=:lat, longitude=:lng
-                     WHERE address_id=:aid"
-                );
-                $upd->bindValue(':aid', $existingAddr['address_id'], PDO::PARAM_INT);
-            } else {
-                $upd = $conn->prepare(
-                    "INSERT INTO addresses (user_id, address_type, full_name, phone, address_line1, city, state, pincode, latitude, longitude, is_default)
-                     VALUES (:uid, 'home', :name, :phone, :addr, :city, :state, :pincode, :lat, :lng, 1)"
-                );
-                $upd->bindValue(':uid', $customer_id, PDO::PARAM_INT);
+                // Skip if already saved, or the book is full (same limit as addresses.php)
+                if (!(int)$cnt['same'] && (int)$cnt['total'] < 10) {
+                    $ins = $conn->prepare(
+                        "INSERT INTO addresses (user_id, address_type, full_name, phone, address_line1, city, state, pincode, latitude, longitude, is_default)
+                         VALUES (:uid, 'home', :name, :phone, :addr, :city, :state, :pincode, :lat, :lng, :is_default)"
+                    );
+                    $ins->bindValue(':uid',     $customer_id, PDO::PARAM_INT);
+                    $ins->bindValue(':name',    trim($shipping['full_name']));
+                    $ins->bindValue(':phone',   trim($shipping['phone']));
+                    $ins->bindValue(':addr',    trim($shipping['address']));
+                    $ins->bindValue(':city',    trim($shipping['city']));
+                    $ins->bindValue(':state',   trim($shipping['state']));
+                    $ins->bindValue(':pincode', trim($shipping['pincode']));
+                    $ins->bindValue(':lat',     $cust_lat);
+                    $ins->bindValue(':lng',     $cust_lng);
+                    $ins->bindValue(':is_default', (int)$cnt['total'] === 0 ? 1 : 0, PDO::PARAM_INT);
+                    $ins->execute();
+                }
+            } catch (Exception $addrErr) {
+                error_log("Address save error: " . $addrErr->getMessage());
             }
-            $upd->bindValue(':name',   trim($shipping['full_name']));
-            $upd->bindValue(':phone',  trim($shipping['phone']));
-            $upd->bindValue(':addr',   trim($shipping['address']));
-            $upd->bindValue(':city',   trim($shipping['city']));
-            $upd->bindValue(':state',  trim($shipping['state']));
-            $upd->bindValue(':pincode',trim($shipping['pincode']));
-            $upd->bindValue(':lat',    $cust_lat);
-            $upd->bindValue(':lng',    $cust_lng);
-            $upd->execute();
-        } catch (Exception $addrErr) {
-            error_log("Address save error: " . $addrErr->getMessage());
         }
 
         // Send order confirmation emails (non-critical — don't fail the response if email fails)
