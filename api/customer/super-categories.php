@@ -20,7 +20,10 @@ try {
         WHERE sc.is_active = 1
           AND EXISTS (
               SELECT 1 FROM super_category_links l
-              INNER JOIN products p ON p.category_id = l.category_id
+              INNER JOIN products p ON (
+                  p.category_id = l.category_id
+                  OR p.category_id IN (SELECT category_id FROM categories WHERE parent_category_id = l.category_id)
+              )
               INNER JOIN shops s ON s.shop_id = p.shop_id
               WHERE l.super_category_id = sc.super_category_id
                 AND p.product_status = 'active'
