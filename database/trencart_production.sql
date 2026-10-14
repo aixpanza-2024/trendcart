@@ -215,7 +215,7 @@ CREATE TABLE IF NOT EXISTS products (
     category_id         INT,
     product_name        VARCHAR(255)  NOT NULL,
     product_description TEXT,
-    product_code        VARCHAR(50)   UNIQUE,
+    product_code        VARCHAR(50)   NULL,
     price               DECIMAL(10,2) NOT NULL,
     original_price      DECIMAL(10,2),
     discount_percentage DECIMAL(5,2)  DEFAULT 0.00,
@@ -242,6 +242,7 @@ CREATE TABLE IF NOT EXISTS products (
     updated_at          TIMESTAMP     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (shop_id)    REFERENCES shops(shop_id)          ON DELETE CASCADE,
     FOREIGN KEY (category_id) REFERENCES categories(category_id) ON DELETE SET NULL,
+    UNIQUE KEY uq_shop_product_code (shop_id, product_code),  -- SKU unique per shop
     INDEX idx_shop      (shop_id),
     INDEX idx_category  (category_id),
     INDEX idx_status    (product_status),

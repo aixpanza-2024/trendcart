@@ -94,6 +94,18 @@ try {
         throw new Exception('Product name and valid price are required');
     }
 
+    // SKU is unique per shop among existing products (a deleted product's
+    // SKU is free again; other shops may use the same one)
+    if ($product_code !== null) {
+        $dup = $conn->prepare("SELECT product_name FROM products WHERE shop_id = :shop_id AND product_code = :code AND product_id <> :pid LIMIT 1");
+        $dup->execute([':shop_id' => $shop_id, ':code' => $product_code, ':pid' => $product_id]);
+        if ($existing = $dup->fetchColumn()) {
+            http_response_code(409);
+            echo json_encode(['success' => false, 'message' => "SKU \"$product_code\" is already used by \"$existing\" in your shop. Use a different SKU, or delete that product first."]);
+            exit();
+        }
+    }
+
     // Parse colors
     $colors = json_decode($colors_json, true);
     if (!is_array($colors)) $colors = [];
