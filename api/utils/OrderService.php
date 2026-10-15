@@ -10,6 +10,7 @@
 require_once __DIR__ . '/DeliveryCalculator.php';
 require_once __DIR__ . '/CouponValidator.php';
 require_once __DIR__ . '/SubscriptionService.php';
+require_once __DIR__ . '/ProductVariants.php';
 
 class OrderService {
 
@@ -63,28 +64,34 @@ class OrderService {
 
             if (!$product) continue; // skip inactive / not found
 
-            $effective_price = (float)$product['price'];
-            if ($selected_size) {
-                $adjStmt = $conn->prepare(
-                    "SELECT price_adjustment FROM product_sizes
-                     WHERE product_id = :pid AND size_label = :size LIMIT 1"
-                );
-                $adjStmt->bindValue(':pid',  $product_id, PDO::PARAM_INT);
-                $adjStmt->bindValue(':size', $selected_size);
-                $adjStmt->execute();
-                $adjRow = $adjStmt->fetch(PDO::FETCH_ASSOC);
-                $adjStmt->closeCursor();
-                if ($adjRow) {
-                    $effective_price += (float)$adjRow['price_adjustment'];
+            // The exact colour + size the customer picked
+            ProductVariants::ensure($conn, $product_id);
+            $variant = ProductVariants::resolve($conn, $product_id, $selected_size, $selected_color);
+            if (!$variant) {
+                // Added from a quick "Add to Cart" button that sent no colour/size
+                if (!$selected_color || !$selected_size) {
+                    $optStmt = $conn->prepare("SELECT SUM(color_name <> '') AS colours, SUM(size_label <> '') AS sizes FROM product_variants WHERE product_id = :pid");
+                    $optStmt->execute([':pid' => $product_id]);
+                    $opt  = $optStmt->fetch(PDO::FETCH_ASSOC);
+                    $need = array_filter([(!$selected_color && $opt['colours'] > 0) ? 'colour' : null, (!$selected_size && $opt['sizes'] > 0) ? 'size' : null]);
+                    if ($need) {
+                        return ['success' => false, 'message' => "Please choose a " . implode(' and ', $need) . " for {$product['product_name']}: remove it from your cart, open the product and add it again."];
+                    }
                 }
+                $picked = trim(implode(' / ', array_filter([$selected_color, $selected_size])));
+                return ['success' => false, 'message' => "{$product['product_name']}" . ($picked !== '' ? " ($picked)" : '')
+                    . " is no longer available in that option. Please remove it from your cart and choose again."];
             }
+
+            $effective_price = (float)$product['price'] + (float)$variant['price_adjustment'];
 
             $line_total       = round($effective_price * $quantity, 2);
             $subtotal        += $line_total;
             $validated_items[] = [
                 'product_id'     => $product['product_id'],
                 'product_name'   => $product['product_name'],
-                'product_code'   => $product['product_code'],
+                'product_code'   => $variant['sku'] ?? $product['product_code'],
+                'variant_id'     => (int)$variant['variant_id'],
                 'product_image'  => $product['product_image'],
                 'shop_id'        => $product['shop_id'],
                 'selected_size'  => $selected_size,
@@ -262,41 +269,25 @@ class OrderService {
 
         $conn->beginTransaction();
 
-        // Lock rows and validate stock (FOR UPDATE prevents race conditions)
-        $sizeStockStmt = $conn->prepare(
-            "SELECT stock_quantity FROM product_sizes
-             WHERE product_id = :pid AND size_label = :size FOR UPDATE"
+        // Lock each variant and validate stock (FOR UPDATE prevents race conditions)
+        $variantStockStmt = $conn->prepare(
+            "SELECT stock_quantity FROM product_variants WHERE variant_id = :vid FOR UPDATE"
         );
-        $prodStockStmt = $conn->prepare(
-            "SELECT stock_quantity FROM products WHERE product_id = :pid FOR UPDATE"
-        );
-
+        $needed = [];
         foreach ($validated_items as $item) {
-            if ($item['selected_size']) {
-                $sizeStockStmt->bindValue(':pid',  $item['product_id'],   PDO::PARAM_INT);
-                $sizeStockStmt->bindValue(':size', $item['selected_size']);
-                $sizeStockStmt->execute();
-                $stockRow = $sizeStockStmt->fetch(PDO::FETCH_ASSOC);
-                $sizeStockStmt->closeCursor();
-                $available = $stockRow ? (int)$stockRow['stock_quantity'] : 0;
-                if ($available < $item['quantity']) {
-                    $conn->rollBack();
-                    return ['success' => false, 'message' => $available > 0
-                        ? "{$item['product_name']} (Size: {$item['selected_size']}) only has {$available} left in stock."
-                        : "{$item['product_name']} (Size: {$item['selected_size']}) is out of stock."];
-                }
-            } else {
-                $prodStockStmt->bindValue(':pid', $item['product_id'], PDO::PARAM_INT);
-                $prodStockStmt->execute();
-                $stockRow = $prodStockStmt->fetch(PDO::FETCH_ASSOC);
-                $prodStockStmt->closeCursor();
-                $available = $stockRow ? (int)$stockRow['stock_quantity'] : 0;
-                if ($available < $item['quantity']) {
-                    $conn->rollBack();
-                    return ['success' => false, 'message' => $available > 0
-                        ? "{$item['product_name']} only has {$available} left in stock."
-                        : "{$item['product_name']} is out of stock."];
-                }
+            $needed[$item['variant_id']] = ($needed[$item['variant_id']] ?? 0) + $item['quantity'];
+        }
+        foreach ($validated_items as $item) {
+            $variantStockStmt->execute([':vid' => $item['variant_id']]);
+            $available = (int)$variantStockStmt->fetchColumn();
+            $variantStockStmt->closeCursor();
+            if ($available < $needed[$item['variant_id']]) {
+                $conn->rollBack();
+                $picked = trim(implode(' / ', array_filter([$item['selected_color'], $item['selected_size']])));
+                $label  = $item['product_name'] . ($picked !== '' ? " ($picked)" : '');
+                return ['success' => false, 'message' => $available > 0
+                    ? "{$label} only has {$available} left in stock."
+                    : "{$label} is out of stock."];
             }
         }
 
@@ -387,9 +378,9 @@ class OrderService {
         // still reads correctly after the product is deleted or its SKU reused.
         $iStmt = $conn->prepare(
             "INSERT INTO order_items
-                (order_id, shop_id, product_id, product_name, product_code, product_image, selected_size, selected_color, quantity, price, subtotal)
+                (order_id, shop_id, product_id, variant_id, product_name, product_code, product_image, selected_size, selected_color, quantity, price, subtotal)
              VALUES
-                (:order_id, :shop_id, :product_id, :product_name, :product_code, :product_image, :selected_size, :selected_color, :quantity, :price, :subtotal)"
+                (:order_id, :shop_id, :product_id, :variant_id, :product_name, :product_code, :product_image, :selected_size, :selected_color, :quantity, :price, :subtotal)"
         );
         $ocStmt = $conn->prepare(
             "UPDATE products SET orders_count = orders_count + :qty WHERE product_id = :pid"
@@ -398,6 +389,7 @@ class OrderService {
             $iStmt->bindValue(':order_id',       $order_id,                  PDO::PARAM_INT);
             $iStmt->bindValue(':shop_id',        $item['shop_id'],           PDO::PARAM_INT);
             $iStmt->bindValue(':product_id',     $item['product_id'],        PDO::PARAM_INT);
+            $iStmt->bindValue(':variant_id',     $item['variant_id'],        PDO::PARAM_INT);
             $iStmt->bindValue(':product_name',   $item['product_name']);
             $iStmt->bindValue(':product_code',   $item['product_code']);
             $iStmt->bindValue(':product_image',  $item['product_image']);
@@ -412,34 +404,7 @@ class OrderService {
             $ocStmt->bindValue(':pid', $item['product_id'], PDO::PARAM_INT);
             $ocStmt->execute();
 
-            if ($item['selected_size']) {
-                $decSize = $conn->prepare(
-                    "UPDATE product_sizes
-                     SET stock_quantity = GREATEST(0, stock_quantity - :qty)
-                     WHERE product_id = :pid AND size_label = :size"
-                );
-                $decSize->bindValue(':qty',  $item['quantity'],     PDO::PARAM_INT);
-                $decSize->bindValue(':pid',  $item['product_id'],   PDO::PARAM_INT);
-                $decSize->bindValue(':size', $item['selected_size']);
-                $decSize->execute();
-                $syncStock = $conn->prepare(
-                    "UPDATE products
-                     SET stock_quantity = (SELECT COALESCE(SUM(stock_quantity),0) FROM product_sizes WHERE product_id = :pid)
-                     WHERE product_id = :pid2"
-                );
-                $syncStock->bindValue(':pid',  $item['product_id'], PDO::PARAM_INT);
-                $syncStock->bindValue(':pid2', $item['product_id'], PDO::PARAM_INT);
-                $syncStock->execute();
-            } else {
-                $decProd = $conn->prepare(
-                    "UPDATE products
-                     SET stock_quantity = GREATEST(0, stock_quantity - :qty)
-                     WHERE product_id = :pid"
-                );
-                $decProd->bindValue(':qty', $item['quantity'],   PDO::PARAM_INT);
-                $decProd->bindValue(':pid', $item['product_id'], PDO::PARAM_INT);
-                $decProd->execute();
-            }
+            ProductVariants::changeStock($conn, $item['variant_id'], -$item['quantity']);
         }
 
         $conn->commit();

@@ -13,6 +13,7 @@ header('Content-Type: application/json');
 require_once __DIR__ . '/../config/session.php';
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../utils/TokenAuth.php';
+require_once __DIR__ . '/../utils/ProductVariants.php';
 
 const CANCELLABLE_STATUSES = ['pending', 'confirmed'];
 
@@ -62,30 +63,24 @@ try {
     }
 
     $itemsStmt = $conn->prepare(
-        "SELECT product_id, selected_size, quantity FROM order_items WHERE order_id = :id"
+        "SELECT product_id, variant_id, selected_size, selected_color, quantity FROM order_items WHERE order_id = :id"
     );
     $itemsStmt->bindValue(':id', $order_id, PDO::PARAM_INT);
     $itemsStmt->execute();
     $items = $itemsStmt->fetchAll(PDO::FETCH_ASSOC);
 
+    // Put the stock back on the exact colour/size variant. Lines from before
+    // variants existed have no variant_id — matched by size/colour instead.
+    // A product (or variant) deleted since has nothing to restock.
     foreach ($items as $item) {
-        if ($item['selected_size']) {
-            $conn->prepare(
-                "UPDATE product_sizes SET stock_quantity = stock_quantity + :qty
-                 WHERE product_id = :pid AND size_label = :size"
-            )->execute([
-                ':qty'  => $item['quantity'],
-                ':pid'  => $item['product_id'],
-                ':size' => $item['selected_size'],
-            ]);
-            $conn->prepare(
-                "UPDATE products SET stock_quantity = (SELECT COALESCE(SUM(stock_quantity),0) FROM product_sizes WHERE product_id = :pid)
-                 WHERE product_id = :pid2"
-            )->execute([':pid' => $item['product_id'], ':pid2' => $item['product_id']]);
-        } else {
-            $conn->prepare(
-                "UPDATE products SET stock_quantity = stock_quantity + :qty WHERE product_id = :pid"
-            )->execute([':qty' => $item['quantity'], ':pid' => $item['product_id']]);
+        $variant_id = $item['variant_id'] !== null ? (int)$item['variant_id'] : null;
+        if ($variant_id === null && $item['product_id'] !== null) {
+            ProductVariants::ensure($conn, (int)$item['product_id']);
+            $v = ProductVariants::resolve($conn, (int)$item['product_id'], $item['selected_size'], $item['selected_color']);
+            $variant_id = $v ? (int)$v['variant_id'] : null;
+        }
+        if ($variant_id !== null) {
+            ProductVariants::changeStock($conn, $variant_id, (int)$item['quantity']);
         }
     }
 
