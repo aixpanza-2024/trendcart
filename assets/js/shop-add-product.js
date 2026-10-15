@@ -14,6 +14,11 @@ let sizeVariants = [];
 // Color variants: array of { color_name, display_order }
 let colorVariants = [];
 
+// Stock & SKU per colour/size: variantKey(colour, size) -> { stock, sku }
+let variantValues = {};
+// false while an older product's stock isn't split per colour yet
+let splitByColor = true;
+
 document.addEventListener('DOMContentLoaded', function () {
     checkShopAuthentication();
     loadCategories();
@@ -163,6 +168,7 @@ async function loadProductData(id) {
             // Load colors and sizes
             loadColorsFromData(product.colors || []);
             loadSizesFromData(product.sizes || []);
+            loadVariantsFromData(product.variants || [], (product.colors || []).length > 0);
 
             if (product.images && product.images.length > 0) {
                 displayExistingImages(product.images);
@@ -296,6 +302,7 @@ function setupFormSubmit() {
         // Ensure sizesJson is up-to-date then include
         syncSizesJson();
         formData.append('sizes_json', document.getElementById('sizesJson').value || '[]');
+        if (variantCombos().length) formData.append('variants_json', JSON.stringify(collectVariants()));
 
         uploadedImages.forEach(img => {
             formData.append('images[]', img.file);
@@ -339,7 +346,7 @@ function validateForm() {
         showToast('Please enter a valid price', 'error');
         return false;
     }
-    if (sizeVariants.length === 0) {
+    if (variantCombos().length === 0) {
         const stock = document.getElementById('stockQuantity').value;
         if (stock === '' || parseInt(stock) < 0) {
             showToast('Please enter a valid stock quantity', 'error');
@@ -464,39 +471,23 @@ function removeSize(label) {
 /** Re-draw the size rows list */
 function renderSizeVariants() {
     const list   = document.getElementById('sizeVariantsList');
-    const noMsg  = document.getElementById('noSizesMsg');
 
-    const stockInput = document.getElementById('stockQuantity');
-    const stockLabel = document.querySelector('label[for="stockQuantity"]');
-    const stockHint  = document.getElementById('stockHint');
     if (sizeVariants.length === 0) {
         list.innerHTML = '<p class="text-muted small" id="noSizesMsg">No sizes added yet. Click the size buttons above or enter a custom size.</p>';
-        stockInput.required = true;
-        stockInput.placeholder = '0';
-        if (stockLabel) stockLabel.classList.add('required-field');
-        if (stockHint) stockHint.style.display = 'none';
+        renderVariantGrid();
         return;
     }
-    stockInput.required = false;
-    stockInput.placeholder = 'Auto (sum of sizes)';
-    if (stockLabel) stockLabel.classList.remove('required-field');
-    if (stockHint) stockHint.style.display = 'block';
 
     list.innerHTML = `
         <div class="row g-1 mb-1 px-2">
             <div class="col-3"><small class="fw-semibold text-muted">Size</small></div>
-            <div class="col-4"><small class="fw-semibold text-muted">Stock Qty</small></div>
-            <div class="col-4"><small class="fw-semibold text-muted">Price Adj (₹)</small></div>
+            <div class="col-8"><small class="fw-semibold text-muted">Price Adj (₹)</small></div>
             <div class="col-1"></div>
         </div>
         ${sizeVariants.map((s, i) => `
         <div class="size-row" data-index="${i}">
             <div class="size-label-badge col-3">${s.size_label}</div>
-            <input type="number" class="form-control form-control-sm size-stock-input col-4"
-                   value="${s.stock_quantity}" min="0" placeholder="0"
-                   onchange="updateSizeField(${i},'stock_quantity', this.value)"
-                   oninput="updateSizeField(${i},'stock_quantity', this.value)">
-            <input type="number" class="form-control form-control-sm col-4"
+            <input type="number" class="form-control form-control-sm col-8"
                    value="${s.price_adjustment}" step="0.01" placeholder="0"
                    title="Add to base price (can be negative)"
                    onchange="updateSizeField(${i},'price_adjustment', this.value)"
@@ -507,6 +498,7 @@ function renderSizeVariants() {
         </div>`).join('')}
         <small class="text-muted">Price Adj: extra ₹ added to base price for this size (use 0 if same price for all sizes).</small>
     `;
+    renderVariantGrid();
 }
 
 /** Update a field on a size variant (called from inputs) */
@@ -601,6 +593,7 @@ function renderColorTags() {
     if (!list) return;
     if (colorVariants.length === 0) {
         list.innerHTML = '<small class="text-muted">No colors added yet</small>';
+        renderVariantGrid();
         return;
     }
     list.innerHTML = colorVariants.map(c => `
@@ -609,6 +602,7 @@ function renderColorTags() {
             <button type="button" class="remove-color" onclick="removeColor('${c.color_name}')" title="Remove">×</button>
         </span>
     `).join('');
+    renderVariantGrid();
 }
 
 function syncColorsJson() {
@@ -631,6 +625,135 @@ function loadColorsFromData(colors) {
     });
     renderColorTags();
     syncColorsJson();
+}
+
+/* ============================================================
+   STOCK & SKU PER COLOUR / SIZE (variants)
+   One row per colour x size picked above. The server (ProductVariants.php)
+   validates and saves; this only draws the table and collects it.
+   ============================================================ */
+function variantKey(color, size) {
+    return (color || '').toLowerCase() + '||' + (size || '').toLowerCase();
+}
+
+function escAttr(s) {
+    return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+/** Colour/size combinations to stock; [] when the product has neither. */
+function variantCombos() {
+    if (!colorVariants.length && !sizeVariants.length) return [];
+    const colors = (colorVariants.length && splitByColor) ? colorVariants.map(c => c.color_name) : [''];
+    const sizes  = sizeVariants.length ? sizeVariants.map(s => s.size_label) : [''];
+    const rows = [];
+    colors.forEach(color => sizes.forEach(size => rows.push({ color, size })));
+    return rows;
+}
+
+function renderVariantGrid() {
+    const card = document.getElementById('variantCard');
+    if (!card) return;
+    const combos     = variantCombos();
+    const stockInput = document.getElementById('stockQuantity');
+    const stockLabel = document.querySelector('label[for="stockQuantity"]');
+    const stockHint  = document.getElementById('stockHint');
+
+    if (!combos.length) {
+        // No colours or sizes: the single Stock Quantity field is the stock, the product code the SKU
+        card.style.display = 'none';
+        stockInput.readOnly = false;
+        stockInput.required = true;
+        if (stockLabel) stockLabel.classList.add('required-field');
+        if (stockHint) stockHint.style.display = 'none';
+        return;
+    }
+
+    card.style.display = '';
+    stockInput.readOnly = true;
+    stockInput.required = false;
+    if (stockLabel) stockLabel.classList.remove('required-field');
+    if (stockHint) stockHint.style.display = 'block';
+
+    document.getElementById('variantLegacyNote').innerHTML = (colorVariants.length && !splitByColor)
+        ? `<div class="alert alert-warning small py-2">
+               Stock for this product is not split by colour yet — customers pick a colour, but stock is counted per size only.
+               <button type="button" class="btn btn-sm btn-dark ms-2" onclick="splitStockByColor()">Split stock by colour</button>
+           </div>`
+        : '';
+
+    document.getElementById('variantGrid').innerHTML = `
+        <div class="table-responsive">
+        <table class="table table-sm align-middle mb-1">
+            <thead><tr>
+                ${colorVariants.length && splitByColor ? '<th>Colour</th>' : ''}
+                ${sizeVariants.length ? '<th>Size</th>' : ''}
+                <th style="width:110px;">Stock</th>
+                <th>SKU / QR code <small class="text-muted fw-normal">(optional)</small></th>
+            </tr></thead>
+            <tbody>
+            ${combos.map(c => {
+                const key = variantKey(c.color, c.size);
+                const v   = variantValues[key] || { stock: '', sku: '' };
+                return `<tr>
+                    ${colorVariants.length && splitByColor ? `<td>${escAttr(c.color)}</td>` : ''}
+                    ${sizeVariants.length ? `<td>${escAttr(c.size)}</td>` : ''}
+                    <td><input type="number" class="form-control form-control-sm" min="0" placeholder="0"
+                               value="${escAttr(v.stock)}" data-key="${escAttr(key)}" oninput="setVariantValue(this.dataset.key, 'stock', this.value)"></td>
+                    <td><input type="text" class="form-control form-control-sm" maxlength="50" placeholder="e.g. SM0001"
+                               value="${escAttr(v.sku)}" data-key="${escAttr(key)}" oninput="setVariantValue(this.dataset.key, 'sku', this.value)"></td>
+                </tr>`;
+            }).join('')}
+            </tbody>
+        </table>
+        </div>
+        <small class="text-muted">Each SKU must be unique in your shop. A deleted product's SKU can be reused.</small>`;
+    updateStockTotal();
+}
+
+function setVariantValue(key, field, value) {
+    variantValues[key] = variantValues[key] || { stock: '', sku: '' };
+    variantValues[key][field] = value;
+    if (field === 'stock') updateStockTotal();
+}
+
+function updateStockTotal() {
+    const total = variantCombos().reduce((sum, c) => {
+        const v = variantValues[variantKey(c.color, c.size)];
+        return sum + (v ? (parseInt(v.stock) || 0) : 0);
+    }, 0);
+    document.getElementById('stockQuantity').value = total;
+}
+
+function collectVariants() {
+    return variantCombos().map(c => {
+        const v = variantValues[variantKey(c.color, c.size)] || {};
+        return {
+            color_name:     c.color,
+            size_label:     c.size,
+            stock_quantity: parseInt(v.stock) || 0,
+            sku:            (v.sku || '').trim(),
+        };
+    });
+}
+
+/** Older products: start counting stock per colour (rows start empty). */
+function splitStockByColor() {
+    splitByColor = true;
+    renderVariantGrid();
+    showToast('Enter the stock for each colour and size, then save', 'success');
+}
+
+/** Edit mode: fill the table from the saved variants. */
+function loadVariantsFromData(variants, hasColors) {
+    variantValues = {};
+    variants.forEach(v => {
+        variantValues[variantKey(v.color_name, v.size_label)] = {
+            stock: parseInt(v.stock_quantity) || 0,
+            sku:   v.sku || '',
+        };
+    });
+    splitByColor = !hasColors || variants.some(v => v.color_name !== '');
+    renderVariantGrid();
 }
 
 // showToast is provided globally by main.js

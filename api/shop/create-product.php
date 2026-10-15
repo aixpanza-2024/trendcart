@@ -20,6 +20,7 @@ require_once __DIR__ . '/../config/session.php';
 
 // Include required files
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../utils/ProductVariants.php';
 
 // Check if user is logged in
 if (!isset($_SESSION['logged_in']) || !$_SESSION['logged_in']) {
@@ -96,17 +97,21 @@ try {
         throw new Exception('Valid price is required');
     }
 
-    // SKU is unique per shop among existing products (a deleted product's
-    // SKU is free again; other shops may use the same one)
-    if ($product_code !== null) {
-        $dup = $conn->prepare("SELECT product_name FROM products WHERE shop_id = :shop_id AND product_code = :code LIMIT 1");
-        $dup->execute([':shop_id' => $shop_id, ':code' => $product_code]);
-        if ($existing = $dup->fetchColumn()) {
-            http_response_code(409);
-            echo json_encode(['success' => false, 'message' => "SKU \"$product_code\" is already used by \"$existing\" in your shop. Use a different SKU, or delete that product first."]);
-            exit();
-        }
+    // Colour/size variants, each with its own stock and SKU. SKUs (variant
+    // SKUs and the product code) are unique per shop among existing products.
+    try {
+        $variant_rows = ProductVariants::fromForm($_POST);
+        ProductVariants::checkSkus($conn, (int)$shop_id, null, $product_code, $variant_rows);
+    } catch (InvalidArgumentException $ve) {
+        http_response_code(409);
+        echo json_encode(['success' => false, 'message' => $ve->getMessage()]);
+        exit();
     }
+    // Plain colour list, kept while the product isn't split by colour
+    $legacy_colors = array_values(array_filter(array_map(
+        fn($c) => trim($c['color_name'] ?? ''),
+        json_decode($_POST['colors_json'] ?? '[]', true) ?: []
+    )));
 
     // Begin transaction
     $conn->beginTransaction();
@@ -121,10 +126,8 @@ try {
     if (!is_array($sizes)) $sizes = [];
     // Build comma-joined size label for the legacy `size` column (keeps search/filter working)
     $size_summary = implode(',', array_map(fn($s) => $s['size_label'], $sizes));
-    // Total stock = sum of variant stocks (or the entered stock_quantity if no variants)
-    $total_stock = count($sizes) > 0
-        ? array_sum(array_column($sizes, 'stock_quantity'))
-        : (int)$stock_quantity;
+    // Total stock = sum of the variants (summaries are rebuilt again on save)
+    $total_stock = array_sum(array_column($variant_rows, 'stock_quantity'));
 
     // Insert product
     $query = "INSERT INTO products (
@@ -168,35 +171,8 @@ try {
 
     $product_id = $conn->lastInsertId();
 
-    // Insert size variants
-    if (!empty($sizes)) {
-        $sizeStmt = $conn->prepare(
-            "INSERT INTO product_sizes (product_id, size_label, stock_quantity, price_adjustment, display_order)
-             VALUES (:product_id, :size_label, :stock_qty, :price_adj, :disp_order)"
-        );
-        foreach ($sizes as $idx => $sv) {
-            $sizeStmt->bindValue(':product_id',  $product_id, PDO::PARAM_INT);
-            $sizeStmt->bindValue(':size_label',  trim($sv['size_label']));
-            $sizeStmt->bindValue(':stock_qty',   max(0, (int)($sv['stock_quantity'] ?? 0)), PDO::PARAM_INT);
-            $sizeStmt->bindValue(':price_adj',   round((float)($sv['price_adjustment'] ?? 0), 2));
-            $sizeStmt->bindValue(':disp_order',  $idx, PDO::PARAM_INT);
-            $sizeStmt->execute();
-        }
-    }
-
-    // Insert color variants
-    if (!empty($colors)) {
-        $colorStmt = $conn->prepare(
-            "INSERT INTO product_colors (product_id, color_name, display_order)
-             VALUES (:product_id, :color_name, :disp_order)"
-        );
-        foreach ($colors as $idx => $cv) {
-            $colorStmt->bindValue(':product_id',  $product_id, PDO::PARAM_INT);
-            $colorStmt->bindValue(':color_name',  trim($cv['color_name']));
-            $colorStmt->bindValue(':disp_order',  $idx, PDO::PARAM_INT);
-            $colorStmt->execute();
-        }
-    }
+    // Variants (also rebuilds product_sizes / product_colors / total stock)
+    ProductVariants::save($conn, (int)$product_id, (int)$shop_id, $variant_rows, $legacy_colors);
 
     // Handle image uploads
     if (isset($_FILES['images']) && !empty($_FILES['images']['name'][0])) {

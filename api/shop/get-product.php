@@ -122,6 +122,10 @@ try {
     $clStmt->execute();
     $product['colors'] = $clStmt->fetchAll(PDO::FETCH_ASSOC);
 
+    // Colour/size variants with their own stock and SKU
+    require_once __DIR__ . '/../utils/ProductVariants.php';
+    $product['variants'] = ProductVariants::forProduct($conn, (int)$product_id);
+
     http_response_code(200);
     echo json_encode([
         'success' => true,

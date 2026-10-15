@@ -415,7 +415,7 @@
                     <div class="col-md-6">
                         <label for="stockQuantity" class="form-label required-field">Stock Quantity</label>
                         <input type="number" class="form-control" id="stockQuantity" required min="0" placeholder="0">
-                        <small id="stockHint" class="text-muted" style="display:none;">Auto-calculated from size variants</small>
+                        <small id="stockHint" class="text-muted" style="display:none;">Total of the Stock &amp; SKU table below</small>
                     </div>
                     <div class="col-md-6">
                         <label for="lowStockThreshold" class="form-label">Low Stock Alert</label>
@@ -490,7 +490,7 @@
             <div class="form-card">
                 <div class="form-section-title">
                     <i class="fas fa-ruler-combined"></i> Size Variants
-                    <small class="text-muted fw-normal ms-2">Click sizes to add them, then set stock per size</small>
+                    <small class="text-muted fw-normal ms-2">Click sizes to add them — stock is set per colour/size below</small>
                 </div>
 
                 <!-- Quick-pick standard sizes -->
@@ -563,6 +563,16 @@
 
                 <!-- hidden field carries JSON to backend -->
                 <input type="hidden" id="sizesJson" name="sizes_json">
+            </div>
+
+            <!-- Stock & SKU per colour/size (variants) — drawn by renderVariantGrid() -->
+            <div class="form-card" id="variantCard" style="display:none;">
+                <div class="form-section-title">
+                    <i class="fas fa-barcode"></i> Stock &amp; SKU per Colour / Size
+                    <small class="text-muted fw-normal ms-2">One row per item you stock — each can have its own QR/SKU label</small>
+                </div>
+                <div id="variantLegacyNote"></div>
+                <div id="variantGrid"></div>
             </div>
 
             <!-- Product Images -->
