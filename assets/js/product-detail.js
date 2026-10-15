@@ -203,40 +203,29 @@ function renderProduct(p) {
 
     if (p.colors && p.colors.length > 0) {
         colorBlock.style.display = '';
-        colorBtns.innerHTML = p.colors.map(c => `
+        colorBtns.innerHTML = p.colors.map(c => {
+            const soldOut = p.color_stock && (p.color_stock[c.color_name] || 0) <= 0;
+            return `
             <button type="button"
-                class="color-option-btn"
+                class="color-option-btn${soldOut ? ' disabled' : ''}"
                 data-color="${c.color_name}"
-                onclick="selectColor(this)">
+                ${soldOut ? 'disabled title="Out of stock"' : 'onclick="selectColor(this)"'}>
                 ${c.color_name}
-            </button>`).join('');
+                ${soldOut ? '<small class="d-block text-danger" style="font-size:9px;">Out of stock</small>' : ''}
+            </button>`;
+        }).join('');
     } else {
         colorBlock.style.display = 'none';
     }
 
     // ── Size selector ────────────────────────────────────────────
-    selectedSize = null;
-    const sizeBlock = document.getElementById('sizeSelectBlock');
-    const sizeBtns  = document.getElementById('sizeButtons');
-
-    if (p.sizes && p.sizes.length > 0) {
-        sizeBlock.style.display = '';
-        sizeBtns.innerHTML = p.sizes.map(s => {
-            const outOfStock = parseInt(s.stock_quantity) <= 0;
-            const adj        = parseFloat(s.price_adjustment || 0);
-            const adjLabel   = adj !== 0 ? `<small class="d-block" style="font-size:9px;margin-top:1px;">${adj > 0 ? '+' : ''}₹${adj}</small>` : '';
-            return `<button type="button"
-                        class="size-option-btn${outOfStock ? ' disabled' : ''}"
-                        data-size="${s.size_label}"
-                        data-price-adj="${adj}"
-                        data-stock="${s.stock_quantity}"
-                        ${outOfStock ? 'disabled title="Out of stock"' : `onclick="selectSize(this)"`}>
-                        ${s.size_label}${adjLabel}
-                        ${outOfStock ? '<small class="d-block text-danger" style="font-size:9px;">Out of stock</small>' : ''}
-                    </button>`;
-        }).join('');
+    // Stock split by colour: sizes appear once a colour is picked (selectColor)
+    if (p.sizes_by_color) {
+        p.sizes = [];
+        const anySizes = Object.values(p.sizes_by_color).some(list => list.length > 0);
+        renderSizeButtons(anySizes ? null : []);
     } else {
-        sizeBlock.style.display = 'none';
+        renderSizeButtons(p.sizes || []);
     }
 
     // ── Add to cart button ───────────────────────────────────────
@@ -269,6 +258,8 @@ function renderProduct(p) {
                 effectivePrice = price + parseFloat(sv.price_adjustment || 0);
                 maxStock = parseInt(sv.stock_quantity) || 0;
             }
+        } else if (p.color_stock && selectedColor) {
+            maxStock = parseInt(p.color_stock[selectedColor]) || 0;
         }
 
         // Guard: ensure requested qty doesn't exceed available stock
@@ -322,6 +313,8 @@ function changeQty(delta) {
     if (selectedSize && currentProduct && currentProduct.sizes) {
         const sv = currentProduct.sizes.find(s => s.size_label === selectedSize);
         if (sv) maxQty = Math.max(0, parseInt(sv.stock_quantity) || 0);
+    } else if (!selectedSize && currentProduct && currentProduct.color_stock && selectedColor) {
+        maxQty = Math.max(0, parseInt(currentProduct.color_stock[selectedColor]) || 0);
     } else if (!selectedSize && currentProduct && !currentProduct.sizes?.length) {
         maxQty = Math.max(0, parseInt(currentProduct.stock_quantity) || 99);
     }
@@ -338,6 +331,50 @@ function selectColor(btn) {
     selectedColor = btn.dataset.color;
     const errEl = document.getElementById('colorError');
     if (errEl) errEl.classList.add('d-none');
+
+    // Stock split by colour: show only the sizes that exist in this colour
+    if (currentProduct && currentProduct.sizes_by_color) {
+        currentProduct.sizes = currentProduct.sizes_by_color[selectedColor] || [];
+        renderSizeButtons(currentProduct.sizes);
+        currentQty = 1;
+        document.getElementById('qtyDisplay').textContent = 1;
+    }
+}
+
+/* ================================================================
+   SIZE BUTTONS — sizes: list to show, [] = none, null = "pick a colour first"
+   ================================================================ */
+function renderSizeButtons(sizes) {
+    selectedSize = null;
+    const sizeBlock = document.getElementById('sizeSelectBlock');
+    const sizeBtns  = document.getElementById('sizeButtons');
+
+    if (sizes === null) {
+        sizeBlock.style.display = '';
+        sizeBtns.innerHTML = '<small class="text-muted">Select a colour to see the available sizes</small>';
+        return;
+    }
+    if (!sizes.length) {
+        sizeBlock.style.display = 'none';
+        sizeBtns.innerHTML = '';
+        return;
+    }
+
+    sizeBlock.style.display = '';
+    sizeBtns.innerHTML = sizes.map(s => {
+        const outOfStock = parseInt(s.stock_quantity) <= 0;
+        const adj        = parseFloat(s.price_adjustment || 0);
+        const adjLabel   = adj !== 0 ? `<small class="d-block" style="font-size:9px;margin-top:1px;">${adj > 0 ? '+' : ''}₹${adj}</small>` : '';
+        return `<button type="button"
+                    class="size-option-btn${outOfStock ? ' disabled' : ''}"
+                    data-size="${s.size_label}"
+                    data-price-adj="${adj}"
+                    data-stock="${s.stock_quantity}"
+                    ${outOfStock ? 'disabled title="Out of stock"' : `onclick="selectSize(this)"`}>
+                    ${s.size_label}${adjLabel}
+                    ${outOfStock ? '<small class="d-block text-danger" style="font-size:9px;">Out of stock</small>' : ''}
+                </button>`;
+    }).join('');
 }
 
 /* ================================================================

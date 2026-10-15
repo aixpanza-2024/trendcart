@@ -86,6 +86,24 @@ try {
         $product['colors'] = [];
     }
 
+    // Colour/size variants. sizes_by_color / color_stock are only set when
+    // the stock is split by colour: picking a colour then shows just the
+    // sizes that exist in it. Without them the page works as before.
+    try {
+        require_once __DIR__ . '/../utils/ProductVariants.php';
+        $variants = ProductVariants::forProduct($conn, $product_id);
+        $product['variants'] = array_map(fn($v) => [
+            'variant_id'       => (int)$v['variant_id'],
+            'color_name'       => $v['color_name'],
+            'size_label'       => $v['size_label'],
+            'stock_quantity'   => (int)$v['stock_quantity'],
+            'price_adjustment' => $v['price_adjustment'],
+        ], $variants);
+        $product += ProductVariants::optionsForPage($variants);
+    } catch (Exception $vEx) {
+        $product['variants'] = [];
+    }
+
     // Latest approved reviews (up to 10)
     $revStmt = $conn->prepare("
         SELECT pr.rating, pr.review_text, pr.created_at,
