@@ -490,6 +490,9 @@
             background-image: var(--mono-gradient);
             padding-top: 0.4rem !important;
             padding-bottom: 0.4rem !important;
+            /* thin grey divider instead of the dark drop shadow */
+            box-shadow: none !important;
+            border-bottom: 1px solid rgba(255,255,255,0.14) !important;
         }
         body.theme-men nav.navbar {
             background: linear-gradient(120deg, #7EC8E3 0%, #ffffff 100%) !important;
@@ -526,7 +529,7 @@
         body.theme-men nav.navbar,
         body.theme-women nav.navbar,
         body.theme-kids nav.navbar {
-            border-bottom-color: rgba(0,0,0,0.08);
+            border-bottom: 1px solid rgba(26,26,26,0.12) !important;
         }
         body.theme-men .navbar-nav .nav-link,
         body.theme-women .navbar-nav .nav-link,
