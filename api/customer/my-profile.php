@@ -8,6 +8,7 @@ header('Content-Type: application/json');
 require_once __DIR__ . '/../config/session.php';
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../utils/TokenAuth.php';
+require_once __DIR__ . '/../utils/InputClean.php';
 require_once __DIR__ . '/../utils/SubscriptionService.php';
 
 $database = new Database();
@@ -62,7 +63,7 @@ try {
         if (!empty($data->full_name) || !empty($data->phone)) {
             $sets   = [];
             $params = [':user_id' => $user_id];
-            if (!empty($data->full_name)) { $sets[] = 'full_name = :full_name'; $params[':full_name'] = trim($data->full_name); }
+            if (!empty($data->full_name)) { $sets[] = 'full_name = :full_name'; $params[':full_name'] = InputClean::line($data->full_name, 100); }
             if (!empty($data->phone))     { $sets[] = 'phone = :phone';         $params[':phone']     = trim($data->phone); }
             if ($sets) {
                 $stmt = $conn->prepare("UPDATE users SET " . implode(', ', $sets) . " WHERE user_id = :user_id");

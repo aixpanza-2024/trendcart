@@ -11,6 +11,8 @@ require_once __DIR__ . '/DeliveryCalculator.php';
 require_once __DIR__ . '/CouponValidator.php';
 require_once __DIR__ . '/SubscriptionService.php';
 require_once __DIR__ . '/ProductVariants.php';
+require_once __DIR__ . '/InputClean.php';
+require_once __DIR__ . '/AddressInput.php';
 
 class OrderService {
 
@@ -28,6 +30,12 @@ class OrderService {
             if (empty(trim($shipping[$field] ?? ''))) {
                 return ['success' => false, 'message' => 'Missing required field: ' . $field];
             }
+        }
+        if (AddressInput::mobile($shipping['phone']) === null) {
+            return ['success' => false, 'message' => 'Enter a valid 10-digit mobile number'];
+        }
+        if (!preg_match('/^\d{6}$/', trim($shipping['pincode']))) {
+            return ['success' => false, 'message' => 'Enter a valid 6-digit pincode'];
         }
         if (empty($cart_items)) {
             return ['success' => false, 'message' => 'Cart is empty'];
@@ -237,6 +245,12 @@ class OrderService {
     public static function placeOrder($conn, $customer_id, $shipping, $cart_items, $coupon_code,
                                        $payment_method, $payment_status,
                                        $razorpay_order_id = null, $razorpay_payment_id = null) {
+
+        // Shipping details are shown to shops and admins — store plain text only
+        foreach (['full_name' => 100, 'address' => 500, 'city' => 100, 'state' => 100, 'email' => 255] as $field => $max) {
+            if (isset($shipping[$field])) $shipping[$field] = InputClean::line($shipping[$field], $max);
+        }
+        if (isset($shipping['phone'])) $shipping['phone'] = AddressInput::mobile($shipping['phone']) ?? $shipping['phone'];
 
         $priced = self::priceCart($conn, $customer_id, $shipping, $cart_items, $coupon_code);
         if (!$priced['success']) {

@@ -11,6 +11,7 @@ require_once __DIR__ . '/../config/session.php';
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../utils/TokenAuth.php';
 require_once __DIR__ . '/../utils/AddressInput.php';
+require_once __DIR__ . '/../utils/InputClean.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
@@ -31,12 +32,12 @@ if ($address_id <= 0) {
     exit;
 }
 
-$full_name     = trim($data['full_name'] ?? '');
+$full_name     = InputClean::line($data['full_name'] ?? '', 100);
 $phone         = AddressInput::mobile($data['phone'] ?? '');
-$address_line1 = trim($data['address_line1'] ?? '');
-$address_line2 = trim($data['address_line2'] ?? '');
-$city          = trim($data['city'] ?? '');
-$state         = trim($data['state'] ?? '');
+$address_line1 = InputClean::line($data['address_line1'] ?? '', 255);
+$address_line2 = InputClean::line($data['address_line2'] ?? '', 255);
+$city          = InputClean::line($data['city'] ?? '', 100);
+$state         = InputClean::line($data['state'] ?? '', 100);
 $pincode       = trim($data['pincode'] ?? '');
 $address_type_in = $data['address_type'] ?? 'home';
 $address_type    = in_array($address_type_in, ['home', 'work', 'other'], true) ? $address_type_in : 'home';

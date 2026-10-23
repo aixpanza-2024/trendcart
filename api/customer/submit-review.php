@@ -9,6 +9,7 @@
 header('Content-Type: application/json');
 require_once __DIR__ . '/../config/session.php';
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../utils/InputClean.php';
 require_once __DIR__ . '/../utils/TokenAuth.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -28,7 +29,7 @@ if (!$body) $body = $_POST;
 
 $order_item_id = isset($body['order_item_id']) ? (int)$body['order_item_id'] : 0;
 $rating        = isset($body['rating'])        ? (int)$body['rating']        : 0;
-$review_text   = isset($body['review_text'])   ? trim($body['review_text'])  : '';
+$review_text   = isset($body['review_text'])   ? InputClean::text($body['review_text'], 2000) : '';
 
 if ($order_item_id <= 0 || $rating < 1 || $rating > 5) {
     http_response_code(400);

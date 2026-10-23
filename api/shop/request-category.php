@@ -6,6 +6,7 @@
 header('Content-Type: application/json');
 require_once __DIR__ . '/../config/session.php';
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../utils/InputClean.php';
 
 if (!isset($_SESSION['logged_in']) || !$_SESSION['logged_in']) {
     http_response_code(401);
@@ -65,9 +66,9 @@ try {
     }
 
     $shop_id    = $shop['shop_id'];
-    $cat_name   = trim($data['category_name']);
-    $parent     = trim($data['parent_name'] ?? '');
-    $note       = trim($data['note'] ?? '');
+    $cat_name   = InputClean::line($data['category_name'], 100);
+    $parent     = InputClean::line($data['parent_name'] ?? '', 100);
+    $note       = InputClean::text($data['note'] ?? '', 1000);
 
     $stmt = $conn->prepare("
         INSERT INTO category_requests (shop_id, user_id, category_name, parent_name, note)

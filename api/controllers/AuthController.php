@@ -11,6 +11,7 @@ require_once '../api/utils/OTPManager.php';
 require_once '../api/utils/EmailManager.php';
 require_once '../api/utils/SMSManager.php';
 require_once '../api/utils/TokenAuth.php';
+require_once __DIR__ . '/../utils/InputClean.php';
 require_once '../api/utils/DebugOtp.php';
 require_once '../api/utils/RateLimiter.php';
 
@@ -167,7 +168,7 @@ class AuthController {
         }
 
         $email     = $data->email;
-        $full_name = trim($data->full_name);
+        $full_name = InputClean::line($data->full_name, 100);
         $phone     = trim($data->phone);
         $user_type = $data->user_type;
         $shop_name = isset($data->shop_name) ? $data->shop_name : null;

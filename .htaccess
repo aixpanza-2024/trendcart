@@ -10,3 +10,6 @@ RewriteRule .* - [E=HTTP_AUTHORIZATION:%1]
 RedirectMatch 404 /\.git
 RedirectMatch 404 \.sql$
 RedirectMatch 404 /error_log$
+
+# Uploaded files are images only — never serve (or execute) a script from /uploads/
+RedirectMatch 404 (?i)/uploads/.*\.(php[0-9]?|phtml|phar|pht|phps|cgi|pl|py|sh|htaccess)$

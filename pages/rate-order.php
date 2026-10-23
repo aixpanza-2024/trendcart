@@ -18,6 +18,7 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true || $_SESSI
 $customer_id = (int)$_SESSION['user_id'];
 
 require_once '../api/config/database.php';
+require_once '../api/utils/InputClean.php';
 
 $database = new Database();
 $conn     = $database->getConnection();
@@ -104,7 +105,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'rate'
     foreach ((array)($_POST['items'] ?? []) as $order_item_id => $fields) {
         $order_item_id = (int)$order_item_id;
         $rating        = (int)($fields['rating']      ?? 0);
-        $review_text   = trim($fields['review_text']  ?? '');
+        $review_text   = InputClean::text($fields['review_text'] ?? '', 2000);
 
         if ($rating < 1 || $rating > 5) continue;
 

@@ -21,6 +21,7 @@ require_once __DIR__ . '/../config/session.php';
 // Include required files
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../utils/ProductVariants.php';
+require_once __DIR__ . '/../utils/InputClean.php';
 
 // Check authentication
 if (!isset($_SESSION['logged_in']) || !$_SESSION['logged_in'] || $_SESSION['user_type'] !== 'shop') {
@@ -69,9 +70,9 @@ try {
     }
 
     // Get POST data (same as create)
-    $product_name = $_POST['product_name'] ?? '';
+    $product_name = InputClean::line($_POST['product_name'] ?? '', 255);
     $product_code = !empty($_POST['product_code']) ? trim($_POST['product_code']) : null;
-    $product_description = $_POST['product_description'] ?? null;
+    $product_description = isset($_POST['product_description']) ? InputClean::text($_POST['product_description']) : null;
     $category_id = $_POST['category_id'] ?? null;
     $product_status = $_POST['product_status'] ?? 'active';
 
@@ -198,7 +199,15 @@ try {
                 continue;
             }
 
-            $extension = pathinfo($file_name, PATHINFO_EXTENSION);
+            // Only real images, saved under an extension taken from the file's
+            // actual content — never the uploader's file name (a ".php" upload
+            // would otherwise be executable on the server)
+            $image_types = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp', 'image/gif' => 'gif'];
+            $mime = (new finfo(FILEINFO_MIME_TYPE))->file($tmp_name);
+            if (!isset($image_types[$mime]) || @getimagesize($tmp_name) === false) {
+                continue;
+            }
+            $extension = $image_types[$mime];
             $unique_name = uniqid('product_' . $product_id . '_') . '.' . $extension;
             $file_path = $upload_dir . $unique_name;
 

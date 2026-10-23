@@ -8,6 +8,7 @@
 header('Content-Type: application/json');
 require_once __DIR__ . '/../config/session.php';
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../utils/InputClean.php';
 
 if (!isset($_SESSION['logged_in']) || !$_SESSION['logged_in']) {
     http_response_code(401);
@@ -78,14 +79,14 @@ try {
                 longitude = :lng
             WHERE user_id = :uid
         ");
-        $stmt->bindValue(':name', $data['shop_name'] ?? '');
-        $stmt->bindValue(':desc', $data['shop_description'] ?? '');
-        $stmt->bindValue(':city', $data['shop_city'] ?? '');
-        $stmt->bindValue(':state', $data['shop_state'] ?? '');
+        $stmt->bindValue(':name', InputClean::line($data['shop_name'] ?? '', 255));
+        $stmt->bindValue(':desc', InputClean::text($data['shop_description'] ?? ''));
+        $stmt->bindValue(':city', InputClean::line($data['shop_city'] ?? '', 100));
+        $stmt->bindValue(':state', InputClean::line($data['shop_state'] ?? '', 100));
         $stmt->bindValue(':pincode', $data['shop_pincode'] ?? '');
         $stmt->bindValue(':phone', $data['shop_phone'] ?? '');
         $stmt->bindValue(':email', $data['shop_email'] ?? '');
-        $stmt->bindValue(':address', $data['shop_address'] ?? '');
+        $stmt->bindValue(':address', InputClean::line($data['shop_address'] ?? '', 500));
         $stmt->bindValue(':lat', isset($data['latitude'])  && $data['latitude']  !== '' ? (float)$data['latitude']  : null);
         $stmt->bindValue(':lng', isset($data['longitude']) && $data['longitude'] !== '' ? (float)$data['longitude'] : null);
         $stmt->bindParam(':uid', $user_id);
@@ -99,8 +100,8 @@ try {
                 gst_number = :gst
             WHERE user_id = :uid
         ");
-        $stmt->bindValue(':name', $data['shop_name'] ?? '');
-        $stmt->bindValue(':desc', $data['shop_description'] ?? '');
+        $stmt->bindValue(':name', InputClean::line($data['shop_name'] ?? '', 255));
+        $stmt->bindValue(':desc', InputClean::text($data['shop_description'] ?? ''));
         $stmt->bindValue(':gst', $data['gst_number'] ?? '');
         $stmt->bindParam(':uid', $user_id);
         $stmt->execute();
