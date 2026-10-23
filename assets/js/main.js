@@ -27,13 +27,15 @@ document.addEventListener('DOMContentLoaded', function() {
 /* Show a top bar for admin/shop users visiting the main website */
 async function _injectPanelBar() {
     try {
-        const res  = await fetch('../api/check-auth.php');
+        // index.html / cosmetics.html sit in the site root, every other page one folder down
+        const up   = /\/(pages|shop|admin)\//.test(window.location.pathname.replace(/\\/g, '/')) ? '../' : '';
+        const res  = await fetch(up + 'api/check-auth.php');
         const data = await res.json();
         if (!data.success || !data.data || !data.data.logged_in) return;
         const userType = data.data.user && data.data.user.user_type;
         if (userType !== 'admin' && userType !== 'shop') return;
 
-        const panelUrl   = userType === 'admin' ? '../admin/dashboard.html' : '../shop/dashboard.html';
+        const panelUrl   = userType === 'admin' ? up + 'admin/dashboard.html' : up + 'shop/dashboard.html';
         const label      = userType === 'admin' ? 'Admin Panel' : 'Shop Panel';
         const iconClass  = userType === 'admin' ? 'fa-user-shield' : 'fa-store';
 

@@ -115,7 +115,8 @@ function displayProducts(products) {
     let html = '';
     products.forEach(product => {
         const statusClass = product.product_status || 'active';
-        const image = product.primary_image || '../assets/images/placeholder-product.jpg';
+        // Stored paths start at the site root ("/uploads/..."); the site may live in a sub-folder
+        const image = product.primary_image ? '../' + product.primary_image.replace(/^\//, '') : 'https://placehold.co/80x80/eee/999?text=No+Image';
         const price = parseFloat(product.price) || 0;
         const stock = parseInt(product.stock_quantity) || 0;
         const threshold = parseInt(product.low_stock_threshold) || 10;

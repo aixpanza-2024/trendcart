@@ -380,17 +380,3 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 });
-
-/* ===================================
-   FORGOT PASSWORD (placeholder)
-   =================================== */
-function forgotPassword() {
-    const email = prompt('Enter your registered email address:');
-
-    if (email && isValidEmail(email)) {
-        showToast('Password reset link sent to your email', 'success');
-        // In production, this would send an actual password reset email
-    } else if (email) {
-        showToast('Please enter a valid email address', 'error');
-    }
-}

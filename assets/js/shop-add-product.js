@@ -190,7 +190,7 @@ function displayExistingImages(images) {
         const div = document.createElement('div');
         div.className = 'image-preview';
         div.innerHTML = `
-            <img src="${image.image_url}" alt="Product Image ${index + 1}">
+            <img src="../${String(image.image_url).replace(/^\//, '')}" alt="Product Image ${index + 1}">
             ${image.is_primary ? '<span class="primary-badge">Primary</span>' : ''}
             <button type="button" class="remove-image" onclick="removeExistingImage(${image.image_id}, this)">
                 <i class="fas fa-times"></i>
