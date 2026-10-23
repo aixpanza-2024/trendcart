@@ -5,7 +5,8 @@
 
 header('Content-Type: application/json');
 require_once __DIR__ . '/../config/session.php';
-require_once '../config/database.php';
+require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../utils/ProductVariants.php';
 
 if (!isset($_SESSION['logged_in']) || !$_SESSION['logged_in']) {
     http_response_code(401);
@@ -53,23 +54,57 @@ try {
 
     $shop_id = $shop['shop_id'];
 
-    // Verify item belongs to this shop
-    $stmt = $conn->prepare("SELECT order_item_id FROM order_items WHERE order_item_id = :id AND shop_id = :shop_id");
+    $conn->beginTransaction();
+
+    // Verify item belongs to this shop (locked: two clicks can't both restock)
+    $stmt = $conn->prepare(
+        "SELECT order_item_id, item_status, product_id, variant_id, selected_size, selected_color, quantity
+         FROM order_items WHERE order_item_id = :id AND shop_id = :shop_id FOR UPDATE"
+    );
     $stmt->bindParam(':id', $data['order_item_id']);
     $stmt->bindParam(':shop_id', $shop_id);
     $stmt->execute();
+    $item = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    if (!$stmt->fetch()) {
+    if (!$item) {
+        $conn->rollBack();
         http_response_code(403);
         echo json_encode(['success' => false, 'message' => 'Order item not found']);
         exit();
     }
 
+    // Items only move forward; delivered and cancelled are final
+    $progress = ['pending' => 0, 'confirmed' => 1, 'processing' => 2, 'shipped' => 3, 'delivered' => 4];
+    $current  = $item['item_status'];
+    $next     = $data['status'];
+    if ($current === $next) {
+        $conn->rollBack();
+        echo json_encode(['success' => true, 'message' => 'Status unchanged']);
+        exit();
+    }
+    if ($current === 'delivered' || $current === 'cancelled') {
+        $conn->rollBack();
+        http_response_code(409);
+        echo json_encode(['success' => false, 'message' => "This item is already {$current} and can't be changed."]);
+        exit();
+    }
+    if ($next !== 'cancelled' && ($progress[$next] ?? 0) < ($progress[$current] ?? 0)) {
+        $conn->rollBack();
+        http_response_code(409);
+        echo json_encode(['success' => false, 'message' => "An item that is {$current} can't go back to {$next}."]);
+        exit();
+    }
+
     // Update status
     $stmt = $conn->prepare("UPDATE order_items SET item_status = :status WHERE order_item_id = :id");
-    $stmt->bindParam(':status', $data['status']);
+    $stmt->bindParam(':status', $next);
     $stmt->bindParam(':id', $data['order_item_id']);
     $stmt->execute();
+
+    // Cancelled by the shop: the stock goes back on the shelf
+    if ($next === 'cancelled') {
+        ProductVariants::restockOrderItem($conn, $item);
+    }
 
     // Sync parent orders.order_status based on all item statuses for this order
     $syncStmt = $conn->prepare(
@@ -103,9 +138,11 @@ try {
         $updO->execute();
     }
 
+    $conn->commit();
     echo json_encode(['success' => true, 'message' => 'Status updated']);
 
 } catch (Exception $e) {
+    if (isset($conn) && $conn->inTransaction()) $conn->rollBack();
     http_response_code(500);
     echo json_encode(['success' => false, 'message' => $e->getMessage()]);
 }

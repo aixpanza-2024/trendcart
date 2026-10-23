@@ -272,6 +272,24 @@ class ProductVariants {
     }
 
     /**
+     * Put one cancelled order line's quantity back in stock. Lines from before
+     * variants existed have no variant_id and are matched by size/colour; a
+     * product deleted since has nothing to restock.
+     * $item: product_id, variant_id, selected_size, selected_color, quantity
+     */
+    public static function restockOrderItem(PDO $conn, array $item): void {
+        $variant_id = $item['variant_id'] !== null ? (int)$item['variant_id'] : null;
+        if ($variant_id === null && $item['product_id'] !== null) {
+            self::ensure($conn, (int)$item['product_id']);
+            $v = self::resolve($conn, (int)$item['product_id'], $item['selected_size'], $item['selected_color']);
+            $variant_id = $v ? (int)$v['variant_id'] : null;
+        }
+        if ($variant_id !== null) {
+            self::changeStock($conn, $variant_id, (int)$item['quantity']);
+        }
+    }
+
+    /**
      * Customer-facing shape for the product page: per colour, which sizes
      * exist and their stock. Empty when the product isn't split by colour.
      */

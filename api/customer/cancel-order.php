@@ -69,19 +69,9 @@ try {
     $itemsStmt->execute();
     $items = $itemsStmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // Put the stock back on the exact colour/size variant. Lines from before
-    // variants existed have no variant_id — matched by size/colour instead.
-    // A product (or variant) deleted since has nothing to restock.
+    // Put the stock back on the exact colour/size variant
     foreach ($items as $item) {
-        $variant_id = $item['variant_id'] !== null ? (int)$item['variant_id'] : null;
-        if ($variant_id === null && $item['product_id'] !== null) {
-            ProductVariants::ensure($conn, (int)$item['product_id']);
-            $v = ProductVariants::resolve($conn, (int)$item['product_id'], $item['selected_size'], $item['selected_color']);
-            $variant_id = $v ? (int)$v['variant_id'] : null;
-        }
-        if ($variant_id !== null) {
-            ProductVariants::changeStock($conn, $variant_id, (int)$item['quantity']);
-        }
+        ProductVariants::restockOrderItem($conn, $item);
     }
 
     $conn->prepare(

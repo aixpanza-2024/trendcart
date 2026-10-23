@@ -6,6 +6,7 @@
 header('Content-Type: application/json');
 require_once __DIR__ . '/../config/session.php';
 require_once '../config/database.php';
+require_once __DIR__ . '/../utils/ProductVariants.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(200); exit(); }
 
@@ -74,9 +75,24 @@ try {
     foreach ($params as $k => $v) { $stmt->bindValue($k, $v); }
     $stmt->execute();
 
-    // Also update all order items
-    $stmt = $conn->prepare("UPDATE order_items SET item_status = :status WHERE order_id = :id");
+    // Cancelling puts back the stock of every item not already cancelled or delivered
+    if ($data['status'] === 'cancelled' && $order['order_status'] !== 'cancelled') {
+        $itemsStmt = $conn->prepare(
+            "SELECT product_id, variant_id, selected_size, selected_color, quantity
+             FROM order_items WHERE order_id = :id AND item_status NOT IN ('cancelled', 'delivered')"
+        );
+        $itemsStmt->execute([':id' => $data['order_id']]);
+        foreach ($itemsStmt->fetchAll(PDO::FETCH_ASSOC) as $item) {
+            ProductVariants::restockOrderItem($conn, $item);
+        }
+    }
+
+    // Also update all order items. Items have no 'returned'/'refunded' state,
+    // so those order-level statuses leave the items as they are.
+    $item_statuses = ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'];
+    $stmt = $conn->prepare("UPDATE order_items SET item_status = :status WHERE order_id = :id AND :status2 IN ('" . implode("','", $item_statuses) . "')");
     $stmt->bindParam(':status', $data['status']);
+    $stmt->bindParam(':status2', $data['status']);
     $stmt->bindParam(':id', $data['order_id']);
     $stmt->execute();
 
