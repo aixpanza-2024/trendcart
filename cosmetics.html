@@ -335,11 +335,12 @@
             position: relative;
             transition: background 0.3s;
         }
-        /* "Shop all in X" sits at the end of the circles row, centred on the circles */
+        /* "Shop all in X" is pinned to the right end of the circles row (after the
+           last circle when the row scrolls), centred on the circles */
         .cat-shop-all {
             flex: 0 0 auto;
             align-self: center;
-            margin: 0 0 14px 6px;
+            margin: 0 8px 14px auto;
             white-space: nowrap;
         }
         body:not(.theme-men):not(.theme-women):not(.theme-kids) .cat-shop-all {

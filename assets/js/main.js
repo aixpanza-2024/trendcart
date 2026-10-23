@@ -322,8 +322,7 @@ function checkAuthStatus() {
         authButtons.outerHTML = `
             <li class="nav-item dropdown">
                 <a class="nav-link dropdown-toggle d-flex align-items-center gap-1 px-2" href="#"
-                   id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false"
-                   style="font-size:0.82rem;font-weight:600;letter-spacing:0.07em;text-transform:uppercase;">
+                   id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                     <i class="fas fa-user-circle" style="font-size:1rem;"></i> ${userName}
                 </a>
                 <ul class="dropdown-menu dropdown-menu-end shadow border-0" aria-labelledby="userDropdown"
