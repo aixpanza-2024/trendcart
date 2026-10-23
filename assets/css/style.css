@@ -46,10 +46,10 @@ a {
 .navbar-nav .nav-link {
     color: rgba(255,255,255,0.88) !important;
     padding: 0.45rem 0.9rem;
-    font-size: 0.82rem;
+    font-size: 0.9rem;
     font-weight: 600;
-    letter-spacing: 0.07em;
-    text-transform: uppercase;
+    letter-spacing: 0.01em;
+    text-transform: capitalize;
     position: relative;
     transition: color var(--transition-speed) ease;
     white-space: nowrap;
