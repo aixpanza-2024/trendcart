@@ -121,12 +121,15 @@ function injectMobileNav() {
     const page     = window.location.pathname.split('/').pop() || 'index.html';
     const active   = (...pages) => pages.includes(page) ? 'active' : '';
 
-    // 1) Top navbar icons: search toggle + cart
+    // 1) Top navbar icons: search toggle + wishlist + cart
     navContainer.insertAdjacentHTML('beforeend', `
         <div class="mob-top-icons" id="mobTopIcons">
             <button class="mob-icon" id="mobSearchToggle" type="button" aria-label="Search">
                 <i class="fas fa-search"></i>
             </button>
+            <a href="${href('wishlist.html')}" class="mob-icon" aria-label="Wishlist">
+                <i class="fas fa-heart"></i>
+            </a>
             <a href="${href('cart.html')}" class="mob-icon" aria-label="Cart" style="position:relative;">
                 <i class="fas fa-shopping-bag"></i>
                 <span class="cart-badge" id="mobTopCartBadge" style="display:none;">0</span>
@@ -198,6 +201,9 @@ function injectMobileNav() {
                 <div class="mob-account-sheet-handle"></div>
                 <a href="${href('orders.html')}" class="mob-account-sheet-item">
                     <i class="fas fa-box"></i> My Orders
+                </a>
+                <a href="${href('wishlist.html')}" class="mob-account-sheet-item">
+                    <i class="fas fa-heart"></i> My Wishlist
                 </a>
                 <a href="${href('profile.html')}" class="mob-account-sheet-item">
                     <i class="fas fa-user"></i> My Profile
