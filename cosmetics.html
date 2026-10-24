@@ -98,7 +98,7 @@
 
     <!-- Category + Subcategory Row: All/Skincare/Makeup..., a divider, then the
          subcategory circles, ending in a plain "view all" arrow -->
-    <section class="cat-circles-section">
+    <section class="cat-circles-section" style="display:none;">
         <div class="container-xl px-4">
             <div class="cat-scroll-row">
                 <button type="button" class="cat-scroll-btn cat-scroll-left" id="catScrollLeft" onclick="scrollCategories(-1)" aria-label="Scroll left" hidden>
@@ -731,6 +731,14 @@
 
         // Renders just the subcategory circles + trailing arrow — the pills
         // to their left are handled separately by loadSuperCategoryTabs().
+        // The whole row (pills + circles) collapses when neither has anything to
+        // show, so an empty vertical doesn't leave a blank padded bar on screen.
+        function updateRowVisibility() {
+            const hasPills = document.getElementById('superCatTabs').children.length > 0;
+            const hasItems = document.getElementById('catItemsWrap').children.length > 0;
+            document.querySelector('.cat-circles-section').style.display = (hasPills || hasItems) ? '' : 'none';
+        }
+
         function renderCategoryItems(superCategoryId, data) {
             const wrap = document.getElementById('catItemsWrap');
 
@@ -743,6 +751,7 @@
                 // Nothing to show at all (e.g. no shops yet in this vertical) —
                 // an arrow with nothing to point past is just clutter.
                 wrap.innerHTML = '';
+                updateRowVisibility();
                 requestAnimationFrame(updateCatScrollBtns);
                 return;
             }
@@ -763,6 +772,7 @@
                     </a>`;
             });
             wrap.innerHTML = items.join('') + arrow;
+            updateRowVisibility();
             requestAnimationFrame(updateCatScrollBtns);
             wrap.querySelectorAll('img[data-fallback]').forEach(img => {
                 img.addEventListener('error', function() {
@@ -804,6 +814,7 @@
                             ${t.super_category_name}
                         </button>`).join('');
                     document.getElementById('catRowDivider').hidden = false;
+                    updateRowVisibility();
                     requestAnimationFrame(updateCatScrollBtns);
                 })
                 .catch(() => {});
