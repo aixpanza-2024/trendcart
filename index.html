@@ -748,7 +748,9 @@
             const arrow = `<a href="${arrowHref}" class="cat-row-arrow" aria-label="View all"><i class="fas fa-arrow-right"></i></a>`;
 
             if (!data || !data.length) {
-                wrap.innerHTML = arrow;
+                // Nothing to show at all (e.g. no shops yet in this vertical) —
+                // an arrow with nothing to point past is just clutter.
+                wrap.innerHTML = '';
                 requestAnimationFrame(updateCatScrollBtns);
                 return;
             }
