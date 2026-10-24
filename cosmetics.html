@@ -96,22 +96,20 @@
         </div>
     </nav>
 
-    <!-- Super Category Tabs (All / Skincare / Makeup ...) -->
-    <section class="super-cat-tabs-section" id="superCatTabsSection" style="display:none;">
-        <div class="super-cat-tabs" id="superCatTabs"></div>
-    </section>
-
-    <!-- Category Circles Section -->
+    <!-- Category + Subcategory Row: All/Skincare/Makeup..., a divider, then the
+         subcategory circles, ending in a plain "view all" arrow -->
     <section class="cat-circles-section">
         <div class="container-xl px-4">
             <div class="cat-scroll-row">
-                <button type="button" class="cat-scroll-btn cat-scroll-left" id="catScrollLeft" onclick="scrollCategories(-1)" aria-label="Scroll categories left" hidden>
+                <button type="button" class="cat-scroll-btn cat-scroll-left" id="catScrollLeft" onclick="scrollCategories(-1)" aria-label="Scroll left" hidden>
                     <i class="fas fa-chevron-left"></i>
                 </button>
                 <div class="cat-scroll-track" id="catScrollTrack">
-                    <!-- Loaded dynamically -->
+                    <div class="cat-pills-wrap" id="superCatTabs"><!-- Loaded dynamically --></div>
+                    <div class="cat-row-divider" id="catRowDivider" hidden></div>
+                    <div class="cat-items-wrap" id="catItemsWrap"><!-- Loaded dynamically --></div>
                 </div>
-                <button type="button" class="cat-scroll-btn cat-scroll-right" id="catScrollRight" onclick="scrollCategories(1)" aria-label="Scroll categories right" hidden>
+                <button type="button" class="cat-scroll-btn cat-scroll-right" id="catScrollRight" onclick="scrollCategories(1)" aria-label="Scroll right" hidden>
                     <i class="fas fa-chevron-right"></i>
                 </button>
             </div>
@@ -335,27 +333,61 @@
             position: relative;
             transition: background 0.3s;
         }
-        /* "Shop all in X" is pinned to the right end of the circles row (after the
-           last circle when the row scrolls), centred on the circles */
-        .cat-shop-all {
-            flex: 0 0 auto;
-            align-self: center;
-            margin: 0 8px 14px auto;
-            white-space: nowrap;
+        /* Pills and circles render as direct siblings in one flex row even
+           though they're grouped in wrapper divs in the markup. */
+        .cat-pills-wrap, .cat-items-wrap {
+            display: contents;
         }
-        body:not(.theme-men):not(.theme-women):not(.theme-kids) .cat-shop-all {
+        /* Thin vertical pipe between the All/Skincare/Makeup pills and the
+           subcategory circles — only shown once the pills have loaded. */
+        .cat-row-divider {
+            flex: 0 0 auto;
+            width: 1px;
+            align-self: stretch;
+            margin: 4px 8px;
+            background: rgba(255,255,255,0.2);
+        }
+        body.theme-men .cat-row-divider,
+        body.theme-women .cat-row-divider,
+        body.theme-kids .cat-row-divider {
+            background: rgba(26,26,26,0.15);
+        }
+        /* Plain "view all" arrow at the end of the row — no label text */
+        .cat-row-arrow {
+            flex: 0 0 auto;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255,255,255,0.12);
             color: #fff;
-            border-color: rgba(255,255,255,0.6);
+            border: 1px solid rgba(255,255,255,0.25);
+            margin-left: 6px;
+            transition: background 0.15s, transform 0.15s;
+        }
+        .cat-row-arrow:hover {
+            background: rgba(255,255,255,0.22);
+            transform: translateX(2px);
+        }
+        body.theme-men .cat-row-arrow,
+        body.theme-women .cat-row-arrow,
+        body.theme-kids .cat-row-arrow {
+            background: rgba(255,255,255,0.65);
+            color: #1a1a1a;
+            border-color: rgba(26,26,26,0.15);
         }
         .cat-scroll-row {
             position: relative;
         }
         .cat-scroll-track {
             display: flex;
+            align-items: center;
             overflow-x: auto;
             scroll-behavior: smooth;
-            gap: 4px;
-            padding: 6px 2px 6px;
+            gap: 8px;
+            padding: 10px 2px;
             scrollbar-width: none;
             -ms-overflow-style: none;
         }
@@ -442,22 +474,8 @@
         }
 
         /* ── Super Category Tabs ── */
-        /* Default ("All") is a black-to-grey gradient, same as the circles strip
-           below — Men/Women/Kids override this further down to their gradient. */
-        .super-cat-tabs-section {
-            background: var(--mono-gradient);
-            transition: background 0.3s;
-        }
-        .super-cat-tabs {
-            display: flex;
-            justify-content: center;
-            overflow-x: auto;
-            gap: 8px;
-            padding: 8px 12px;
-            scrollbar-width: none;
-            -ms-overflow-style: none;
-        }
-        .super-cat-tabs::-webkit-scrollbar { display: none; }
+        /* These pills now render as the first items in the single category/
+           subcategory row; the row's own background (below) covers them. */
         .super-cat-tab {
             flex: 0 0 auto;
             border: 1px solid rgba(255,255,255,0.18);
@@ -501,20 +519,11 @@
         body.theme-kids nav.navbar {
             background: linear-gradient(120deg, #FFD54F 0%, #ffffff 100%) !important;
         }
-        body.theme-men .super-cat-tabs-section {
-            background: linear-gradient(120deg, #7EC8E3 0%, #ffffff 100%) !important;
-        }
         body.theme-men .cat-circles-section {
             background: var(--corner-arc), linear-gradient(120deg, #7EC8E3 0%, #ffffff 100%) !important;
         }
-        body.theme-women .super-cat-tabs-section {
-            background: linear-gradient(120deg, #F48FB1 0%, #ffffff 100%) !important;
-        }
         body.theme-women .cat-circles-section {
             background: var(--corner-arc), linear-gradient(120deg, #F48FB1 0%, #ffffff 100%) !important;
-        }
-        body.theme-kids .super-cat-tabs-section {
-            background: linear-gradient(120deg, #FFD54F 0%, #ffffff 100%) !important;
         }
         body.theme-kids .cat-circles-section {
             background: var(--corner-arc), linear-gradient(120deg, #FFD54F 0%, #ffffff 100%) !important;
@@ -720,55 +729,56 @@
                 .catch(() => {});
         })();
 
-        function loadCategoryCircles(superCategoryId, superCategoryName) {
-            const shopAllLink = superCategoryId && superCategoryName
-                ? `<a href="pages/products.html?super_category_id=${superCategoryId}&vertical=${PAGE_VERTICAL}" class="btn btn-outline-dark btn-sm cat-shop-all">
-                    Shop all in ${superCategoryName} <i class="fas fa-arrow-right ms-1"></i>
-                </a>`
-                : '';
+        // Renders just the subcategory circles + trailing arrow — the pills
+        // to their left are handled separately by loadSuperCategoryTabs().
+        function renderCategoryItems(superCategoryId, data) {
+            const wrap = document.getElementById('catItemsWrap');
 
+            const arrowHref = superCategoryId
+                ? `pages/products.html?super_category_id=${superCategoryId}&vertical=${PAGE_VERTICAL}`
+                : `pages/products.html?vertical=${PAGE_VERTICAL}`;
+            const arrow = `<a href="${arrowHref}" class="cat-row-arrow" aria-label="View all"><i class="fas fa-arrow-right"></i></a>`;
+
+            if (!data || !data.length) {
+                wrap.innerHTML = arrow;
+                requestAnimationFrame(updateCatScrollBtns);
+                return;
+            }
+
+            const avatarColors = ['#E53935','#8E24AA','#1E88E5','#00897B','#F4511E','#6D4C41','#3949AB','#039BE5','#43A047','#D81B60','#F9A825','#546E7A'];
+            function catAvatar(name) {
+                const color = avatarColors[name.charCodeAt(0) % avatarColors.length];
+                return `<div class="cat-circle-placeholder" style="background:${color};color:#fff;font-size:18px;font-weight:700;font-family:sans-serif;">${name.charAt(0).toUpperCase()}</div>`;
+            }
+            const items = data.map(cat => {
+                const inner = cat.category_image
+                    ? `<img src="${cat.category_image.replace(/^\//, '')}" alt="${cat.category_name}" loading="lazy" data-fallback="${cat.category_name}">`
+                    : catAvatar(cat.category_name);
+                return `
+                    <a class="cat-circle-item" href="pages/products.html?category_id=${cat.category_id}&vertical=${PAGE_VERTICAL}">
+                        <div class="cat-circle">${inner}</div>
+                        <span class="cat-name">${cat.category_name}</span>
+                    </a>`;
+            });
+            wrap.innerHTML = items.join('') + arrow;
+            requestAnimationFrame(updateCatScrollBtns);
+            wrap.querySelectorAll('img[data-fallback]').forEach(img => {
+                img.addEventListener('error', function() {
+                    this.replaceWith(document.createRange().createContextualFragment(catAvatar(this.dataset.fallback)));
+                });
+            });
+        }
+
+        function loadCategoryCircles(superCategoryId) {
             const url = superCategoryId
                 ? `api/customer/categories.php?super_category_id=${superCategoryId}&vertical=${PAGE_VERTICAL}`
                 : `api/customer/categories.php?vertical=${PAGE_VERTICAL}`;
             fetch(url)
                 .then(r => r.json())
-                .then(res => {
-                    const track = document.getElementById('catScrollTrack');
-                    if (!res.success || !res.data.length) {
-                        if (!superCategoryId) document.querySelector('.cat-circles-section').style.display = 'none';
-                        else track.innerHTML = shopAllLink;
-                        requestAnimationFrame(updateCatScrollBtns);
-                        return;
-                    }
-                    document.querySelector('.cat-circles-section').style.display = '';
-                    const avatarColors = ['#E53935','#8E24AA','#1E88E5','#00897B','#F4511E','#6D4C41','#3949AB','#039BE5','#43A047','#D81B60','#F9A825','#546E7A'];
-                    function catAvatar(name) {
-                        const color = avatarColors[name.charCodeAt(0) % avatarColors.length];
-                        return `<div class="cat-circle-placeholder" style="background:${color};color:#fff;font-size:18px;font-weight:700;font-family:sans-serif;">${name.charAt(0).toUpperCase()}</div>`;
-                    }
-                    const items = res.data.map(cat => {
-                        const inner = cat.category_image
-                            ? `<img src="${cat.category_image.replace(/^\//, '')}" alt="${cat.category_name}" loading="lazy" data-fallback="${cat.category_name}">`
-                            : catAvatar(cat.category_name);
-                        return `
-                            <a class="cat-circle-item" href="pages/products.html?category_id=${cat.category_id}&vertical=${PAGE_VERTICAL}">
-                                <div class="cat-circle">${inner}</div>
-                                <span class="cat-name">${cat.category_name}</span>
-                            </a>`;
-                    });
-                    track.innerHTML = items.join('') + shopAllLink;
-                    requestAnimationFrame(updateCatScrollBtns);
-                    track.querySelectorAll('img[data-fallback]').forEach(img => {
-                        img.addEventListener('error', function() {
-                            this.replaceWith(document.createRange().createContextualFragment(catAvatar(this.dataset.fallback)));
-                        });
-                    });
-                })
-                .catch(() => {
-                    if (!superCategoryId) document.querySelector('.cat-circles-section').style.display = 'none';
-                });
+                .then(res => renderCategoryItems(superCategoryId, res.success ? res.data : []))
+                .catch(() => renderCategoryItems(superCategoryId, []));
         }
-        loadCategoryCircles();
+        loadCategoryCircles(null);
 
         // Men -> sky blue, Women -> pink, Kids -> yellow, anything else (All) -> back to black.
         function setMoodTheme(categoryName) {
@@ -780,30 +790,35 @@
         }
 
         (function loadSuperCategoryTabs() {
+            const tabsEl = document.getElementById('superCatTabs');
+
             fetch(`api/customer/super-categories.php?vertical=${PAGE_VERTICAL}`)
                 .then(r => r.json())
                 .then(res => {
                     if (!res.success || !res.data.length) return;
-                    const tabsEl = document.getElementById('superCatTabs');
                     const tabs = [{ super_category_id: 0, super_category_name: 'All' }, ...res.data];
                     tabsEl.innerHTML = tabs.map((t, i) => `
                         <button class="super-cat-tab${i === 0 ? ' active' : ''}" data-super-category-id="${t.super_category_id}">
                             ${t.super_category_name}
                         </button>`).join('');
-                    document.getElementById('superCatTabsSection').style.display = '';
-
-                    tabsEl.querySelectorAll('.super-cat-tab').forEach(btn => {
-                        btn.addEventListener('click', function () {
-                            tabsEl.querySelectorAll('.super-cat-tab').forEach(b => b.classList.remove('active'));
-                            this.classList.add('active');
-                            const id = parseInt(this.dataset.superCategoryId, 10);
-                            const name = this.textContent.trim();
-                            loadCategoryCircles(id || null, name);
-                            setMoodTheme(name);
-                        });
-                    });
+                    document.getElementById('catRowDivider').hidden = false;
+                    requestAnimationFrame(updateCatScrollBtns);
                 })
                 .catch(() => {});
+
+            // Delegated so it keeps working after loadCategoryCircles() rewrites
+            // the items (and would otherwise rewrite the pills too, if they lived
+            // in the same innerHTML replacement).
+            tabsEl.addEventListener('click', function (e) {
+                const btn = e.target.closest('.super-cat-tab');
+                if (!btn) return;
+                tabsEl.querySelectorAll('.super-cat-tab').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                const id = parseInt(btn.dataset.superCategoryId, 10) || null;
+                const name = btn.textContent.trim();
+                loadCategoryCircles(id);
+                setMoodTheme(name);
+            });
         })();
 
         function scrollCategories(dir) {
