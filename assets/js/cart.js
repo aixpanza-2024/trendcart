@@ -44,6 +44,21 @@ function addToCart(productId, productName, productPrice, productImage, shopName,
     _doAddToCart(cart, cartKey, productId, productName, productPrice, productImage, shopName, shopId, size, color, qty);
 }
 
+/* Cart images are kept site-relative ("uploads/products/x.jpg") whichever
+   page added them — the home page passes "uploads/...", pages/ pass
+   "../uploads/..." — and resolved for the page that shows them. External
+   images (placeholders) are left as they are. */
+function _cartImageKey(img) {
+    if (!img || /^(https?:|data:|blob:)/i.test(img)) return img || '';
+    return String(img).replace(/^(\.\.\/)+/, '').replace(/^\//, '');
+}
+function cartImageSrc(img) {
+    const key = _cartImageKey(img);
+    if (!key || /^(https?:|data:|blob:)/i.test(key)) return key;
+    const inSubfolder = /\/(pages|shop|admin)\//.test(window.location.pathname.replace(/\\/g, '/'));
+    return (inSubfolder ? '../' : '') + key;
+}
+
 /* Internal: actually insert/increment the item and save */
 function _doAddToCart(cart, cartKey, productId, productName, productPrice, productImage, shopName, shopId, size, color, qty = 1) {
     const existingItemIndex = cart.findIndex(item => item.cartKey === cartKey);
@@ -60,7 +75,7 @@ function _doAddToCart(cart, cartKey, productId, productName, productPrice, produ
             color:    color   || null,
             name:     productName,
             price:    parseFloat(productPrice),
-            image:    productImage,
+            image:    _cartImageKey(productImage),
             shop:     shopName,
             quantity: qty
         });
@@ -249,7 +264,7 @@ function renderCartItems() {
             <div class="col-12 col-md-6">
                 <div class="cart-item" data-cart-key="${key}">
                     <div class="cart-item-top">
-                        <img src="${item.image}" alt="${item.name}">
+                        <img src="${cartImageSrc(item.image)}" alt="${item.name}">
                         <div class="cart-item-details">
                             <h5 class="cart-item-title">${item.name}</h5>
                             <p class="cart-item-shop mb-1"><i class="fas fa-store"></i> ${item.shop}</p>
