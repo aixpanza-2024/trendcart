@@ -5,7 +5,9 @@
  */
 
 header('Content-Type: application/json');
+require_once __DIR__ . '/../config/session.php';
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../utils/CustomerLocation.php';
 
 try {
     $database = new Database();
@@ -26,6 +28,7 @@ try {
                p.color, p.material, p.fabric_type, p.pattern,
                s.shop_id, s.shop_name, s.shop_description, s.shop_logo,
                s.shop_city, s.rating_average, s.total_ratings, s.total_products,
+               s.latitude AS shop_lat, s.longitude AS shop_lng,
                c.category_name
         FROM products p
         INNER JOIN shops s ON p.shop_id = s.shop_id
@@ -55,6 +58,11 @@ try {
     $imgStmt->bindValue(':id', $product_id, PDO::PARAM_INT);
     $imgStmt->execute();
     $product['images'] = $imgStmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // How far the shop is from the customer's chosen location (?lat=&lng=,
+    // or their saved location); shop coordinates are not sent out
+    $product['shop_distance_km'] = CustomerLocation::kmTo(CustomerLocation::current($conn), $product['shop_lat'], $product['shop_lng']);
+    unset($product['shop_lat'], $product['shop_lng']);
 
     // Size variants (graceful: returns [] if table not yet created)
     try {

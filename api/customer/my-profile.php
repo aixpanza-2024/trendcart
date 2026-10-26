@@ -22,7 +22,7 @@ try {
         $stmt = $conn->prepare(
             "SELECT u.user_id, u.full_name, u.email, u.phone,
                     cp.date_of_birth, cp.gender, cp.profile_image,
-                    cp.latitude, cp.longitude, cp.location_updated_at
+                    cp.latitude, cp.longitude, cp.location_label, cp.location_updated_at
              FROM users u
              LEFT JOIN customer_profiles cp ON u.user_id = cp.user_id
              WHERE u.user_id = :user_id LIMIT 1"

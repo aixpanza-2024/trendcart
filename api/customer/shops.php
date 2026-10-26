@@ -2,10 +2,14 @@
 /**
  * Customer - Public Shops Listing API
  * Returns aggregated product data per shop for client-side filtering.
+ * Optional ?lat=&lng= (navbar location chooser) adds distance_km per shop;
+ * a logged-in customer's saved location is used when they are not sent.
  */
 
 header('Content-Type: application/json');
+require_once __DIR__ . '/../config/session.php';
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../utils/CustomerLocation.php';
 
 try {
     $database = new Database();
@@ -18,7 +22,7 @@ try {
 
     $sql = "SELECT s.shop_id, s.shop_name, s.business_vertical, s.shop_description, s.shop_logo,
                    s.shop_city, s.rating_average, s.total_ratings, s.total_products,
-                   s.shop_status, s.created_at,
+                   s.shop_status, s.created_at, s.latitude, s.longitude,
                    MIN(p.price) AS min_price,
                    MAX(CASE WHEN p.discount_percentage > 0 THEN 1 ELSE 0 END) AS has_offers,
                    COALESCE(SUM(p.orders_count), 0) AS total_orders,
@@ -46,6 +50,15 @@ try {
     $stmt->execute();
 
     $shops = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // Distance from the customer's chosen location; the shop's exact
+    // coordinates stay on the server
+    $from = CustomerLocation::current($conn);
+    foreach ($shops as &$shop) {
+        $shop['distance_km'] = CustomerLocation::kmTo($from, $shop['latitude'], $shop['longitude']);
+        unset($shop['latitude'], $shop['longitude']);
+    }
+    unset($shop);
 
     echo json_encode(['success' => true, 'data' => $shops, 'count' => count($shops)]);
 
