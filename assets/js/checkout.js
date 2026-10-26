@@ -30,48 +30,74 @@ document.addEventListener('DOMContentLoaded', function () {
     loadPaymentMethods();
 });
 
-function useCurrentLocationForCheckout() {
-    const btn = document.getElementById('useLocationBtnCheckout');
-    if (!navigator.geolocation) {
-        showToast('Your browser does not support location detection.', 'error');
-        return;
+/* ── "Delivering to" card ─────────────────────────────────────────
+   The point the delivery charge is worked out from: the selected saved
+   address's map pin, or (for a new address) the location chosen in the
+   navbar. "Change location" opens the same chooser without reloading. */
+function whenLocationPicker(cb, tries = 40) {
+    if (window.TcLocation) return cb(window.TcLocation);
+    if (tries > 0) setTimeout(() => whenLocationPicker(cb, tries - 1), 150);
+}
+
+function navbarLocation() {
+    try { return JSON.parse(localStorage.getItem('tcLocation') || 'null'); } catch (e) { return null; }
+}
+
+/** New (typed) address: take coordinates and city/state/pincode from the chosen location. */
+function applyNavLocation(loc, overwrite) {
+    if (!loc || !isFinite(loc.lat) || !isFinite(loc.lng)) return;
+    customerLat = +loc.lat;
+    customerLng = +loc.lng;
+    const fill = (id, v) => {
+        const el = document.getElementById(id);
+        if (v && (overwrite || !el.value.trim())) el.value = v;
+    };
+    fill('city', loc.city);
+    fill('state', loc.state);
+    fill('pincode', loc.pincode);
+}
+
+function renderCheckoutLocation() {
+    const label = document.getElementById('checkoutLocLabel');
+    const hint  = document.getElementById('checkoutLocHint');
+    const mapEl = document.getElementById('checkoutLocMap');
+    const sel   = savedAddresses.find(a => a.address_id == selectedAddressId);
+    let point   = null;
+
+    if (sel) {
+        label.textContent = `${sel.address_line1}, ${sel.city} - ${sel.pincode}`;
+        if (hasPin(sel)) {
+            point = { lat: +sel.latitude, lng: +sel.longitude };
+            hint.textContent = 'Saved address — delivery charge from its map pin';
+        } else {
+            hint.textContent = 'This saved address has no map pin, so the charge is estimated from its pincode';
+        }
+    } else if (customerLat !== null && customerLng !== null) {
+        point = { lat: customerLat, lng: customerLng };
+        label.textContent = (navbarLocation() || {}).label || 'Pinned location';
+        hint.textContent = 'Delivery charge is worked out from this point';
+    } else {
+        label.textContent = 'No location selected yet';
+        hint.textContent = 'Choose a location so the delivery charge can be worked out';
     }
+    document.getElementById('checkoutLocBtnText').textContent = (point || sel) ? 'Change location' : 'Choose location';
+    mapEl.style.display = point ? '' : 'none';
+    if (point) whenLocationPicker(t => t.preview(mapEl, point));
+}
 
-    const orig = btn.innerHTML;
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Locating...';
-
-    navigator.geolocation.getCurrentPosition(
-        (pos) => {
-            customerLat = pos.coords.latitude;
-            customerLng = pos.coords.longitude;
-            selectedAddressId = null; // the server would otherwise use the saved address's pin
-            renderSavedAddresses();
-            localStorage.setItem('customerLat', customerLat);
-            localStorage.setItem('customerLng', customerLng);
-
-            fetch('../api/customer/update-location.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ latitude: customerLat, longitude: customerLng }),
-            }).catch(() => {});
-
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-check me-1"></i> Location set';
-            showToast('Location set — delivery fee updated', 'success');
-
-            const pincode = document.getElementById('pincode').value.trim();
-            if (pincode.length === 6) checkDeliveryZone(pincode);
-        },
-        (err) => {
-            btn.disabled = false;
-            btn.innerHTML = orig;
-            showToast(err.code === err.PERMISSION_DENIED
-                ? 'Location permission denied — your pincode will be used instead'
-                : 'Could not get your location', 'error');
-        },
-        { enableHighAccuracy: true, timeout: 10000 }
-    );
+function changeCheckoutLocation() {
+    whenLocationPicker(t => t.open(loc => {
+        if (!loc) return;
+        if (selectedAddressId !== null) {      // leaving a saved address: its street no longer applies
+            selectedAddressId = null;
+            document.getElementById('address').value = '';
+        }
+        applyNavLocation(loc, true);
+        renderSavedAddresses();
+        renderCheckoutLocation();
+        checkDeliveryZone(document.getElementById('pincode').value.trim());
+        document.getElementById('address').focus();
+    }));
 }
 
 async function loadCheckoutConfig() {
@@ -107,6 +133,7 @@ function onPincodeInput(val) {
         selectedAddressId = null;
         customerLat = customerLng = null;
         renderSavedAddresses();
+        renderCheckoutLocation();
     }
     if (val.length === 6) {
         deliveryCheckTimer = setTimeout(() => checkDeliveryZone(val), 400);
@@ -406,8 +433,15 @@ async function loadSavedAddresses(preferId) {
     const pick = savedAddresses.find(a => a.address_id == preferId)
               || savedAddresses.find(a => a.address_id == selectedAddressId)
               || savedAddresses.find(a => parseInt(a.is_default));
-    if (pick) selectSavedAddress(pick.address_id);
-    else      renderSavedAddresses();
+    if (pick) {
+        selectSavedAddress(pick.address_id);
+    } else {
+        applyNavLocation(navbarLocation(), false);
+        renderSavedAddresses();
+        renderCheckoutLocation();
+        const pincode = document.getElementById('pincode').value.trim();
+        if (pincode.length === 6 || customerLat !== null) checkDeliveryZone(pincode);
+    }
 }
 
 // Called by address-book.js after the add/edit modal saves
@@ -464,18 +498,21 @@ function selectSavedAddress(addressId) {
         customerLat = hasPin(a) ? parseFloat(a.latitude)  : null;
         customerLng = hasPin(a) ? parseFloat(a.longitude) : null;
     } else {
-        // A typed address starts empty and gets the pincode-based charge
-        // unless "Use my current location" is pressed
+        // A new address starts from the location chosen in the navbar: its
+        // point decides the charge and it fills city/state/pincode. Without
+        // one, the charge comes from the pincode typed in.
         document.getElementById('address').value = '';
         document.getElementById('city').value    = '';
         document.getElementById('pincode').value = '';
         customerLat = customerLng = null;
         document.getElementById('deliveryZoneBadge').style.display = 'none';
+        applyNavLocation(navbarLocation(), true);
     }
 
     renderSavedAddresses();
     const pincode = document.getElementById('pincode').value.trim();
-    if (pincode.length === 6) checkDeliveryZone(pincode);
+    if (pincode.length === 6 || customerLat !== null) checkDeliveryZone(pincode);
+    renderCheckoutLocation();
 }
 
 async function placeOrder() {

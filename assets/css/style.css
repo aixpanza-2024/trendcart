@@ -2066,3 +2066,33 @@ a {
     color: #f5c518;
     transform: scale(1.1);
 }
+
+/* ── Checkout: "Delivering to" location card ── */
+.checkout-loc-card {
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    padding: 12px;
+    border: 1px solid var(--border-color, #e5e7eb);
+    border-radius: 12px;
+    background: #fafafa;
+}
+.checkout-loc-map {
+    flex: 0 0 150px;
+    height: 110px;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #eceff1;
+}
+.checkout-loc-eyebrow {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: #6b7280;
+}
+.min-w-0 { min-width: 0; }
+@media (max-width: 575px) {
+    .checkout-loc-card { flex-direction: column; align-items: stretch; }
+    .checkout-loc-map { flex-basis: auto; height: 140px; }
+}

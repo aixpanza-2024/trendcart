@@ -15,6 +15,7 @@ const TcLocation = (() => {
     const DEFAULT_VIEW = { lat: 10.1632, lng: 76.6413 };   // Kerala
     let provider = null;           // { provider: 'google'|'osm', key }
     let modal = null, map = null, marker = null, pending = null, searchTimer = null, sessionToken = null;
+    let onPicked = null;           // set by open(callback): checkout uses the pick without reloading
 
     const isLoggedIn = () => (typeof _isAuthValid === 'function' ? _isAuthValid() : localStorage.getItem('isLoggedIn') === 'true');
     const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -101,71 +102,128 @@ const TcLocation = (() => {
         });
     }
 
-    async function ensureProvider() {
-        if (!provider) {
-            try { provider = await (await fetch(UP + 'api/maps-config.php')).json(); }
-            catch (e) { provider = { provider: 'osm' }; }
+    const withTimeout = (p, ms) => Promise.race([p, new Promise((_, no) => setTimeout(() => no(new Error('timed out')), ms))]);
+
+    function sessionGet(k) { try { return sessionStorage.getItem(k); } catch (e) { return null; } }
+    function sessionSet(k, v) { try { sessionStorage.setItem(k, v); } catch (e) { /* private mode */ } }
+
+    /** One small Places request: a key without billing / APIs enabled fails here. */
+    async function googleWorks() {
+        try {
+            const { AutocompleteSuggestion } = await withTimeout(google.maps.importLibrary('places'), 5000);
+            await withTimeout(AutocompleteSuggestion.fetchAutocompleteSuggestions({ input: 'Kochi', includedRegionCodes: ['in'] }), 5000);
+            return true;
+        } catch (e) {
+            console.warn('Google Maps/Places not usable with this key (billing or APIs not enabled?) — using OpenStreetMap', e);
+            return false;
         }
-        if (provider.provider === 'google' && !window.google?.maps?.importLibrary) {
-            try {
-                await loadScript(`https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(provider.key)}&v=weekly&loading=async&region=IN`);
-                for (let i = 0; i < 50 && !window.google?.maps?.importLibrary; i++) await new Promise(r => setTimeout(r, 100));
-                if (!window.google?.maps?.importLibrary) throw new Error('Google Maps did not load');
-            } catch (e) {
-                console.error('Google Maps unavailable, using OpenStreetMap', e);
-                provider = { provider: 'osm' };
-            }
-        }
-        if (provider.provider === 'osm' && !window.L) {
+    }
+
+    async function useOsm() {
+        provider = { provider: 'osm' };
+        if (!window.L) {
             const css = document.createElement('link');
             css.rel = 'stylesheet';
             css.href = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css';
             document.head.appendChild(css);
             await loadScript('https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js');
         }
+    }
+
+    async function setupProvider() {
+        try { provider = await (await fetch(UP + 'api/maps-config.php')).json(); }
+        catch (e) { provider = { provider: 'osm' }; }
+
+        if (provider.provider === 'google') {
+            try {
+                if (sessionGet('tcGoogleMaps') === 'off') throw new Error('Google failed earlier in this visit');
+                await loadScript(`https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(provider.key)}&v=weekly&loading=async&region=IN`);
+                for (let i = 0; i < 50 && !window.google?.maps?.importLibrary; i++) await new Promise(r => setTimeout(r, 100));
+                if (!window.google?.maps?.importLibrary) throw new Error('Google Maps did not load');
+                if (sessionGet('tcGoogleMaps') !== 'on') {           // checked once per visit
+                    const ok = await googleWorks();
+                    sessionSet('tcGoogleMaps', ok ? 'on' : 'off');
+                    if (!ok) throw new Error('Google Places check failed');
+                }
+            } catch (e) {
+                await useOsm();
+            }
+        }
+        if (provider.provider === 'osm') await useOsm();
+    }
+
+    let providerReady = null;
+    async function ensureProvider() {
+        if (!providerReady) providerReady = setupProvider();   // shared by the popup and the checkout preview
+        await providerReady;
         return provider.provider;
     }
 
     async function search(text) {
         if ((await ensureProvider()) === 'google') {
-            const { AutocompleteSuggestion, AutocompleteSessionToken } = await google.maps.importLibrary('places');
-            sessionToken = sessionToken || new AutocompleteSessionToken();
-            const { suggestions } = await AutocompleteSuggestion.fetchAutocompleteSuggestions({
-                input: text, includedRegionCodes: ['in'], sessionToken,
-            });
-            return suggestions.filter(s => s.placePrediction).map(s => ({
+            let suggestions = null;
+            try {
+                const { AutocompleteSuggestion, AutocompleteSessionToken } = await google.maps.importLibrary('places');
+                sessionToken = sessionToken || new AutocompleteSessionToken();
+                ({ suggestions } = await withTimeout(AutocompleteSuggestion.fetchAutocompleteSuggestions({
+                    input: text, includedRegionCodes: ['in'], sessionToken,
+                }), 6000));
+            } catch (e) {
+                console.warn('Google search failed, using OpenStreetMap search', e);
+            }
+            if (suggestions) return suggestions.filter(s => s.placePrediction).map(s => ({
                 label: s.placePrediction.text.toString(),
                 resolve: async () => {
                     const place = s.placePrediction.toPlace();
-                    await place.fetchFields({ fields: ['location', 'formattedAddress', 'displayName'] });
+                    await place.fetchFields({ fields: ['location', 'formattedAddress', 'addressComponents'] });
                     sessionToken = null;      // a session ends with the place lookup
-                    return { lat: place.location.lat(), lng: place.location.lng(), label: s.placePrediction.text.toString() };
+                    const part = t => ((place.addressComponents || []).find(c => c.types.includes(t)) || {}).longText;
+                    return Object.assign({ lat: place.location.lat(), lng: place.location.lng(), label: s.placePrediction.text.toString() },
+                        parts(part('locality') || part('administrative_area_level_3'), part('administrative_area_level_1'), part('postal_code')));
                 },
             }));
         }
-        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&countrycodes=in&limit=6&accept-language=en&q=${encodeURIComponent(text)}`);
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&countrycodes=in&limit=6&addressdetails=1&accept-language=en&q=${encodeURIComponent(text)}`);
         const list = await res.json();
-        return list.map(p => ({ label: p.display_name, resolve: async () => ({ lat: +p.lat, lng: +p.lon, label: p.display_name }) }));
+        return list.map(p => ({
+            label: p.display_name,
+            resolve: async () => Object.assign({ lat: +p.lat, lng: +p.lon, label: p.display_name }, osmParts(p.address || {})),
+        }));
     }
 
+    /** City / state / pincode, used by checkout to fill the address form. */
+    function parts(city, state, pincode) {
+        pincode = String(pincode || '').replace(/\s/g, '');
+        return { city: city || '', state: state || '', pincode: /^\d{6}$/.test(pincode) ? pincode : '' };
+    }
+    function osmParts(a) {
+        return parts(a.city || a.town || a.village || a.municipality || a.county || a.state_district, a.state, a.postcode);
+    }
+
+    /** Place name (+ city/state/pincode) for a point, e.g. from GPS or a pin drag. */
     async function placeName(lat, lng) {
-        try {
-            if ((await ensureProvider()) === 'google') {
+        if ((await ensureProvider()) === 'google') {
+            try {
                 const { Geocoder } = await google.maps.importLibrary('geocoding');
-                const { results } = await new Geocoder().geocode({ location: { lat, lng } });
+                const { results } = await withTimeout(new Geocoder().geocode({ location: { lat, lng } }), 6000);
                 const r = results[0];
                 if (r) {
                     const part = t => (r.address_components.find(c => c.types.includes(t)) || {}).long_name;
-                    return [part('sublocality_level_1') || part('sublocality') || part('locality'), part('locality')]
+                    const label = [part('sublocality_level_1') || part('sublocality') || part('locality'), part('locality')]
                         .filter((v, i, a) => v && a.indexOf(v) === i).join(', ') || r.formatted_address;
+                    return Object.assign({ label }, parts(part('locality') || part('administrative_area_level_3'), part('administrative_area_level_1'), part('postal_code')));
                 }
-            } else {
-                const a = (await (await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&accept-language=en&lat=${lat}&lon=${lng}`)).json()).address || {};
-                return [a.suburb || a.neighbourhood || a.village || a.town, a.city || a.town || a.county]
-                    .filter((v, i, arr) => v && arr.indexOf(v) === i).join(', ');
+            } catch (e) {
+                console.warn('Google geocoding failed (Geocoding API enabled?), using OpenStreetMap', e);
             }
+        }
+        try {
+            const a = (await (await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&accept-language=en&lat=${lat}&lon=${lng}`)).json()).address || {};
+            const label = [a.suburb || a.neighbourhood || a.village || a.town, a.city || a.town || a.county]
+                .filter((v, i, arr) => v && arr.indexOf(v) === i).join(', ');
+            return Object.assign({ label: label || 'Pinned location' }, osmParts(a));
         } catch (e) { /* the name is only for display */ }
-        return 'Pinned location';
+        return { label: 'Pinned location', city: '', state: '', pincode: '' };
     }
 
     /* ── map with a draggable pin ─────────────────────────────────── */
@@ -197,13 +255,20 @@ const TcLocation = (() => {
         }
     }
 
-    /** A point was chosen (GPS, pin drag, map click): name it and show it. */
-    async function pick(lat, lng, label) {
-        pending = { lat: Math.round(lat * 1e6) / 1e6, lng: Math.round(lng * 1e6) / 1e6, label: label || 'Finding place name…' };
+    /** A point was chosen (GPS, pin drag, map click, search, saved address): name it and show it. */
+    async function pick(lat, lng, label, extra) {
+        pending = Object.assign({ lat: Math.round(lat * 1e6) / 1e6, lng: Math.round(lng * 1e6) / 1e6, label: label || 'Finding place name…' }, extra || {});
         renderPending();
         showMap(pending);
-        if (!label) {
-            pending.label = await placeName(lat, lng);
+        if (!label || !pending.pincode) {
+            const p = pending, named = await placeName(lat, lng);
+            if (p !== pending) return;                 // a newer pick replaced this one
+            pending = Object.assign({}, pending, {
+                label:   label || named.label,
+                city:    pending.city    || named.city,
+                state:   pending.state   || named.state,
+                pincode: pending.pincode || named.pincode,
+            });
             renderPending();
         }
     }
@@ -272,7 +337,7 @@ const TcLocation = (() => {
                         b.onclick = async () => {
                             box.innerHTML = '';
                             const loc = await item.resolve();
-                            pick(loc.lat, loc.lng, loc.label);
+                            pick(loc.lat, loc.lng, loc.label, loc);
                         };
                         box.appendChild(b);
                     });
@@ -297,7 +362,7 @@ const TcLocation = (() => {
                 b.type = 'button';
                 b.className = 'btn btn-light btn-sm w-100 text-start mb-1';
                 b.innerHTML = `<i class="fas fa-house me-2 text-muted"></i>${esc(a.address_line1)}, ${esc(a.city)}`;
-                b.onclick = () => pick(+a.latitude, +a.longitude, `${a.address_line1}, ${a.city}`);
+                b.onclick = () => pick(+a.latitude, +a.longitude, `${a.address_line1}, ${a.city}`, { city: a.city, state: a.state, pincode: a.pincode });
                 box.appendChild(b);
             });
         } catch (e) { box.innerHTML = ''; }
@@ -315,10 +380,18 @@ const TcLocation = (() => {
             } catch (e) { /* kept on the device anyway */ }
         }
         modal.hide();
+        if (onPicked) {                // e.g. checkout: use it in place, keep what was typed
+            const cb = onPicked;
+            onPicked = null;
+            cb(get());
+            return;
+        }
         window.location.reload();      // every page re-loads its distances for the new location
     }
 
-    function open() {
+    /** Open the chooser. callback(loc) instead of the default page reload. */
+    function open(callback) {
+        onPicked = typeof callback === 'function' ? callback : null;
         if (!modal) buildModal();
         const current = get();
         pending = current;
@@ -339,12 +412,34 @@ const TcLocation = (() => {
         } catch (e) { /* not logged in on the server */ }
     }
 
+    /** Small read-only map with a pin (checkout's "Delivering to" card). */
+    const previews = new Map();
+    async function preview(el, loc) {
+        if (!el || !loc) return;
+        const p = await ensureProvider();
+        const prev = previews.get(el);
+        if (p === 'google') {
+            if (prev) { prev.map.setCenter(loc); prev.marker.setPosition(loc); return; }
+            const { Map: GMap } = await google.maps.importLibrary('maps');
+            const m = new GMap(el, { center: loc, zoom: 15, disableDefaultUI: true, gestureHandling: 'none', clickableIcons: false });
+            previews.set(el, { map: m, marker: new google.maps.Marker({ map: m, position: loc }) });
+        } else {
+            if (prev) { prev.map.setView([loc.lat, loc.lng], 15); prev.marker.setLatLng([loc.lat, loc.lng]); return; }
+            const m = L.map(el, { zoomControl: false, dragging: false, scrollWheelZoom: false, doubleClickZoom: false,
+                                  boxZoom: false, keyboard: false, touchZoom: false, attributionControl: false }).setView([loc.lat, loc.lng], 15);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(m);
+            previews.set(el, { map: m, marker: L.marker([loc.lat, loc.lng]).addTo(m) });
+            setTimeout(() => m.invalidateSize(), 150);
+        }
+    }
+
     function init() {
         injectChip();
         restoreFromProfile();
     }
 
-    return { init, open, get, query };
+    return { init, open, get, query, preview };
 })();
 
+window.TcLocation = TcLocation;   // a top-level const is not a window property; checkout.js looks it up there
 TcLocation.init();

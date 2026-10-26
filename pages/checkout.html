@@ -114,6 +114,18 @@
                 <div class="checkout-section">
                     <h4><i class="fas fa-map-marker-alt"></i> Shipping Address</h4>
                     <form id="checkoutForm">
+                        <!-- Delivering to: the navbar location (or the selected saved address's pin) — decides the delivery charge -->
+                        <div class="checkout-loc-card mb-3" id="checkoutLocCard">
+                            <div class="checkout-loc-map" id="checkoutLocMap"></div>
+                            <div class="flex-grow-1 min-w-0">
+                                <div class="checkout-loc-eyebrow">Delivering to</div>
+                                <div class="fw-semibold" id="checkoutLocLabel">No location selected yet</div>
+                                <div class="small text-muted" id="checkoutLocHint">Choose a location so the delivery charge can be worked out</div>
+                                <button type="button" class="btn btn-outline-dark btn-sm mt-2" onclick="changeCheckoutLocation()">
+                                    <i class="fas fa-location-crosshairs me-1"></i> <span id="checkoutLocBtnText">Choose location</span>
+                                </button>
+                            </div>
+                        </div>
                         <!-- Saved addresses: picking one fills the form and uses its map pin for the delivery fee -->
                         <div class="mb-3" id="savedAddressSection" style="display:none;">
                             <div class="d-flex align-items-center justify-content-between mb-2">
@@ -147,8 +159,9 @@
                         </div>
 
                         <div class="mb-3">
-                            <label for="address" class="form-label">Street Address</label>
-                            <textarea class="form-control" id="address" rows="2" required></textarea>
+                            <label for="address" class="form-label">House / Flat / Building, Street</label>
+                            <textarea class="form-control" id="address" rows="2" required
+                                      placeholder="e.g. Flat 4B, Green Villa, Technopark Road"></textarea>
                         </div>
 
                         <div class="row">
@@ -167,9 +180,6 @@
                             </div>
                         </div>
                         <div id="deliveryZoneBadge" style="display:none;" class="mb-2"></div>
-                        <button type="button" id="useLocationBtnCheckout" class="btn btn-outline-dark btn-sm mb-2" onclick="useCurrentLocationForCheckout()">
-                            <i class="fas fa-location-crosshairs me-1"></i> Use my current location instead
-                        </button>
                     </form>
                 </div>
 
