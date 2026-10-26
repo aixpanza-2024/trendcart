@@ -1,5 +1,5 @@
 /**
- * Home Page - Dynamic product sections (New Arrivals, Offers, Products, Best Sellers)
+ * Home Page - Dynamic product sections (Offers, Products, Best Sellers)
  * Shared by index.html (Dress) and cosmetics.html (Cosmetics) — the page sets
  * <body data-vertical="dress|cosmetics"> and every fetch here is scoped to it.
  */
@@ -7,7 +7,6 @@
 const HOME_VERTICAL = document.body.dataset.vertical === 'cosmetics' ? 'cosmetics' : 'dress';
 
 document.addEventListener('DOMContentLoaded', () => {
-    loadProductSection('newArrivalsTrack', 'sort=newest', 'new', 'No products available yet.');
     loadProductSection('offersTrack', 'on_offer=1', 'offer', 'No offers right now.');
     loadProductSection('productsTrack', '', null, 'No products available yet.');
     loadProductSection('bestSellersTrack', 'sort=popular', 'bestseller', 'No best sellers yet.');
@@ -45,13 +44,11 @@ function buildArrivalCard(p, badge) {
     const catBadge = p.category_name
         ? `<span class="na-badge-cat">${p.category_name}</span>`
         : '';
-    const cornerBadge = badge === 'new'
-        ? `<span class="na-badge-new">New</span>`
-        : badge === 'offer' && parseFloat(p.discount_percentage) > 0
-            ? `<span class="na-badge-new" style="background:#dc3545;">${Math.round(p.discount_percentage)}% OFF</span>`
-            : badge === 'bestseller'
-                ? `<span class="na-badge-new" style="background:#c9995c;">Bestseller</span>`
-                : '';
+    const cornerBadge = badge === 'offer' && parseFloat(p.discount_percentage) > 0
+        ? `<span class="na-badge-new" style="background:#dc3545;">${Math.round(p.discount_percentage)}% OFF</span>`
+        : badge === 'bestseller'
+            ? `<span class="na-badge-new" style="background:#c9995c;">Bestseller</span>`
+            : '';
 
     const safeName = p.product_name.replace(/'/g, "\\'");
     const safeShop = (p.shop_name || '').replace(/'/g, "\\'");
