@@ -30,7 +30,7 @@ document.addEventListener('DOMContentLoaded', function () {
    ================================================================ */
 async function loadProduct(id) {
     try {
-        const res  = await fetch('../api/customer/product-detail.php?id=' + id);
+        const res  = await fetch('../api/customer/product-detail.php?id=' + id + tcLocationQuery());
         const data = await res.json();
 
         if (!data.success) { showError(); return; }
@@ -183,6 +183,8 @@ function renderProduct(p) {
             <div class="flex-grow-1">
                 <div class="fw-semibold">${p.shop_name}</div>
                 ${p.shop_city ? `<div class="text-grey small"><i class="fas fa-map-marker-alt me-1"></i>${p.shop_city}</div>` : ''}
+                ${p.shop_distance_km !== null && p.shop_distance_km !== undefined
+                    ? `<div class="small fw-semibold"><i class="fas fa-route me-1"></i>${p.shop_distance_km} km from your location</div>` : ''}
                 <div class="text-grey small">
                     ${buildStars(parseFloat(p.rating_average || 0))}
                     <span class="ms-1">${parseFloat(p.rating_average || 0).toFixed(1)}</span>

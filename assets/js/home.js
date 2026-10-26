@@ -18,7 +18,7 @@ async function loadFeaturedShops(retry = true) {
     container.innerHTML = '<div class="col-12 text-center py-4"><i class="fas fa-spinner fa-spin fa-2x"></i></div>';
 
     try {
-        const res  = await fetch(`api/customer/shops.php?limit=6&vertical=${HOME_VERTICAL}`);
+        const res  = await fetch(`api/customer/shops.php?limit=6&vertical=${HOME_VERTICAL}${tcLocationQuery()}`);
         const data = await res.json();
 
         if (!data.success || !data.data.length) {
@@ -151,6 +151,9 @@ function buildShopCard(shop, showStats) {
         ? shop.shop_logo.replace(/^\//, '')
         : 'https://placehold.co/400x250/1a1a1a/ffffff?text=' + encodeURIComponent(shop.shop_name);
     const city  = shop.shop_city ? ` &mdash; ${shop.shop_city}` : '';
+    const kmAway = shop.distance_km !== null && shop.distance_km !== undefined
+        ? `<p class="small fw-semibold mb-2"><i class="fas fa-route me-1"></i>${shop.distance_km} km away</p>`
+        : '';
     const stats = showStats ? `
         <div class="d-flex justify-content-between align-items-center mb-3">
             <span class="text-grey"><i class="fas fa-star text-warning"></i>
@@ -167,6 +170,7 @@ function buildShopCard(shop, showStats) {
                 <div class="card-body">
                     <h5 class="card-title">${shop.shop_name}</h5>
                     <p class="card-text">${shop.shop_description || ''}${city}</p>
+                    ${kmAway}
                     ${stats}
                     <a href="pages/products.html?shop_id=${shop.shop_id}" class="btn btn-primary w-100">
                         View Products <i class="fas fa-arrow-right ms-2"></i>

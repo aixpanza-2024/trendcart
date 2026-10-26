@@ -70,7 +70,7 @@ async function loadShops() {
     container.innerHTML = '<div class="col-12 text-center py-5"><i class="fas fa-spinner fa-spin fa-2x"></i></div>';
 
     try {
-        const res  = await fetch(`../api/customer/shops.php?limit=100&vertical=${PAGE_VERTICAL}`);
+        const res  = await fetch(`../api/customer/shops.php?limit=100&vertical=${PAGE_VERTICAL}${tcLocationQuery()}`);
         const data = await res.json();
 
         if (!data.success || !data.data.length) {
@@ -214,6 +214,10 @@ function buildShopCard(shop) {
     const cityIcon = shop.shop_city
         ? `<span><i class="fas fa-map-marker-alt me-1"></i>${shop.shop_city}</span>`
         : '';
+    // From the location chosen in the navbar (null when unknown)
+    const kmAway = shop.distance_km !== null && shop.distance_km !== undefined
+        ? `<span class="fw-semibold text-dark"><i class="fas fa-route me-1"></i>${shop.distance_km} km away</span>`
+        : '';
 
     return `
         <div class="col-lg-4 col-md-6">
@@ -229,6 +233,7 @@ function buildShopCard(shop) {
                     <div class="d-flex align-items-center gap-2 text-grey mb-2" style="font-size:12px;flex-wrap:wrap;">
                         <span title="${rating} out of 5">${stars} <span class="ms-1">${rating}</span></span>
                         ${cityIcon ? `<span class="text-muted">·</span>${cityIcon}` : ''}
+                        ${kmAway ? `<span class="text-muted">·</span>${kmAway}` : ''}
                     </div>
                     <a href="products.html?shop_id=${shop.shop_id}" class="btn btn-primary btn-sm w-100">
                         View Products <i class="fas fa-arrow-right ms-1"></i>

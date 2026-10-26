@@ -22,7 +22,25 @@ document.addEventListener('DOMContentLoaded', function() {
     checkAuthStatus();
     injectMobileNav(); // injects bottom tab bar + mobile search; calls updateCartBadge internally
     _injectPanelBar();  // show "Back to Panel" for admin/shop users
+    _loadLocationPicker();
 });
+
+/* Navbar "📍 location" chooser — customer pages only (not the shop/admin panels) */
+function _loadLocationPicker() {
+    const path = window.location.pathname.replace(/\\/g, '/');
+    if (/\/(shop|admin)\//.test(path) || !document.querySelector('nav.navbar .navbar-brand')) return;
+    const s = document.createElement('script');
+    s.src = (/\/pages\//.test(path) ? '../' : '') + 'assets/js/location-picker.js';
+    document.body.appendChild(s);
+}
+
+/** "&lat=..&lng=.." of the location chosen in the navbar, for API calls that show distances ('' if none). */
+function tcLocationQuery() {
+    try {
+        const l = JSON.parse(localStorage.getItem('tcLocation') || 'null');
+        return l && isFinite(l.lat) && isFinite(l.lng) ? `&lat=${encodeURIComponent(l.lat)}&lng=${encodeURIComponent(l.lng)}` : '';
+    } catch (e) { return ''; }
+}
 
 /* Show a top bar for admin/shop users visiting the main website */
 async function _injectPanelBar() {

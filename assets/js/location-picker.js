@@ -1,0 +1,334 @@
+/**
+ * Navbar location chooser — "📍 Kazhakootam ▾" on every customer page.
+ *
+ * The customer picks where they are (current location, a search, the map
+ * pin, or a saved address). It is kept on the device and, when logged in,
+ * on their profile; the server then shows "X km away" for each shop
+ * (api/customer/shops.php, product-detail.php via ?lat=&lng=).
+ *
+ * Google Maps + Places when api/config/maps_config.php has a key, otherwise
+ * free OpenStreetMap (Leaflet + Nominatim). Loaded by main.js.
+ */
+const TcLocation = (() => {
+    const STORE = 'tcLocation';
+    const UP = /\/(pages|shop|admin)\//.test(window.location.pathname.replace(/\\/g, '/')) ? '../' : '';
+    const DEFAULT_VIEW = { lat: 10.1632, lng: 76.6413 };   // Kerala
+    let provider = null;           // { provider: 'google'|'osm', key }
+    let modal = null, map = null, marker = null, pending = null, searchTimer = null, sessionToken = null;
+
+    const isLoggedIn = () => (typeof _isAuthValid === 'function' ? _isAuthValid() : localStorage.getItem('isLoggedIn') === 'true');
+    const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+    function get() {
+        try {
+            const l = JSON.parse(localStorage.getItem(STORE) || 'null');
+            return l && isFinite(l.lat) && isFinite(l.lng) ? l : null;
+        } catch (e) { return null; }
+    }
+
+    /** "lat=..&lng=.." for API calls (empty when no location is chosen). */
+    function query() {
+        const l = get();
+        return l ? `lat=${encodeURIComponent(l.lat)}&lng=${encodeURIComponent(l.lng)}` : '';
+    }
+
+    function shortLabel(l) {
+        return l && l.label ? l.label.split(',')[0].trim() : 'Select location';
+    }
+
+    function store(loc) {
+        localStorage.setItem(STORE, JSON.stringify(loc));
+        localStorage.setItem('customerLat', loc.lat);       // older code (checkout, shop page) reads these
+        localStorage.setItem('customerLng', loc.lng);
+        renderChip();
+    }
+
+    /* ── navbar chip ─────────────────────────────────────────────── */
+    function renderChip() {
+        const text = shortLabel(get());
+        document.querySelectorAll('.tc-loc-chip-text').forEach(el => { el.textContent = text; });
+    }
+
+    function injectChip() {
+        const brand = document.querySelector('nav.navbar .navbar-brand');
+        if (!brand || document.getElementById('tcLocChip')) return;
+        brand.insertAdjacentHTML('afterend', `
+            <button type="button" class="tc-loc-chip" id="tcLocChip" onclick="TcLocation.open()" title="Choose your location">
+                <i class="fas fa-location-dot"></i>
+                <span class="tc-loc-chip-text">${esc(shortLabel(get()))}</span>
+                <i class="fas fa-chevron-down tc-loc-caret"></i>
+            </button>`);
+        const css = document.createElement('style');
+        css.textContent = `
+            .tc-loc-chip{display:inline-flex;align-items:center;gap:6px;max-width:190px;background:transparent;border:0;
+                color:inherit;font-size:.86rem;font-weight:600;padding:4px 8px;margin-right:10px;border-radius:8px;white-space:nowrap}
+            nav.navbar .tc-loc-chip{color:rgba(255,255,255,.9)}
+            body.theme-men nav.navbar .tc-loc-chip,body.theme-women nav.navbar .tc-loc-chip,body.theme-kids nav.navbar .tc-loc-chip{color:#1a1a1a}
+            .tc-loc-chip:hover{background:rgba(127,127,127,.15)}
+            .tc-loc-chip-text{overflow:hidden;text-overflow:ellipsis}
+            .tc-loc-caret{font-size:.65rem;opacity:.7}
+            @media (max-width:991px){.tc-loc-chip{max-width:140px;font-size:.8rem;margin-right:auto}}
+            .tc-loc-results{max-height:200px;overflow:auto}
+            .tc-loc-results button{display:block;width:100%;text-align:left;border:0;background:none;padding:8px 10px;border-bottom:1px solid #eee;font-size:.88rem}
+            .tc-loc-results button:hover{background:#f5f5f5}
+            #tcLocMap{height:220px;border-radius:10px;border:1px solid #ddd}
+            .tc-loc-km{font-size:.78rem;color:#6b7280}`;
+        document.head.appendChild(css);
+    }
+
+    /* ── provider (Google if a key is configured, else OpenStreetMap) ── */
+    function loadScript(src) {
+        return new Promise((ok, fail) => {
+            const s = document.createElement('script');
+            s.src = src; s.async = true; s.onload = ok; s.onerror = fail;
+            document.head.appendChild(s);
+        });
+    }
+
+    async function ensureProvider() {
+        if (!provider) {
+            try { provider = await (await fetch(UP + 'api/maps-config.php')).json(); }
+            catch (e) { provider = { provider: 'osm' }; }
+        }
+        if (provider.provider === 'google' && !window.google?.maps?.importLibrary) {
+            try {
+                await loadScript(`https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(provider.key)}&v=weekly&loading=async&region=IN`);
+                for (let i = 0; i < 50 && !window.google?.maps?.importLibrary; i++) await new Promise(r => setTimeout(r, 100));
+                if (!window.google?.maps?.importLibrary) throw new Error('Google Maps did not load');
+            } catch (e) {
+                console.error('Google Maps unavailable, using OpenStreetMap', e);
+                provider = { provider: 'osm' };
+            }
+        }
+        if (provider.provider === 'osm' && !window.L) {
+            const css = document.createElement('link');
+            css.rel = 'stylesheet';
+            css.href = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css';
+            document.head.appendChild(css);
+            await loadScript('https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js');
+        }
+        return provider.provider;
+    }
+
+    async function search(text) {
+        if ((await ensureProvider()) === 'google') {
+            const { AutocompleteSuggestion, AutocompleteSessionToken } = await google.maps.importLibrary('places');
+            sessionToken = sessionToken || new AutocompleteSessionToken();
+            const { suggestions } = await AutocompleteSuggestion.fetchAutocompleteSuggestions({
+                input: text, includedRegionCodes: ['in'], sessionToken,
+            });
+            return suggestions.filter(s => s.placePrediction).map(s => ({
+                label: s.placePrediction.text.toString(),
+                resolve: async () => {
+                    const place = s.placePrediction.toPlace();
+                    await place.fetchFields({ fields: ['location', 'formattedAddress', 'displayName'] });
+                    sessionToken = null;      // a session ends with the place lookup
+                    return { lat: place.location.lat(), lng: place.location.lng(), label: s.placePrediction.text.toString() };
+                },
+            }));
+        }
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&countrycodes=in&limit=6&accept-language=en&q=${encodeURIComponent(text)}`);
+        const list = await res.json();
+        return list.map(p => ({ label: p.display_name, resolve: async () => ({ lat: +p.lat, lng: +p.lon, label: p.display_name }) }));
+    }
+
+    async function placeName(lat, lng) {
+        try {
+            if ((await ensureProvider()) === 'google') {
+                const { Geocoder } = await google.maps.importLibrary('geocoding');
+                const { results } = await new Geocoder().geocode({ location: { lat, lng } });
+                const r = results[0];
+                if (r) {
+                    const part = t => (r.address_components.find(c => c.types.includes(t)) || {}).long_name;
+                    return [part('sublocality_level_1') || part('sublocality') || part('locality'), part('locality')]
+                        .filter((v, i, a) => v && a.indexOf(v) === i).join(', ') || r.formatted_address;
+                }
+            } else {
+                const a = (await (await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&accept-language=en&lat=${lat}&lon=${lng}`)).json()).address || {};
+                return [a.suburb || a.neighbourhood || a.village || a.town, a.city || a.town || a.county]
+                    .filter((v, i, arr) => v && arr.indexOf(v) === i).join(', ');
+            }
+        } catch (e) { /* the name is only for display */ }
+        return 'Pinned location';
+    }
+
+    /* ── map with a draggable pin ─────────────────────────────────── */
+    async function showMap(loc) {
+        const p = await ensureProvider();
+        const el = document.getElementById('tcLocMap');
+        el.style.display = '';
+        if (p === 'google') {
+            if (!map) {
+                const { Map } = await google.maps.importLibrary('maps');
+                map = new Map(el, { center: loc, zoom: 15, streetViewControl: false, mapTypeControl: false, fullscreenControl: false });
+                marker = new google.maps.Marker({ map, position: loc, draggable: true });
+                marker.addListener('dragend', () => pick(marker.getPosition().lat(), marker.getPosition().lng()));
+                map.addListener('click', e => pick(e.latLng.lat(), e.latLng.lng()));
+            } else {
+                map.setCenter(loc); marker.setPosition(loc);
+            }
+        } else {
+            if (!map) {
+                map = L.map(el).setView([loc.lat, loc.lng], 15);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(map);
+                marker = L.marker([loc.lat, loc.lng], { draggable: true }).addTo(map);
+                marker.on('dragend', () => { const q = marker.getLatLng(); pick(q.lat, q.lng); });
+                map.on('click', e => pick(e.latlng.lat, e.latlng.lng));
+            } else {
+                map.setView([loc.lat, loc.lng], 15); marker.setLatLng([loc.lat, loc.lng]);
+            }
+            setTimeout(() => map.invalidateSize(), 150);
+        }
+    }
+
+    /** A point was chosen (GPS, pin drag, map click): name it and show it. */
+    async function pick(lat, lng, label) {
+        pending = { lat: Math.round(lat * 1e6) / 1e6, lng: Math.round(lng * 1e6) / 1e6, label: label || 'Finding place name…' };
+        renderPending();
+        showMap(pending);
+        if (!label) {
+            pending.label = await placeName(lat, lng);
+            renderPending();
+        }
+    }
+
+    function renderPending() {
+        document.getElementById('tcLocPicked').innerHTML = pending
+            ? `<i class="fas fa-location-dot text-danger me-1"></i>${esc(pending.label)}`
+            : '<span class="text-muted">Use your current location, search, or pick a saved address</span>';
+        document.getElementById('tcLocConfirm').disabled = !pending;
+    }
+
+    /* ── the popup ────────────────────────────────────────────────── */
+    function buildModal() {
+        document.body.insertAdjacentHTML('beforeend', `
+            <div class="modal fade" id="tcLocModal" tabindex="-1" aria-hidden="true">
+              <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                  <div class="modal-header py-2">
+                    <h6 class="modal-title fw-bold"><i class="fas fa-location-dot me-2"></i>Choose your location</h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                  </div>
+                  <div class="modal-body">
+                    <button type="button" class="btn btn-outline-dark w-100 mb-2" id="tcLocGps">
+                      <i class="fas fa-location-crosshairs me-1"></i> Use my current location
+                    </button>
+                    <input type="text" class="form-control mb-1" id="tcLocSearch" placeholder="Search area, landmark or pincode" autocomplete="off">
+                    <div class="tc-loc-results mb-2" id="tcLocResults"></div>
+                    <div id="tcLocSaved" class="mb-2"></div>
+                    <div id="tcLocMap" style="display:none;"></div>
+                    <div class="small mt-2" id="tcLocPicked"></div>
+                    <div class="tc-loc-km mt-1">Drag the pin or tap the map to adjust.</div>
+                  </div>
+                  <div class="modal-footer py-2">
+                    <button type="button" class="btn btn-primary w-100" id="tcLocConfirm" disabled>Confirm location</button>
+                  </div>
+                </div>
+              </div>
+            </div>`);
+        modal = new bootstrap.Modal(document.getElementById('tcLocModal'));
+
+        document.getElementById('tcLocGps').addEventListener('click', function () {
+            if (!navigator.geolocation) { showToast('Your browser does not support location detection', 'error'); return; }
+            const btn = this, orig = btn.innerHTML;
+            btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Locating...';
+            navigator.geolocation.getCurrentPosition(
+                pos => { btn.disabled = false; btn.innerHTML = orig; pick(pos.coords.latitude, pos.coords.longitude); },
+                err => {
+                    btn.disabled = false; btn.innerHTML = orig;
+                    showToast(err.code === err.PERMISSION_DENIED ? 'Location permission denied — search for your area instead' : 'Could not get your location', 'error');
+                },
+                { enableHighAccuracy: true, timeout: 10000 });
+        });
+
+        document.getElementById('tcLocSearch').addEventListener('input', function () {
+            clearTimeout(searchTimer);
+            const text = this.value.trim(), box = document.getElementById('tcLocResults');
+            if (text.length < 3) { box.innerHTML = ''; return; }
+            searchTimer = setTimeout(async () => {
+                try {
+                    const list = await search(text);
+                    box.innerHTML = list.length ? '' : '<div class="small text-muted p-2">No places found</div>';
+                    list.forEach(item => {
+                        const b = document.createElement('button');
+                        b.type = 'button';
+                        b.innerHTML = `<i class="fas fa-location-dot text-muted me-2"></i>${esc(item.label)}`;
+                        b.onclick = async () => {
+                            box.innerHTML = '';
+                            const loc = await item.resolve();
+                            pick(loc.lat, loc.lng, loc.label);
+                        };
+                        box.appendChild(b);
+                    });
+                } catch (e) {
+                    box.innerHTML = '<div class="small text-muted p-2">Search is unavailable right now</div>';
+                }
+            }, 350);
+        });
+
+        document.getElementById('tcLocConfirm').addEventListener('click', confirmPick);
+    }
+
+    async function loadSavedAddresses() {
+        const box = document.getElementById('tcLocSaved');
+        if (!isLoggedIn()) { box.innerHTML = ''; return; }
+        try {
+            const d = await (await fetch(UP + 'api/customer/addresses.php')).json();
+            const withPin = (d.data || []).filter(a => a.latitude && a.longitude);
+            box.innerHTML = withPin.length ? '<div class="small fw-semibold text-muted mb-1">Saved addresses</div>' : '';
+            withPin.slice(0, 4).forEach(a => {
+                const b = document.createElement('button');
+                b.type = 'button';
+                b.className = 'btn btn-light btn-sm w-100 text-start mb-1';
+                b.innerHTML = `<i class="fas fa-house me-2 text-muted"></i>${esc(a.address_line1)}, ${esc(a.city)}`;
+                b.onclick = () => pick(+a.latitude, +a.longitude, `${a.address_line1}, ${a.city}`);
+                box.appendChild(b);
+            });
+        } catch (e) { box.innerHTML = ''; }
+    }
+
+    async function confirmPick() {
+        if (!pending || pending.label === 'Finding place name…') return;
+        store(pending);
+        if (isLoggedIn()) {
+            try {
+                await fetch(UP + 'api/customer/update-location.php', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ latitude: pending.lat, longitude: pending.lng, label: pending.label }),
+                });
+            } catch (e) { /* kept on the device anyway */ }
+        }
+        modal.hide();
+        window.location.reload();      // every page re-loads its distances for the new location
+    }
+
+    function open() {
+        if (!modal) buildModal();
+        const current = get();
+        pending = current;
+        document.getElementById('tcLocSearch').value = '';
+        document.getElementById('tcLocResults').innerHTML = '';
+        renderPending();
+        loadSavedAddresses();
+        modal.show();
+        if (current) showMap(current);
+    }
+
+    /** Logged-in customer on a new device: start from the location saved on their profile. */
+    async function restoreFromProfile() {
+        if (get() || !isLoggedIn()) return;
+        try {
+            const p = (await (await fetch(UP + 'api/customer/my-profile.php')).json()).data || {};
+            if (p.latitude && p.longitude) store({ lat: +p.latitude, lng: +p.longitude, label: p.location_label || 'Saved location' });
+        } catch (e) { /* not logged in on the server */ }
+    }
+
+    function init() {
+        injectChip();
+        restoreFromProfile();
+    }
+
+    return { init, open, get, query };
+})();
+
+TcLocation.init();
