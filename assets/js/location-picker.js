@@ -50,24 +50,40 @@ const TcLocation = (() => {
     }
 
     function injectChip() {
-        const brand = document.querySelector('nav.navbar .navbar-brand');
-        if (!brand || document.getElementById('tcLocChip')) return;
-        brand.insertAdjacentHTML('afterend', `
-            <button type="button" class="tc-loc-chip" id="tcLocChip" onclick="TcLocation.open()" title="Choose your location">
-                <i class="fas fa-location-dot"></i>
-                <span class="tc-loc-chip-text">${esc(shortLabel(get()))}</span>
-                <i class="fas fa-chevron-down tc-loc-caret"></i>
-            </button>`);
+        const nav = document.querySelector('nav.navbar');
+        if (!nav || document.getElementById('tcLocChip')) return;
+        const path = window.location.pathname.replace(/\\/g, '/');
+        const helpHref = /\/pages\//.test(path) ? 'help-center.html' : 'pages/help-center.html';
+        nav.insertAdjacentHTML('beforebegin', `
+            <div class="tc-utility-bar">
+                <button type="button" class="tc-loc-chip" id="tcLocChip" onclick="TcLocation.open()" title="Choose your location">
+                    <i class="fas fa-location-dot"></i>
+                    <span class="tc-loc-chip-text">${esc(shortLabel(get()))}</span>
+                    <i class="fas fa-chevron-down tc-loc-caret"></i>
+                </button>
+                <div class="tc-utility-right">
+                    <a href="tel:+918089970014" class="tc-utility-link"><i class="fas fa-phone"></i><span> +91 8089970014</span></a>
+                    <a href="${helpHref}" class="tc-utility-link"><i class="fas fa-circle-question"></i><span> Help Center</span></a>
+                </div>
+            </div>`);
         const css = document.createElement('style');
         css.textContent = `
-            .tc-loc-chip{display:inline-flex;align-items:center;gap:6px;max-width:190px;background:transparent;border:0;
-                color:inherit;font-size:.86rem;font-weight:600;padding:4px 8px;margin-right:10px;border-radius:8px;white-space:nowrap}
-            nav.navbar .tc-loc-chip{color:rgba(255,255,255,.9)}
-            body.theme-men nav.navbar .tc-loc-chip,body.theme-women nav.navbar .tc-loc-chip,body.theme-kids nav.navbar .tc-loc-chip{color:#1a1a1a}
-            .tc-loc-chip:hover{background:rgba(127,127,127,.15)}
+            .tc-utility-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;
+                background:#fff;padding:6px 20px;border-bottom:1px solid #eee}
+            .tc-loc-chip{display:inline-flex;align-items:center;gap:6px;max-width:220px;background:transparent;border:0;
+                color:#1a1a1a;font-size:.86rem;font-weight:600;padding:4px 6px;border-radius:8px;white-space:nowrap;cursor:pointer}
+            .tc-loc-chip:hover{background:rgba(0,0,0,.05)}
             .tc-loc-chip-text{overflow:hidden;text-overflow:ellipsis}
             .tc-loc-caret{font-size:.65rem;opacity:.7}
-            @media (max-width:991px){.tc-loc-chip{max-width:140px;font-size:.8rem;margin-right:auto}}
+            .tc-utility-right{display:flex;align-items:center;gap:18px}
+            .tc-utility-link{display:inline-flex;align-items:center;gap:5px;color:#1a1a1a;text-decoration:none;font-size:.82rem;font-weight:600}
+            .tc-utility-link:hover{color:#8B5E3C}
+            @media (max-width:575px){
+                .tc-utility-bar{padding:5px 12px}
+                .tc-loc-chip{max-width:140px;font-size:.8rem}
+                .tc-utility-right{gap:10px}
+                .tc-utility-link span{display:none}
+            }
             .tc-loc-results{max-height:200px;overflow:auto}
             .tc-loc-results button{display:block;width:100%;text-align:left;border:0;background:none;padding:8px 10px;border-bottom:1px solid #eee;font-size:.88rem}
             .tc-loc-results button:hover{background:#f5f5f5}
