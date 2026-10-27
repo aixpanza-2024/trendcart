@@ -21,7 +21,9 @@ try {
     $rows = $stmt->fetchAll(PDO::FETCH_KEY_PAIR);
 
     $handling_fee              = (float)($rows['handling_fee'] ?? 0);
-    $first_order_free_delivery = (int)($rows['first_order_free_delivery'] ?? 1) === 1;
+    // First-order free delivery is paused for now (see OrderService); restore the line below to bring it back.
+    // $first_order_free_delivery = (int)($rows['first_order_free_delivery'] ?? 1) === 1;
+    $first_order_free_delivery = false;
 
     // Check if this customer has placed any previous orders (session or token — optional, not gated)
     $is_first_order = false;
@@ -49,7 +51,7 @@ try {
     echo json_encode([
         'success'                   => true,
         'handling_fee'              => 0,
-        'first_order_free_delivery' => true,
+        'first_order_free_delivery' => false, // paused for now; was true
         'is_first_order'            => false,
     ]);
 }

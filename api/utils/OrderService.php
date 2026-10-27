@@ -140,7 +140,9 @@ class OrderService {
         );
         $psRows2 = $psStmt2->fetchAll(PDO::FETCH_KEY_PAIR);
         $handling_fee_amount       = (float)($psRows2['handling_fee'] ?? 0);
-        $first_order_free_delivery = (int)($psRows2['first_order_free_delivery'] ?? 1) === 1;
+        // First-order free delivery is paused for now; restore the line below to bring it back.
+        // $first_order_free_delivery = (int)($psRows2['first_order_free_delivery'] ?? 1) === 1;
+        $first_order_free_delivery = false;
 
         $orderCountStmt = $conn->prepare(
             "SELECT COUNT(*) FROM orders WHERE customer_id = :id AND order_status != 'cancelled'"
