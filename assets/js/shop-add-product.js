@@ -693,7 +693,8 @@ function renderVariantGrid() {
             <tbody>
             ${combos.map(c => {
                 const key = variantKey(c.color, c.size);
-                const v   = variantValues[key] || { stock: '', sku: '' };
+                // A new colour/size row starts with 1 in stock; saved rows keep their value
+                const v   = variantValues[key] = variantValues[key] || { stock: 1, sku: '' };
                 return `<tr>
                     ${colorVariants.length && splitByColor ? `<td>${escAttr(c.color)}</td>` : ''}
                     ${sizeVariants.length ? `<td>${escAttr(c.size)}</td>` : ''}
@@ -711,7 +712,7 @@ function renderVariantGrid() {
 }
 
 function setVariantValue(key, field, value) {
-    variantValues[key] = variantValues[key] || { stock: '', sku: '' };
+    variantValues[key] = variantValues[key] || { stock: 1, sku: '' };
     variantValues[key][field] = value;
     if (field === 'stock') updateStockTotal();
 }
@@ -736,7 +737,7 @@ function collectVariants() {
     });
 }
 
-/** Older products: start counting stock per colour (rows start empty). */
+/** Older products: start counting stock per colour (rows start at 1). */
 function splitStockByColor() {
     splitByColor = true;
     renderVariantGrid();
