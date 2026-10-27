@@ -37,7 +37,8 @@ async function loadProduct(id) {
 
         currentProduct = data.data;
         renderProduct(currentProduct);
-        renderReviews(currentProduct.reviews || []);
+        // Reviews are only sent to admin/shop logins; customers never see the section
+        if (currentProduct.show_reviews) renderReviews(currentProduct.reviews || []);
         loadMoreProducts(currentProduct.shop_id, currentProduct.product_id);
 
     } catch (e) {

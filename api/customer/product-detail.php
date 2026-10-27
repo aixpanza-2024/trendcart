@@ -112,19 +112,25 @@ try {
         $product['variants'] = [];
     }
 
-    // Latest approved reviews (up to 10)
-    $revStmt = $conn->prepare("
-        SELECT pr.rating, pr.review_text, pr.created_at,
-               u.full_name AS reviewer_name
-        FROM product_reviews pr
-        INNER JOIN users u ON pr.user_id = u.user_id
-        WHERE pr.product_id = :id AND pr.is_approved = 1
-        ORDER BY pr.created_at DESC
-        LIMIT 10
-    ");
-    $revStmt->bindValue(':id', $product_id, PDO::PARAM_INT);
-    $revStmt->execute();
-    $product['reviews'] = $revStmt->fetchAll(PDO::FETCH_ASSOC);
+    // Customer reviews are for the admin and shop owners only — customers and
+    // guests get no reviews (show_reviews tells the page to leave the section hidden)
+    $product['show_reviews'] = isset($_SESSION['logged_in']) && in_array($_SESSION['user_type'] ?? '', ['admin', 'shop'], true);
+    $product['reviews'] = [];
+    if ($product['show_reviews']) {
+        // Latest approved reviews (up to 10)
+        $revStmt = $conn->prepare("
+            SELECT pr.rating, pr.review_text, pr.created_at,
+                   u.full_name AS reviewer_name
+            FROM product_reviews pr
+            INNER JOIN users u ON pr.user_id = u.user_id
+            WHERE pr.product_id = :id AND pr.is_approved = 1
+            ORDER BY pr.created_at DESC
+            LIMIT 10
+        ");
+        $revStmt->bindValue(':id', $product_id, PDO::PARAM_INT);
+        $revStmt->execute();
+        $product['reviews'] = $revStmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 
     echo json_encode(['success' => true, 'data' => $product]);
 

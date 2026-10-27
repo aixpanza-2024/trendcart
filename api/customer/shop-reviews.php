@@ -2,7 +2,8 @@
 /**
  * Customer - Shop Reviews
  * GET ?shop_id=X  -> every approved review for that shop, newest first.
- * Public (no login required — same as browsing a shop's products).
+ * Admin and shop logins only — customers and guests get an empty list, so
+ * the shop page leaves its reviews section hidden.
  *
  * Reads product_reviews.shop_id/product_name directly (not via a join to
  * products), so a review for a since-deleted product still shows up here —
@@ -11,7 +12,13 @@
  */
 
 header('Content-Type: application/json');
+require_once __DIR__ . '/../config/session.php';
 require_once __DIR__ . '/../config/database.php';
+
+if (!isset($_SESSION['logged_in']) || !in_array($_SESSION['user_type'] ?? '', ['admin', 'shop'], true)) {
+    echo json_encode(['success' => true, 'data' => [], 'count' => 0]);
+    exit;
+}
 
 $shop_id = isset($_GET['shop_id']) ? (int)$_GET['shop_id'] : 0;
 if ($shop_id <= 0) {
