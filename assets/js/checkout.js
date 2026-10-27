@@ -189,7 +189,7 @@ async function checkDeliveryZone(pincode) {
 
 function updateCheckoutTotals() {
     const { totals } = getCartForCheckout();
-    const deliveryFee    = (isFirstOrder && firstOrderFreeEnabled) ? 0 : currentDeliveryFee;
+    const deliveryFee    = (isFirstOrder && firstOrderFreeEnabled) || (appliedCoupon && appliedCoupon.free_delivery) ? 0 : currentDeliveryFee;
     const discountAmount = appliedCoupon ? appliedCoupon.discount_amount : 0;
     const total = Math.max(0, totals.subtotal + deliveryFee + currentHandlingFee - discountAmount);
 
@@ -197,7 +197,7 @@ function updateCheckoutTotals() {
 
     const discountRow = document.getElementById('discountRow');
     if (discountRow) {
-        if (appliedCoupon) {
+        if (appliedCoupon && !appliedCoupon.free_delivery) {
             discountRow.style.display = '';
             document.getElementById('orderDiscount').textContent = '-' + formatCurrency(discountAmount);
             document.getElementById('appliedCouponLabel').textContent = '(' + appliedCoupon.code + ')';
@@ -256,7 +256,9 @@ async function applyCoupon() {
             input.disabled = true;
             btn.textContent = 'Remove';
             btn.onclick = removeCoupon;
-            msgEl.innerHTML = `<span class="text-success"><i class="fas fa-check-circle"></i> Coupon applied — you saved ${formatCurrency(data.data.discount_amount)}</span>`;
+            msgEl.innerHTML = data.data.free_delivery
+                ? '<span class="text-success"><i class="fas fa-check-circle"></i> Coupon applied — free delivery</span>'
+                : `<span class="text-success"><i class="fas fa-check-circle"></i> Coupon applied — you saved ${formatCurrency(data.data.discount_amount)}</span>`;
             updateCheckoutTotals();
         } else {
             appliedCoupon = null;

@@ -40,9 +40,11 @@ async function loadCoupons() {
 function buildCouponCard(c) {
     const valueLabel = c.discount_type === 'percentage'
         ? `${parseFloat(c.discount_value)}% OFF`
+        : c.discount_type === 'free_delivery' ? 'FREE DELIVERY'
         : `₹${parseFloat(c.discount_value).toLocaleString('en-IN')} OFF`;
 
     const terms = [];
+    if (c.first_order_only == 1) terms.push('First order only');
     if (parseFloat(c.min_order_value) > 0) {
         terms.push(`Min order ₹${parseFloat(c.min_order_value).toLocaleString('en-IN')}`);
     }

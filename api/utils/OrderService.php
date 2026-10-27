@@ -201,6 +201,7 @@ class OrderService {
         // Coupon — never trust a discount amount from the client
         $applied_coupon  = null;
         $discount_amount = 0.00;
+        $delivery_waived = 0.00; // delivery charge a free-delivery coupon took off
         $coupon_code = trim((string)$coupon_code);
         if ($coupon_code !== '') {
             $couponResult = CouponValidator::validate($conn, $coupon_code, $customer_id, $subtotal);
@@ -209,6 +210,11 @@ class OrderService {
             }
             $applied_coupon  = $couponResult['coupon'];
             $discount_amount = $couponResult['discount_amount'];
+            if ($couponResult['free_delivery']) {
+                $delivery_waived    = $shipping_amount;
+                $shipping_amount    = 0.00;
+                $delivery_zone_name = ($delivery_zone_name ? $delivery_zone_name . ' ' : '') . "(Coupon {$applied_coupon['code']} - Free)";
+            }
         }
 
         $total_amount = round($subtotal + $shipping_amount + $handling_fee_amount - $discount_amount, 2);
@@ -225,6 +231,7 @@ class OrderService {
             'handling_fee_amount' => $handling_fee_amount,
             'discount_amount'     => $discount_amount,
             'applied_coupon'      => $applied_coupon,
+            'delivery_waived'     => $delivery_waived,
             'total_amount'        => $total_amount,
             'cust_lat'            => $cust_lat,
             'cust_lng'            => $cust_lng,
@@ -387,7 +394,8 @@ class OrderService {
         $order_id = (int)$conn->lastInsertId();
 
         if ($applied_coupon) {
-            CouponValidator::recordUsage($conn, $applied_coupon['coupon_id'], $customer_id, $order_id, $discount_amount);
+            // For a free-delivery coupon the saving is the delivery charge it waived
+            CouponValidator::recordUsage($conn, $applied_coupon['coupon_id'], $customer_id, $order_id, $discount_amount + $priced['delivery_waived']);
         }
 
         // Insert order items. Name, SKU and image are snapshotted so the line

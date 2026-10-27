@@ -26,12 +26,15 @@ if ($code === '' || !preg_match('/^[A-Z0-9_-]{3,50}$/', $code)) {
     echo json_encode(['success' => false, 'message' => 'Code must be 3-50 characters: letters, numbers, - or _']);
     exit();
 }
-if (!in_array($discount_type, ['percentage', 'fixed'], true)) {
+if (!in_array($discount_type, ['percentage', 'fixed', 'free_delivery'], true)) {
     http_response_code(400);
-    echo json_encode(['success' => false, 'message' => 'discount_type must be percentage or fixed']);
+    echo json_encode(['success' => false, 'message' => 'discount_type must be percentage, fixed or free_delivery']);
     exit();
 }
-if (!is_numeric($discount_value) || $discount_value <= 0) {
+// A free-delivery coupon waives the delivery charge, so it has no discount value
+if ($discount_type === 'free_delivery') {
+    $discount_value = 0;
+} elseif (!is_numeric($discount_value) || $discount_value <= 0) {
     http_response_code(400);
     echo json_encode(['success' => false, 'message' => 'Enter a valid discount value']);
     exit();
@@ -58,10 +61,10 @@ try {
     $stmt = $conn->prepare(
         "INSERT INTO coupons
             (code, description, discount_type, discount_value, max_discount_amount, min_order_value,
-             usage_limit_total, usage_limit_per_user, valid_from, valid_until, is_active, created_by)
+             usage_limit_total, usage_limit_per_user, first_order_only, valid_from, valid_until, is_active, created_by)
          VALUES
             (:code, :description, :discount_type, :discount_value, :max_discount, :min_order,
-             :usage_total, :usage_per_user, :valid_from, :valid_until, :is_active, :created_by)"
+             :usage_total, :usage_per_user, :first_order_only, :valid_from, :valid_until, :is_active, :created_by)"
     );
     $stmt->bindValue(':code', $code);
     $stmt->bindValue(':description', trim($data['description'] ?? '') ?: null);
@@ -74,6 +77,7 @@ try {
     $usage_per_user = $data['usage_limit_per_user'] ?? '';
     // Column is NOT NULL DEFAULT 1 — an empty/omitted value means "1 per customer", not unlimited
     $stmt->bindValue(':usage_per_user', ($usage_per_user !== '' && $usage_per_user !== null) ? (int)$usage_per_user : 1, PDO::PARAM_INT);
+    $stmt->bindValue(':first_order_only', !empty($data['first_order_only']) ? 1 : 0, PDO::PARAM_INT);
     $stmt->bindValue(':valid_from', !empty($data['valid_from']) ? $data['valid_from'] : null);
     $stmt->bindValue(':valid_until', !empty($data['valid_until']) ? $data['valid_until'] : null);
     $stmt->bindValue(':is_active', !empty($data['is_active']) ? 1 : 0, PDO::PARAM_INT);

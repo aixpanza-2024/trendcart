@@ -51,6 +51,19 @@ class CouponValidator {
         if ((int)$usedStmt->fetchColumn() >= (int)$coupon['usage_limit_per_user']) {
             return ['valid' => false, 'message' => 'You have already used this coupon the maximum number of times'];
         }
+        if (!empty($coupon['first_order_only'])) {
+            $orderStmt = $conn->prepare("SELECT COUNT(*) FROM orders WHERE customer_id = :uid AND order_status != 'cancelled'");
+            $orderStmt->bindValue(':uid', $user_id, PDO::PARAM_INT);
+            $orderStmt->execute();
+            if ((int)$orderStmt->fetchColumn() > 0) {
+                return ['valid' => false, 'message' => 'This coupon is only for your first order'];
+            }
+        }
+
+        // Free delivery takes nothing off the products — the caller waives the delivery charge
+        if ($coupon['discount_type'] === 'free_delivery') {
+            return ['valid' => true, 'coupon' => $coupon, 'discount_amount' => 0.0, 'free_delivery' => true];
+        }
 
         $discount = $coupon['discount_type'] === 'percentage'
             ? round($subtotal * (float)$coupon['discount_value'] / 100, 2)
@@ -63,7 +76,7 @@ class CouponValidator {
         $discount = min($discount, $subtotal);
         $discount = max(0, round($discount, 2));
 
-        return ['valid' => true, 'coupon' => $coupon, 'discount_amount' => $discount];
+        return ['valid' => true, 'coupon' => $coupon, 'discount_amount' => $discount, 'free_delivery' => false];
     }
 
     /**

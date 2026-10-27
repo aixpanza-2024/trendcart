@@ -32,9 +32,10 @@ function renderCoupons(coupons) {
     const now = new Date();
 
     tbody.innerHTML = coupons.map(c => {
-        const discountLabel = c.discount_type === 'percentage'
+        let discountLabel = c.discount_type === 'percentage'
             ? `${parseFloat(c.discount_value)}%${c.max_discount_amount ? ' (up to ' + formatINR(c.max_discount_amount) + ')' : ''}`
-            : formatINR(c.discount_value);
+            : c.discount_type === 'free_delivery' ? 'Free delivery' : formatINR(c.discount_value);
+        if (c.first_order_only == 1) discountLabel += '<br><small class="text-muted">First order only</small>';
 
         const usageLabel = `${c.times_used} / ${c.usage_limit_total ?? '∞'}<br><small class="text-muted">${c.usage_limit_per_user}/customer</small>`;
 
@@ -91,7 +92,9 @@ function openCouponModal() {
     document.getElementById('couponUsagePerUser').value = '1';
     document.getElementById('couponValidFrom').value = '';
     document.getElementById('couponValidUntil').value = '';
+    document.getElementById('couponFirstOrderOnly').checked = false;
     document.getElementById('couponIsActive').checked = true;
+    toggleCouponValueField();
     couponModal.show();
 }
 
@@ -113,8 +116,17 @@ function editCoupon(couponId) {
     document.getElementById('couponUsagePerUser').value = c.usage_limit_per_user;
     document.getElementById('couponValidFrom').value = toLocalInputValue(c.valid_from);
     document.getElementById('couponValidUntil').value = toLocalInputValue(c.valid_until);
+    document.getElementById('couponFirstOrderOnly').checked = c.first_order_only == 1;
     document.getElementById('couponIsActive').checked = c.is_active == 1;
+    toggleCouponValueField();
     couponModal.show();
+}
+
+// A free-delivery coupon has no discount value or cap — hide those fields for it
+function toggleCouponValueField() {
+    const free = document.getElementById('couponDiscountType').value === 'free_delivery';
+    document.getElementById('couponDiscountValueCol').style.display = free ? 'none' : '';
+    document.getElementById('couponMaxDiscount').closest('.col-6').style.display = free ? 'none' : '';
 }
 
 async function saveCoupon() {
@@ -130,10 +142,15 @@ async function saveCoupon() {
         usage_limit_per_user:  document.getElementById('couponUsagePerUser').value || 1,
         valid_from:            document.getElementById('couponValidFrom').value ? document.getElementById('couponValidFrom').value.replace('T', ' ') + ':00' : null,
         valid_until:           document.getElementById('couponValidUntil').value ? document.getElementById('couponValidUntil').value.replace('T', ' ') + ':00' : null,
+        first_order_only:      document.getElementById('couponFirstOrderOnly').checked,
         is_active:             document.getElementById('couponIsActive').checked,
     };
+    if (payload.discount_type === 'free_delivery') {
+        payload.discount_value = 0;
+        payload.max_discount_amount = null;
+    }
 
-    if (!payload.code || !payload.discount_type || !payload.discount_value) {
+    if (!payload.code || !payload.discount_type || (payload.discount_type !== 'free_delivery' && !payload.discount_value)) {
         adminToast('Code and discount value are required', 'error');
         return;
     }

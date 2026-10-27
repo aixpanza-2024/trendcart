@@ -49,11 +49,14 @@ try {
         // Top-level fields for the Flutter app's contract:
         'discount_amount' => $result['discount_amount'],
         'final_total'     => round($subtotal - $result['discount_amount'], 2),
+        // true = the coupon waives the delivery charge instead of discounting the products
+        'free_delivery'   => $result['free_delivery'],
         // Nested for the existing web checkout flow — unchanged shape:
         'data' => [
             'code'            => $result['coupon']['code'],
             'discount_amount' => $result['discount_amount'],
             'description'     => $result['coupon']['description'],
+            'free_delivery'   => $result['free_delivery'],
         ],
     ]);
 

@@ -21,7 +21,7 @@ try {
 
     $stmt = $conn->prepare(
         "SELECT coupon_id, code, description, discount_type, discount_value,
-                max_discount_amount, min_order_value, usage_limit_per_user, valid_until
+                max_discount_amount, min_order_value, usage_limit_per_user, first_order_only, valid_until
          FROM coupons
          WHERE is_active = 1
            AND (valid_from IS NULL OR valid_from <= NOW())
@@ -37,7 +37,14 @@ try {
     if ($customer_id && !empty($coupons)) {
         $usedStmt = $conn->prepare("SELECT COUNT(*) FROM coupon_usage WHERE coupon_id = :cid AND user_id = :uid");
 
-        $coupons = array_values(array_filter($coupons, function ($c) use ($usedStmt, $customer_id) {
+        $orderStmt = $conn->prepare("SELECT COUNT(*) FROM orders WHERE customer_id = :uid AND order_status != 'cancelled'");
+        $orderStmt->bindValue(':uid', $customer_id, PDO::PARAM_INT);
+        $orderStmt->execute();
+        $has_ordered = (int)$orderStmt->fetchColumn() > 0;
+
+        $coupons = array_values(array_filter($coupons, function ($c) use ($usedStmt, $customer_id, $has_ordered) {
+            // First-order coupons are hidden from customers who have already ordered
+            if ($has_ordered && (int)$c['first_order_only'] === 1) return false;
             $usedStmt->bindValue(':cid', $c['coupon_id'], PDO::PARAM_INT);
             $usedStmt->bindValue(':uid', $customer_id, PDO::PARAM_INT);
             $usedStmt->execute();
@@ -51,7 +58,8 @@ try {
     foreach ($coupons as &$c) {
         unset($c['usage_limit_per_user']);
         $c['discount']  = (float)$c['discount_value'];
-        $c['type']      = $c['discount_type'] === 'percentage' ? 'percent' : 'flat';
+        $c['type']      = $c['discount_type'] === 'percentage' ? 'percent'
+                        : ($c['discount_type'] === 'free_delivery' ? 'free_delivery' : 'flat');
         $c['min_order'] = (float)$c['min_order_value'];
     }
     unset($c);

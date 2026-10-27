@@ -21,7 +21,7 @@ try {
 
     $stmt = $conn->query(
         "SELECT coupon_id, code, description, discount_type, discount_value, max_discount_amount,
-                min_order_value, usage_limit_total, usage_limit_per_user, times_used,
+                min_order_value, usage_limit_total, usage_limit_per_user, first_order_only, times_used,
                 valid_from, valid_until, is_active, created_at
          FROM coupons
          ORDER BY created_at DESC"
