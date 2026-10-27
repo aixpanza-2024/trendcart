@@ -13,6 +13,11 @@ class DeliveryCalculator {
 
     const DISTANCE_THRESHOLD_KM = 20;
 
+    // Pincode/zone pricing is paused for now (it gave free delivery inside the
+    // shop's own zone). While false, the fallback charges the standard
+    // above-20km fee instead. Set to true to bring zone pricing back.
+    const ZONE_PRICING_ENABLED = false;
+
     /** Great-circle distance between two coordinates, in kilometers. */
     public static function haversineKm($lat1, $lon1, $lat2, $lon2) {
         $earthRadiusKm = 6371;
@@ -65,6 +70,15 @@ class DeliveryCalculator {
      * @return array{fee:float,zone_name:string,method:string}
      */
     public static function zoneFee($conn, $shopId, $customerPincode) {
+        if (!self::ZONE_PRICING_ENABLED) {
+            return [
+                'fee'       => self::getDistanceFees($conn)['above'],
+                'zone_name' => 'Standard delivery',
+                'area_name' => null,
+                'method'    => 'standard',
+            ];
+        }
+
         // Customer's zone
         $stmt = $conn->prepare("
             SELECT z.zone_id, z.zone_name, z.delivery_fee, dp.area_name
