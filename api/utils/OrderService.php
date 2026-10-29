@@ -77,14 +77,9 @@ class OrderService {
             $variant = ProductVariants::resolve($conn, $product_id, $selected_size, $selected_color);
             if (!$variant) {
                 // Added from a quick "Add to Cart" button that sent no colour/size
-                if (!$selected_color || !$selected_size) {
-                    $optStmt = $conn->prepare("SELECT SUM(color_name <> '') AS colours, SUM(size_label <> '') AS sizes FROM product_variants WHERE product_id = :pid");
-                    $optStmt->execute([':pid' => $product_id]);
-                    $opt  = $optStmt->fetch(PDO::FETCH_ASSOC);
-                    $need = array_filter([(!$selected_color && $opt['colours'] > 0) ? 'colour' : null, (!$selected_size && $opt['sizes'] > 0) ? 'size' : null]);
-                    if ($need) {
-                        return ['success' => false, 'message' => "Please choose a " . implode(' and ', $need) . " for {$product['product_name']}: remove it from your cart, open the product and add it again."];
-                    }
+                $need = ProductVariants::missingOptions($conn, $product_id, $selected_size, $selected_color);
+                if ($need) {
+                    return ['success' => false, 'message' => "Please choose a " . implode(' and ', $need) . " for {$product['product_name']}: remove it from your cart, open the product and add it again."];
                 }
                 $picked = trim(implode(' / ', array_filter([$selected_color, $selected_size])));
                 return ['success' => false, 'message' => "{$product['product_name']}" . ($picked !== '' ? " ($picked)" : '')

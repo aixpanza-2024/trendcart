@@ -262,6 +262,25 @@ class ProductVariants {
         return null;
     }
 
+    /**
+     * Which choices a cart line is missing when resolve() finds no variant:
+     * ['colour'], ['size'], both, or [] (the line named an option that no
+     * longer exists). Quick "Add to Cart" buttons send no colour or size.
+     */
+    public static function missingOptions(PDO $conn, int $product_id, ?string $size, ?string $color): array {
+        $size  = trim((string)$size);
+        $color = trim((string)$color);
+        if ($size !== '' && $color !== '') return [];
+
+        $q = $conn->prepare("SELECT SUM(color_name <> '') AS colours, SUM(size_label <> '') AS sizes FROM product_variants WHERE product_id = :pid");
+        $q->execute([':pid' => $product_id]);
+        $opt = $q->fetch(PDO::FETCH_ASSOC);
+        return array_values(array_filter([
+            ($color === '' && $opt['colours'] > 0) ? 'colour' : null,
+            ($size === ''  && $opt['sizes'] > 0)   ? 'size'   : null,
+        ]));
+    }
+
     /** Add (or with a negative delta, take) stock on one variant and refresh the summaries. */
     public static function changeStock(PDO $conn, int $variant_id, int $delta): void {
         $conn->prepare("UPDATE product_variants SET stock_quantity = GREATEST(0, stock_quantity + :d) WHERE variant_id = :vid")

@@ -260,9 +260,17 @@ function renderCartItems() {
         const colorTag = item.color
             ? `<span class="badge bg-light text-dark border me-1"><i class="fas fa-palette me-1"></i>${item.color}</span>`
             : '';
+        const issue = _cartIssues && _cartIssues[key];
+        const issueHTML = !issue ? '' : `
+                    <div class="alert alert-danger py-2 px-3 mt-2 mb-0 small d-flex align-items-center gap-2 flex-wrap">
+                        <span><i class="fas fa-exclamation-circle me-1"></i>${issue.message}</span>
+                        ${issue.status === 'needs_options'
+                            ? `<button class="btn btn-sm btn-danger ms-auto" onclick="fixCartItem('${key}', ${parseInt(item.id)})">Choose ${issue.need.join(' & ')}</button>`
+                            : ''}
+                    </div>`;
         const itemHTML = `
             <div class="col-12 col-md-6">
-                <div class="cart-item" data-cart-key="${key}">
+                <div class="cart-item${issue ? ' border border-danger' : ''}" data-cart-key="${key}">
                     <div class="cart-item-top">
                         <img src="${cartImageSrc(item.image)}" alt="${item.name}">
                         <div class="cart-item-details">
@@ -271,7 +279,7 @@ function renderCartItems() {
                             ${colorTag}${sizeTag}
                             <p class="cart-item-price fw-bold mb-0 mt-1">${formatCurrency(item.price)}</p>
                         </div>
-                    </div>
+                    </div>${issueHTML}
                     <div class="cart-item-bottom">
                         <div class="quantity-controls">
                             <button onclick="updateQuantity('${key}', -1)">
@@ -329,9 +337,13 @@ function updateCartSummary() {
 
     // Checkout button
     if (checkoutBtn) {
+        const issues = countCartIssues();
         if (totals.itemCount === 0) {
             checkoutBtn.disabled = true;
             checkoutBtn.textContent = 'Cart is Empty';
+        } else if (issues > 0) {
+            checkoutBtn.disabled = true;
+            checkoutBtn.innerHTML = `<i class="fas fa-exclamation-circle me-1"></i> Fix ${issues} item${issues > 1 ? 's' : ''} above to continue`;
         } else {
             checkoutBtn.disabled = false;
             checkoutBtn.innerHTML = `Proceed to Checkout (${totals.itemCount} item${totals.itemCount > 1 ? 's' : ''}) <i class="fas fa-arrow-right ms-1"></i>`;
@@ -351,6 +363,45 @@ async function loadCartHandlingFee() {
 }
 
 /* ===================================
+   CART CHECK — same colour/size rules as checkout (api/customer/check-cart.php)
+   =================================== */
+let _cartIssues = null;   // cartKey -> {status, need, message}; null until checked
+
+function countCartIssues() {
+    if (!_cartIssues) return 0;
+    return getCart().filter(item => _cartIssues[item.cartKey || makeCartKey(item.id, item.size, item.color)]).length;
+}
+
+async function checkCartItems() {
+    const cart = getCart();
+    if (!cart.length) return;
+    try {
+        const res  = await fetch('../api/customer/check-cart.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ items: cart.map(i => ({ id: i.id, size: i.size || null, color: i.color || null })) })
+        });
+        const data = await res.json();
+        if (!data.success) return;   // checkout still checks on the server
+        _cartIssues = {};
+        data.data.forEach(r => {
+            if (r.status !== 'ok') {
+                const item = cart[r.index];
+                _cartIssues[item.cartKey || makeCartKey(item.id, item.size, item.color)] = r;
+            }
+        });
+        renderCartItems();
+    } catch (e) { /* network error: checkout still checks on the server */ }
+}
+
+/** Drop the line that has no colour/size and open the product to pick them. */
+function fixCartItem(cartKey, productId) {
+    saveCart(getCart().filter(item => (item.cartKey || item.id) !== cartKey));
+    updateCartBadge();
+    window.location.href = 'product-detail.html?id=' + productId;
+}
+
+/* ===================================
    PROCEED TO CHECKOUT
    =================================== */
 function proceedToCheckout() {
@@ -358,6 +409,12 @@ function proceedToCheckout() {
 
     if (cart.length === 0) {
         showToast('Your cart is empty', 'error');
+        return;
+    }
+
+    if (countCartIssues() > 0) {
+        showToast('Please fix the highlighted items first', 'error');
+        document.querySelector('.cart-item.border-danger')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
         return;
     }
 
@@ -383,6 +440,7 @@ if (window.location.pathname.includes('cart.html')) {
     document.addEventListener('DOMContentLoaded', function() {
         renderCartItems();
         loadCartHandlingFee();
+        checkCartItems();
     });
 }
 
