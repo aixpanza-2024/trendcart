@@ -260,6 +260,7 @@ function renderCartItems() {
         const colorTag = item.color
             ? `<span class="badge bg-light text-dark border me-1"><i class="fas fa-palette me-1"></i>${item.color}</span>`
             : '';
+        const productUrl = 'product-detail.html?id=' + parseInt(item.id);
         const issue = _cartIssues && _cartIssues[key];
         const issueHTML = !issue ? '' : `
                     <div class="alert alert-danger py-2 px-3 mt-2 mb-0 small d-flex align-items-center gap-2 flex-wrap">
@@ -272,9 +273,9 @@ function renderCartItems() {
             <div class="col-12 col-md-6">
                 <div class="cart-item${issue ? ' border border-danger' : ''}" data-cart-key="${key}">
                     <div class="cart-item-top">
-                        <img src="${cartImageSrc(item.image)}" alt="${item.name}">
+                        <a href="${productUrl}"><img src="${cartImageSrc(item.image)}" alt="${item.name}"></a>
                         <div class="cart-item-details">
-                            <h5 class="cart-item-title">${item.name}</h5>
+                            <h5 class="cart-item-title"><a href="${productUrl}" class="text-reset text-decoration-none">${item.name}</a></h5>
                             <p class="cart-item-shop mb-1"><i class="fas fa-store"></i> ${item.shop}</p>
                             ${colorTag}${sizeTag}
                             <p class="cart-item-price fw-bold mb-0 mt-1">${formatCurrency(item.price)}</p>
