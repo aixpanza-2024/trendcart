@@ -42,7 +42,7 @@ function buildArrivalCard(p, badge) {
         ? p.primary_image.replace(/^\//, '')
         : 'https://placehold.co/300x400/333/fff?text=' + encodeURIComponent(p.product_name);
     const catBadge = p.category_name
-        ? `<span class="na-badge-cat">${p.category_name}</span>`
+        ? `<span class="na-badge-cat">${tcName(p.category_name)}</span>`
         : '';
     const cornerBadge = badge === 'offer' && parseFloat(p.discount_percentage) > 0
         ? `<span class="na-badge-new" style="background:#dc3545;">${Math.round(p.discount_percentage)}% OFF</span>`

@@ -238,7 +238,7 @@ function buildProductCard(p) {
         ? `<small class="text-grey me-2"><i class="fas fa-store"></i> ${p.shop_name}</small>` : '';
 
     const categoryLine = p.category_name
-        ? `<small class="text-grey"><i class="fas fa-tag"></i> ${p.category_name}</small>` : '';
+        ? `<small class="text-grey"><i class="fas fa-tag"></i> ${tcName(p.category_name)}</small>` : '';
 
     // Escape for use in onclick attribute
     const safeName = p.product_name.replace(/'/g, "\\'");
@@ -386,7 +386,7 @@ async function loadCategories(activeCategoryId, superCategoryId) {
                        value="${c.category_id}" id="cat${c.category_id}"
                        ${activeCategoryId && String(c.category_id) === String(activeCategoryId) ? 'checked' : ''}
                        onchange="applyFilters()">
-                <label class="form-check-label" for="cat${c.category_id}">${c.category_name}</label>
+                <label class="form-check-label" for="cat${c.category_id}">${tcName(c.category_name)}</label>
             </div>`).join('');
 
     } catch (err) {

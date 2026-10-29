@@ -48,13 +48,13 @@ async function loadCategories() {
         parents.forEach(p => {
             const opt = document.createElement('option');
             opt.value       = p.category_id;
-            opt.textContent = p.category_name;
+            opt.textContent = tcName(p.category_name);
             select.appendChild(opt);
 
             children.filter(c => c.parent_category_id == p.category_id).forEach(c => {
                 const cOpt = document.createElement('option');
                 cOpt.value       = c.category_id;
-                cOpt.textContent = '\u00A0\u00A0\u2514 ' + c.category_name;
+                cOpt.textContent = '\u00A0\u00A0\u2514 ' + tcName(c.category_name);
                 select.appendChild(cOpt);
             });
         });

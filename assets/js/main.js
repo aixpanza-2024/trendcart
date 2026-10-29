@@ -101,7 +101,7 @@ function _loadLocationPicker() {
     const path = window.location.pathname.replace(/\\/g, '/');
     if (/\/(shop|admin)\//.test(path) || !document.querySelector('nav.navbar .navbar-brand')) return;
     const s = document.createElement('script');
-    s.src = (/\/pages\//.test(path) ? '../' : '') + 'assets/js/location-picker.js?v=20261029';
+    s.src = (/\/pages\//.test(path) ? '../' : '') + 'assets/js/location-picker.js?v=20261029b';
     document.body.appendChild(s);
 }
 
@@ -436,6 +436,12 @@ function checkAuthStatus() {
    =================================== */
 /* Dress and Cosmetics are separate storefronts — read whichever one the
    current page is already scoped to, so navigating via search stays in it. */
+/** Category names are typed by shops in any case ("CHAPPAL", "blouses");
+ *  show them all one way: "Chappal", "Blouses", "Co-Ord Set". Display only. */
+function tcName(s) {
+    return String(s ?? '').trim().toLowerCase().replace(/(^|[\s\-\/(&])(\p{L})/gu, (m, sep, ch) => sep + ch.toUpperCase());
+}
+
 function currentVertical() {
     if (document.body.dataset.vertical === 'cosmetics') return 'cosmetics';
     return new URLSearchParams(window.location.search).get('vertical') === 'cosmetics' ? 'cosmetics' : 'dress';

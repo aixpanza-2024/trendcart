@@ -89,7 +89,7 @@ function renderProduct(p) {
     const badgesEl = document.getElementById('productBadges');
     let badges = '';
     if (p.category_name) {
-        badges += `<span class="badge bg-light text-dark border"><i class="fas fa-tag me-1"></i>${p.category_name}</span>`;
+        badges += `<span class="badge bg-light text-dark border"><i class="fas fa-tag me-1"></i>${tcName(p.category_name)}</span>`;
     }
     if (parseInt(p.is_featured)) {
         badges += `<span class="badge bg-warning text-dark"><i class="fas fa-star me-1"></i>Featured</span>`;
