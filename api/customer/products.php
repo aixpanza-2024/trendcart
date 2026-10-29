@@ -76,8 +76,12 @@ try {
         $params[':vertical'] = $vertical;
     }
     if ($category_id > 0) {
-        $sql .= " AND p.category_id = :category_id";
+        // The category itself or one of its subcategories (e.g. "Sarees" includes
+        // "Silk Sarees") — the same rule categories.php uses to list it.
+        $sql .= " AND (p.category_id = :category_id
+                       OR p.category_id IN (SELECT category_id FROM categories WHERE parent_category_id = :category_id_parent))";
         $params[':category_id'] = $category_id;
+        $params[':category_id_parent'] = $category_id;
     }
     if ($super_category_id > 0) {
         // A product qualifies if its own category is linked to this super category,

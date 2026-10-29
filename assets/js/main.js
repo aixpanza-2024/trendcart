@@ -25,6 +25,77 @@ document.addEventListener('DOMContentLoaded', function() {
     _loadLocationPicker();
 });
 
+/* ===================================
+   MAIN CATEGORY TABS (All / Men / Women / Kids ...) in the navbar
+   Every page: each tab links to pages/categories.html for that main category.
+   The homepages intercept the click and swap their circles row instead.
+   A tab is only highlighted once chosen (on categories.html: the open one).
+   =================================== */
+function setMoodTheme(categoryName) {
+    document.body.classList.remove('theme-men', 'theme-women', 'theme-kids');
+    const key = (categoryName || '').trim().toLowerCase();
+    if (key === 'men' || key === 'women' || key === 'kids') {
+        document.body.classList.add('theme-' + key);
+    }
+}
+
+function initSuperCatTabs() {
+    const tabsEl = document.getElementById('superCatTabs');
+    if (!tabsEl) return;
+
+    const path     = window.location.pathname.replace(/\\/g, '/');
+    const root     = /\/pages\//.test(path) ? '../' : '';
+    const vertical = currentVertical();
+    const onCategoriesPage = /\/categories\.html$/.test(path);
+    const openId   = onCategoriesPage ? (parseInt(new URLSearchParams(window.location.search).get('super_category_id')) || 0) : null;
+    const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const cacheKey = 'tcSuperCats_' + vertical;
+
+    function render(list) {
+        if (!list.length) { tabsEl.innerHTML = ''; return; }   // none set up — tabs stay hidden
+        const picked = tabsEl.querySelector('.super-cat-tab.active');   // homepage choice survives a refresh
+        const activeId = openId ?? (picked ? parseInt(picked.dataset.superCategoryId) || 0 : null);
+        const tabs = [{ super_category_id: 0, super_category_name: 'All' }, ...list];
+        tabsEl.innerHTML = tabs.map(t => {
+            const id   = parseInt(t.super_category_id) || 0;
+            const href = `${root}pages/categories.html?${id ? 'super_category_id=' + id + '&' : ''}vertical=${vertical}`;
+            return `<a class="super-cat-tab${activeId === id ? ' active' : ''}" href="${href}" data-super-category-id="${id}">${esc(t.super_category_name)}</a>`;
+        }).join('');
+        if (onCategoriesPage) {
+            const open = tabs.find(t => (parseInt(t.super_category_id) || 0) === openId);
+            if (open) setMoodTheme(open.super_category_name);
+        }
+    }
+
+    // Draw the last known tabs straight away so the navbar doesn't shift when
+    // the request comes back; only redraw if the list has changed since.
+    let cached = null;
+    try { cached = localStorage.getItem(cacheKey); if (cached) render(JSON.parse(cached)); } catch (e) { cached = null; }
+
+    fetch(`${root}api/customer/super-categories.php?vertical=${vertical}`)
+        .then(r => r.json())
+        .then(res => {
+            if (!res.success) return;
+            const fresh = JSON.stringify(res.data.map(t => ({ super_category_id: t.super_category_id, super_category_name: t.super_category_name })));
+            if (fresh === cached) return;
+            try { localStorage.setItem(cacheKey, fresh); } catch (e) { /* storage blocked */ }
+            render(JSON.parse(fresh));
+        })
+        .catch(() => {});
+}
+
+/* Fill the navbar before the first paint instead of on DOMContentLoaded:
+   main.js loads at the end of <body>, so the header markup is already here. */
+(function paintHeaderEarly() {
+    if (!document.body) return;
+    try {
+        const l = JSON.parse(localStorage.getItem('tcLocation') || 'null');
+        if (l && l.label) document.querySelectorAll('.tc-loc-chip-text').forEach(el => { el.textContent = l.label.split(',')[0].trim(); });
+    } catch (e) { /* no saved location */ }
+    if (document.getElementById('superCatTabs')) initSuperCatTabs();
+    else document.addEventListener('DOMContentLoaded', initSuperCatTabs);
+})();
+
 /* Navbar "📍 location" chooser — customer pages only (not the shop/admin panels) */
 function _loadLocationPicker() {
     const path = window.location.pathname.replace(/\\/g, '/');

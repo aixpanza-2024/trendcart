@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-4K7BXN8VK9"></script>
+    <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'G-4K7BXN8VK9');
+    </script>
+
+    <!-- Meta Pixel Code -->
+    <script>
+    !function(f,b,e,v,n,t,s)
+    {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+    n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+    if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+    n.queue=[];t=b.createElement(e);t.async=!0;
+    t.src=v;s=b.getElementsByTagName(e)[0];
+    s.parentNode.insertBefore(t,s)}(window, document,'script',
+    'https://connect.facebook.net/en_US/fbevents.js');
+    fbq('init', '1819310779236907');
+    fbq('track', 'PageView');
+    </script>
+    <noscript><img height="1" width="1" style="display:none"
+    src="https://www.facebook.com/tr?id=1819310779236907&ev=PageView&noscript=1"
+    /></noscript>
+    <!-- End Meta Pixel Code -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Browse every category and its products">
+    <title>Shop by Category - TrenCart</title>
+
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="../assets/css/theme.css">
+    <link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+
+    <!-- Location / phone / help bar — the chip is wired up by location-picker.js -->
+    <div class="tc-utility-bar">
+        <button type="button" class="tc-loc-chip" id="tcLocChip" onclick="TcLocation.open()" title="Choose your location">
+            <i class="fas fa-location-dot"></i>
+            <span class="tc-loc-chip-text">Select location</span>
+            <i class="fas fa-chevron-down tc-loc-caret"></i>
+        </button>
+        <div class="tc-utility-right">
+            <a href="tel:+918089970014" class="tc-utility-link"><i class="fas fa-phone"></i><span> +91 8089970014</span></a>
+            <a href="help-center.html" class="tc-utility-link"><i class="fas fa-circle-question"></i><span> Help Center</span></a>
+        </div>
+    </div>
+
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+        <div class="container-fluid px-4">
+            <a class="navbar-brand" href="../index.html">
+                <img src="../assets/images/trencartlogo.png" alt="TrenCart" style="height: 34px;">
+            </a>
+            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <!-- Main categories (All / Men / Women / Kids ...) — rendered by initSuperCatTabs()
+                 in main.js; on the homepages a click swaps the circles row below -->
+            <div class="nav-super-cats" id="superCatTabs"><!-- Loaded dynamically --></div>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav nav-main-links">
+                    <li class="nav-item">
+                        <a class="nav-link" href="shops.html">Shops</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="../cosmetics.html">Cosmetics</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="products.html">Products</a>
+                    </li>
+                </ul>
+                <form class="navbar-search-form d-flex" onsubmit="navProductSearch(event)">
+                    <div class="input-group">
+                        <input type="text" class="form-control nav-search-input" id="navSearchInput"
+                               placeholder="Search products..." autocomplete="off">
+                        <button class="nav-search-btn" type="submit">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </form>
+                <ul class="navbar-nav align-items-center ms-2">
+                    <li class="nav-item auth-buttons">
+                        <a class="nav-link" href="login.html">
+                            <i class="fas fa-user me-1"></i>Login
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="wishlist.html" title="Wishlist">
+                            <i class="fas fa-heart"></i>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link nav-cart-link" href="cart.html">
+                            <i class="fas fa-shopping-bag cart-icon"></i>
+                            <span class="cart-badge">0</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Page Banner — products.js retitles it with the main category's name -->
+    <section class="page-banner">
+        <div class="container-xl px-4">
+            <div id="shopHeaderDefault">
+                <div class="pb-eyebrow">Shop by category</div>
+                <h1 class="pb-title">All Categories</h1>
+                <p class="pb-sub">Pick a category to see its products</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Every subcategory of the chosen main category (All / Men / Women ...) -->
+    <section class="cat-circles-section">
+        <div class="container-xl px-4">
+            <div class="cat-grid" id="catGrid">
+                <div class="text-white-50 small py-3"><i class="fas fa-spinner fa-spin me-1"></i> Loading categories...</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Products of the chosen subcategory (or the whole main category) — products.js -->
+    <div class="page-body">
+        <div class="container-xl px-4">
+            <div class="d-flex align-items-baseline gap-2 mb-3">
+                <h2 class="h5 fw-bold mb-0" id="catProductsTitle">All products</h2>
+                <span class="text-grey small">(<span id="productCount">0</span>)</span>
+            </div>
+            <div class="row g-3" id="productsGrid">
+                <!-- Loaded dynamically by products.js -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-4 mb-4">
+                    <h5><img src="../assets/images/trencartlogo.png" alt="TrenCart Logo" style="height: 35px; margin-bottom: 10px;"></h5>
+                    <p>Your premier destination for quality dress materials and fabrics. Experience the perfect blend of tradition and modernity.</p>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <h5>Quick Links</h5>
+                    <ul>
+                        <li><a href="../index.html">Home</a></li>
+                        <li><a href="shops.html">All Shops</a></li>
+                        <li><a href="cart.html">Shopping Cart</a></li>
+                        <li><a href="login.html">Login / Register</a></li>
+                        <li><a href="terms.html">Terms &amp; Conditions</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <h5>Contact</h5>
+                    <ul>
+                        <li><i class="fas fa-envelope me-2"></i> trencarrt@gmail.com</li>
+                        <li><i class="fas fa-phone me-2"></i> +91 8089970014</li>
+                        <li><i class="fas fa-map-marker-alt me-2"></i> Kazhakootam</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 TrenCart. All rights reserved. | Designed with <i class="fas fa-heart text-danger"></i></p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap 5 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Custom JavaScript -->
+    <script src="../assets/js/main.js"></script>
+    <script src="../assets/js/wishlist-widget.js"></script>
+    <script src="../assets/js/cart.js"></script>
+    <script src="../assets/js/auth.js"></script>
+    <script src="../assets/js/products.js"></script>
+    <script>
+        /* Subcategory circles for the main category in the URL. Picking one
+           reloads this page with ?category_id=, and products.js shows its products. */
+        (function loadCategoryGrid() {
+            const params     = new URLSearchParams(window.location.search);
+            const superId    = parseInt(params.get('super_category_id')) || 0;
+            const categoryId = parseInt(params.get('category_id')) || 0;
+            const grid       = document.getElementById('catGrid');
+            const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+            const pageUrl = catId => 'categories.html?' + [
+                superId ? 'super_category_id=' + superId : '',
+                catId   ? 'category_id=' + catId : '',
+                'vertical=' + PAGE_VERTICAL
+            ].filter(Boolean).join('&');
+
+            const avatarColors = ['#E53935','#8E24AA','#1E88E5','#00897B','#F4511E','#6D4C41','#3949AB','#039BE5','#43A047','#D81B60','#F9A825','#546E7A'];
+            const avatar = name => `<div class="cat-circle-placeholder" style="background:${avatarColors[name.charCodeAt(0) % avatarColors.length]};color:#fff;font-size:20px;font-weight:700;">${esc(name.charAt(0).toUpperCase())}</div>`;
+            const circle = (href, inner, name, active) => `
+                <a class="cat-circle-item${active ? ' active' : ''}" href="${href}">
+                    <div class="cat-circle">${inner}</div>
+                    <span class="cat-name" title="${esc(name)}">${esc(name)}</span>
+                </a>`;
+
+            fetch(`../api/customer/categories.php?${superId ? 'super_category_id=' + superId + '&' : ''}vertical=${PAGE_VERTICAL}`)
+                .then(r => r.json())
+                .then(res => {
+                    const cats = res.success ? res.data : [];
+                    if (!cats.length) {
+                        grid.innerHTML = '<div class="text-white-50 small py-3">No categories here yet.</div>';
+                        return;
+                    }
+                    grid.innerHTML =
+                        circle(pageUrl(0), '<div class="cat-circle-placeholder" style="background:#1a1a1a;color:#fff;font-size:18px;"><i class="fas fa-th-large"></i></div>', 'All', !categoryId) +
+                        cats.map(c => circle(
+                            pageUrl(c.category_id),
+                            c.category_image ? `<img src="../${esc(c.category_image.replace(/^\//, ''))}" alt="${esc(c.category_name)}" loading="lazy" onerror="this.outerHTML=''">` : avatar(c.category_name),
+                            c.category_name,
+                            parseInt(c.category_id) === categoryId
+                        )).join('');
+
+                    const picked = cats.find(c => parseInt(c.category_id) === categoryId);
+                    if (picked) {
+                        document.getElementById('catProductsTitle').textContent = picked.category_name;
+                        document.title = picked.category_name + ' - TrenCart';
+                    }
+                })
+                .catch(() => { grid.innerHTML = '<div class="text-white-50 small py-3">Could not load categories.</div>'; });
+        })();
+    </script>
+
+</body>
+</html>

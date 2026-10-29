@@ -52,10 +52,11 @@ const TcLocation = (() => {
 
     function injectChip() {
         const nav = document.querySelector('nav.navbar');
-        if (!nav || document.getElementById('tcLocChip')) return;
+        if (!nav || document.getElementById('tcLocModalCss')) return;
         const path = window.location.pathname.replace(/\\/g, '/');
         const helpHref = /\/pages\//.test(path) ? 'help-center.html' : 'pages/help-center.html';
-        nav.insertAdjacentHTML('beforebegin', `
+        // Pages carry the bar in their markup (no jump on load); older pages get it injected.
+        if (!document.querySelector('.tc-utility-bar')) nav.insertAdjacentHTML('beforebegin', `
             <div class="tc-utility-bar">
                 <button type="button" class="tc-loc-chip" id="tcLocChip" onclick="TcLocation.open()" title="Choose your location">
                     <i class="fas fa-location-dot"></i>
@@ -67,24 +68,10 @@ const TcLocation = (() => {
                     <a href="${helpHref}" class="tc-utility-link"><i class="fas fa-circle-question"></i><span> Help Center</span></a>
                 </div>
             </div>`);
+        renderChip();
         const css = document.createElement('style');
+        css.id = 'tcLocModalCss';
         css.textContent = `
-            .tc-utility-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;
-                background:#fff;padding:6px 20px;border-bottom:1px solid #eee}
-            .tc-loc-chip{display:inline-flex;align-items:center;gap:6px;max-width:220px;background:transparent;border:0;
-                color:#1a1a1a;font-size:.86rem;font-weight:600;padding:4px 6px;border-radius:8px;white-space:nowrap;cursor:pointer}
-            .tc-loc-chip:hover{background:rgba(0,0,0,.05)}
-            .tc-loc-chip-text{overflow:hidden;text-overflow:ellipsis}
-            .tc-loc-caret{font-size:.65rem;opacity:.7}
-            .tc-utility-right{display:flex;align-items:center;gap:18px}
-            .tc-utility-link{display:inline-flex;align-items:center;gap:5px;color:#1a1a1a;text-decoration:none;font-size:.82rem;font-weight:600}
-            .tc-utility-link:hover{color:#8B5E3C}
-            @media (max-width:575px){
-                .tc-utility-bar{padding:5px 12px}
-                .tc-loc-chip{max-width:140px;font-size:.8rem}
-                .tc-utility-right{gap:10px}
-                .tc-utility-link span{display:none}
-            }
             .tc-loc-results{max-height:200px;overflow:auto}
             .tc-loc-results button{display:block;width:100%;text-align:left;border:0;background:none;padding:8px 10px;border-bottom:1px solid #eee;font-size:.88rem}
             .tc-loc-results button:hover{background:#f5f5f5}

@@ -425,9 +425,8 @@ function applyFilters() {
         filtered = filtered.filter(p => expandedCats.has(String(p.category_id)));
     }
 
-    // Price filter (only apply if slider is < max)
-    const sliderMax = priceRange ? parseInt(priceRange.max) : 10000;
-    if (maxPrice < sliderMax) {
+    // Price filter (only when the page has the slider and it's below max)
+    if (priceRange && maxPrice < parseInt(priceRange.max)) {
         filtered = filtered.filter(p => parseFloat(p.price) <= maxPrice);
     }
 

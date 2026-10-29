@@ -38,6 +38,19 @@
 </head>
 <body>
 
+    <!-- Location / phone / help bar — the chip is wired up by location-picker.js -->
+    <div class="tc-utility-bar">
+        <button type="button" class="tc-loc-chip" id="tcLocChip" onclick="TcLocation.open()" title="Choose your location">
+            <i class="fas fa-location-dot"></i>
+            <span class="tc-loc-chip-text">Select location</span>
+            <i class="fas fa-chevron-down tc-loc-caret"></i>
+        </button>
+        <div class="tc-utility-right">
+            <a href="tel:+918089970014" class="tc-utility-link"><i class="fas fa-phone"></i><span> +91 8089970014</span></a>
+            <a href="help-center.html" class="tc-utility-link"><i class="fas fa-circle-question"></i><span> Help Center</span></a>
+        </div>
+    </div>
+
     <!-- Navigation Bar -->
     <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
         <div class="container-fluid px-4">
@@ -47,7 +60,21 @@
             <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
+            <!-- Main categories (All / Men / Women / Kids ...) — rendered by initSuperCatTabs()
+                 in main.js; on the homepages a click swaps the circles row below -->
+            <div class="nav-super-cats" id="superCatTabs"><!-- Loaded dynamically --></div>
             <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav nav-main-links">
+                    <li class="nav-item">
+                        <a class="nav-link" href="shops.html">Shops</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="../cosmetics.html">Cosmetics</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="products.html">Products</a>
+                    </li>
+                </ul>
                 <form class="navbar-search-form d-flex" onsubmit="navProductSearch(event)">
                     <div class="input-group">
                         <input type="text" class="form-control nav-search-input" id="navSearchInput"
@@ -58,15 +85,6 @@
                     </div>
                 </form>
                 <ul class="navbar-nav align-items-center ms-2">
-                    <li class="nav-item">
-                        <a class="nav-link" href="shops.html">Shops</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="../cosmetics.html">Cosmetics</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="products.html">Products</a>
-                    </li>
                     <li class="nav-item auth-buttons">
                         <a class="nav-link" href="login.html">
                             <i class="fas fa-user me-1"></i>Login

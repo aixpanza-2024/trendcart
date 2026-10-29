@@ -46,6 +46,19 @@
 </head>
 <body data-vertical="dress">
 
+    <!-- Location / phone / help bar — the chip is wired up by location-picker.js -->
+    <div class="tc-utility-bar">
+        <button type="button" class="tc-loc-chip" id="tcLocChip" onclick="TcLocation.open()" title="Choose your location">
+            <i class="fas fa-location-dot"></i>
+            <span class="tc-loc-chip-text">Select location</span>
+            <i class="fas fa-chevron-down tc-loc-caret"></i>
+        </button>
+        <div class="tc-utility-right">
+            <a href="tel:+918089970014" class="tc-utility-link"><i class="fas fa-phone"></i><span> +91 8089970014</span></a>
+            <a href="pages/help-center.html" class="tc-utility-link"><i class="fas fa-circle-question"></i><span> Help Center</span></a>
+        </div>
+    </div>
+
     <!-- Navigation Bar -->
     <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
         <div class="container-fluid px-4">
@@ -55,8 +68,8 @@
             <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
-            <!-- Main categories (All / Men / Women / Kids ...) — clicking one swaps
-                 the subcategory circles below; loaded by loadSuperCategoryTabs() -->
+            <!-- Main categories (All / Men / Women / Kids ...) — rendered by initSuperCatTabs()
+                 in main.js; on the homepages a click swaps the circles row below -->
             <div class="nav-super-cats" id="superCatTabs"><!-- Loaded dynamically --></div>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav nav-main-links">
@@ -101,9 +114,9 @@
         </div>
     </nav>
 
-    <!-- Subcategory circles for the main category picked in the navbar,
-         ending in a plain "view all" arrow -->
-    <section class="cat-circles-section" style="display:none;">
+    <!-- Subcategory circles for the main category picked in the navbar —
+         folded away until a tab is picked, then it slides open -->
+    <section class="cat-circles-section cat-row-collapsible" id="catRow">
         <div class="container-xl px-4">
             <div class="cat-scroll-row">
                 <button type="button" class="cat-scroll-btn cat-scroll-left" id="catScrollLeft" onclick="scrollCategories(-1)" aria-label="Scroll left" hidden>
@@ -276,13 +289,6 @@
     <script src="assets/js/home.js"></script>
 
     <style>
-        /* Single thin arc peeking in from the bottom-right corner of the circles
-           strip, layered over each theme's gradient. */
-        :root {
-            --corner-arc: radial-gradient(circle at 88% 175%, transparent 0 229px, rgba(201,153,92,0.55) 230px 231.5px, transparent 232.5px);
-            --mono-gradient: linear-gradient(120deg, #1a1a1a 0%, #5c5c5c 100%);
-        }
-
         /* ── Hero Banner Carousel ── */
         .hb-section {
             padding: 0;
@@ -346,293 +352,6 @@
         }
         .hb-slide-inner, .hb-fallback-inner { height: 280px; }
 
-        /* ── Category Circles ── */
-        /* Default ("All") is a black-to-grey gradient, same as the tabs strip
-           above it, so the whole top area reads as one consistent block.
-           Men/Women/Kids override this to their light gradient further down. */
-        .cat-circles-section {
-            background: var(--corner-arc), var(--mono-gradient);
-            padding: 0;
-            border-bottom: 1px solid rgba(255,255,255,0.08);
-            position: relative;
-            transition: background 0.3s;
-        }
-        /* Pills and circles render as direct siblings in one flex row even
-           though they're grouped in wrapper divs in the markup. */
-        .cat-pills-wrap, .cat-items-wrap {
-            display: contents;
-        }
-        /* Plain "view all" arrow at the end of the row — no label text */
-        .cat-row-arrow {
-            flex: 0 0 auto;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: rgba(255,255,255,0.12);
-            color: #fff;
-            border: 1px solid rgba(255,255,255,0.25);
-            margin-left: auto;
-            transition: background 0.15s, transform 0.15s;
-        }
-        .cat-row-arrow:hover {
-            background: rgba(255,255,255,0.22);
-            transform: translateX(2px);
-        }
-        body.theme-men .cat-row-arrow,
-        body.theme-women .cat-row-arrow,
-        body.theme-kids .cat-row-arrow {
-            background: rgba(255,255,255,0.65);
-            color: #1a1a1a;
-            border-color: rgba(26,26,26,0.15);
-        }
-        .cat-scroll-row {
-            position: relative;
-        }
-        .cat-scroll-track {
-            display: flex;
-            align-items: center;
-            overflow-x: auto;
-            scroll-behavior: smooth;
-            gap: 8px;
-            padding: 10px 2px;
-            scrollbar-width: none;
-            -ms-overflow-style: none;
-        }
-        .cat-scroll-track::-webkit-scrollbar { display: none; }
-        .cat-circle-item {
-            flex: 0 0 auto;
-            width: 72px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            text-decoration: none;
-            color: inherit;
-            cursor: pointer;
-            padding: 4px 2px;
-        }
-        .cat-circle-item:hover .cat-circle {
-            border-color: var(--primary-color, #8B5E3C);
-            transform: scale(1.06);
-        }
-        .cat-circle {
-            width: 52px;
-            height: 52px;
-            border-radius: 50%;
-            overflow: hidden;
-            border: 2px solid rgba(255,255,255,0.18);
-            background: #2a2a2a;
-            transition: border-color 0.2s, transform 0.2s;
-            flex-shrink: 0;
-        }
-        .cat-circle img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        .cat-circle-placeholder {
-            width: 100%;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: #f0ebe5;
-            color: #a08060;
-            font-size: 24px;
-        }
-        .cat-name {
-            margin-top: 5px;
-            font-size: 11px;
-            font-weight: 600;
-            text-align: center;
-            color: #fff;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            max-width: 70px;
-            line-height: 1.2;
-        }
-        .cat-scroll-btn {
-            position: absolute;
-            top: 50%;
-            transform: translateY(-50%);
-            z-index: 2;
-            background: #fff;
-            border: 1px solid #ddd;
-            border-radius: 50%;
-            width: 28px;
-            height: 28px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            box-shadow: 0 1px 4px rgba(0,0,0,0.15);
-            font-size: 11px;
-            color: #555;
-            transition: background 0.2s;
-        }
-        .cat-scroll-btn:hover { background: #f5f5f5; }
-        .cat-scroll-btn[hidden] { display: none; }
-        .cat-scroll-left { left: 8px; }
-        .cat-scroll-right { right: 8px; }
-        @media (max-width: 767px) {
-            .cat-circle { width: 46px; height: 46px; }
-            .cat-circle-item { width: 62px; }
-            .cat-scroll-btn { width: 24px; height: 24px; font-size: 10px; }
-        }
-
-        /* ── Main categories in the navbar (All / Men / Women / Kids ...) ── */
-        /* Text tabs beside the logo with an underline on the active one; on a
-           phone they drop to their own scrollable row under the logo. */
-        .nav-super-cats {
-            display: flex;
-            align-self: stretch;
-            align-items: stretch;
-            margin-left: 1.5rem;
-            overflow-x: auto;
-            scrollbar-width: none;
-        }
-        .nav-super-cats::-webkit-scrollbar { display: none; }
-        .nav-super-cats:empty { display: none; }
-        .super-cat-tab {
-            flex: 0 0 auto;
-            border: 0;
-            border-bottom: 3px solid transparent;
-            background: transparent;
-            color: #fff;
-            font-size: 13px;
-            font-weight: 700;
-            letter-spacing: 0.6px;
-            text-transform: uppercase;
-            padding: 0 14px;
-            cursor: pointer;
-            white-space: nowrap;
-            transition: border-color 0.15s, opacity 0.15s;
-        }
-        .super-cat-tab:hover { border-bottom-color: rgba(255,255,255,0.45); }
-        .super-cat-tab.active { border-bottom-color: #fff; }
-        .nav-main-links { flex-direction: row; align-items: center; }
-        .super-cat-tab { padding-top: 3px; } /* offsets the 3px underline so text lines up with the links */
-        @media (max-width: 991.98px) {
-            nav.navbar > .container-fluid { flex-wrap: wrap !important; }
-            .nav-super-cats {
-                order: 10;
-                flex: 0 0 100%;
-                margin: 6px 0 0;
-                height: 38px;
-            }
-            .super-cat-tab { padding: 0 12px; font-size: 12px; }
-        }
-
-        /* ── Category mood themes — nav + tabs + circles only, this page ── */
-        /* Nav stays a plain gradient (search bar/icons need a clean backdrop);
-           the circles strip layers the corner arc on top. */
-        /* Default ("All") nav uses the same black-to-grey gradient as the strips below */
-        nav.navbar {
-            background-image: var(--mono-gradient);
-            padding-top: 0.4rem !important;
-            padding-bottom: 0.4rem !important;
-            /* thin grey divider instead of the dark drop shadow */
-            box-shadow: none !important;
-            border-bottom: 1px solid rgba(255,255,255,0.14) !important;
-        }
-        body.theme-men nav.navbar {
-            background: linear-gradient(120deg, #7EC8E3 0%, #ffffff 100%) !important;
-        }
-        body.theme-women nav.navbar {
-            background: linear-gradient(120deg, #F48FB1 0%, #ffffff 100%) !important;
-        }
-        body.theme-kids nav.navbar {
-            background: linear-gradient(120deg, #FFD54F 0%, #ffffff 100%) !important;
-        }
-        body.theme-men .cat-circles-section {
-            background: var(--corner-arc), linear-gradient(120deg, #7EC8E3 0%, #ffffff 100%) !important;
-        }
-        body.theme-women .cat-circles-section {
-            background: var(--corner-arc), linear-gradient(120deg, #F48FB1 0%, #ffffff 100%) !important;
-        }
-        body.theme-kids .cat-circles-section {
-            background: var(--corner-arc), linear-gradient(120deg, #FFD54F 0%, #ffffff 100%) !important;
-        }
-        body.theme-men nav.navbar,
-        body.theme-women nav.navbar,
-        body.theme-kids nav.navbar {
-            border-bottom: 1px solid rgba(26,26,26,0.12) !important;
-        }
-        body.theme-men .navbar-nav .nav-link,
-        body.theme-women .navbar-nav .nav-link,
-        body.theme-kids .navbar-nav .nav-link,
-        body.theme-men .navbar-brand,
-        body.theme-women .navbar-brand,
-        body.theme-kids .navbar-brand {
-            color: #1a1a1a !important;
-        }
-        body.theme-men .nav-cart-link .cart-icon,
-        body.theme-women .nav-cart-link .cart-icon,
-        body.theme-kids .nav-cart-link .cart-icon,
-        body.theme-men .navbar-nav .nav-link i,
-        body.theme-women .navbar-nav .nav-link i,
-        body.theme-kids .navbar-nav .nav-link i {
-            color: #1a1a1a;
-        }
-        body.theme-men .nav-search-input,
-        body.theme-women .nav-search-input,
-        body.theme-kids .nav-search-input {
-            background: rgba(255,255,255,0.65);
-            border-color: rgba(0,0,0,0.15);
-            color: #1a1a1a;
-        }
-        body.theme-men .nav-search-input::placeholder,
-        body.theme-women .nav-search-input::placeholder,
-        body.theme-kids .nav-search-input::placeholder {
-            color: rgba(26,26,26,0.55);
-        }
-        body.theme-men .nav-search-btn,
-        body.theme-women .nav-search-btn,
-        body.theme-kids .nav-search-btn {
-            background: rgba(255,255,255,0.65);
-            border-color: rgba(0,0,0,0.15);
-            color: #1a1a1a;
-        }
-        /* phone top-bar icons (search / wishlist / cart) dark on the light themes */
-        body.theme-men .mob-top-icons .mob-icon,
-        body.theme-women .mob-top-icons .mob-icon,
-        body.theme-kids .mob-top-icons .mob-icon {
-            color: #1a1a1a;
-        }
-        body.theme-men .navbar-toggler-icon,
-        body.theme-women .navbar-toggler-icon,
-        body.theme-kids .navbar-toggler-icon {
-            filter: invert(1);
-        }
-        body.theme-men .super-cat-tab,
-        body.theme-women .super-cat-tab,
-        body.theme-kids .super-cat-tab {
-            color: #1a1a1a;
-        }
-        body.theme-men .super-cat-tab:hover,
-        body.theme-women .super-cat-tab:hover,
-        body.theme-kids .super-cat-tab:hover {
-            border-bottom-color: rgba(26,26,26,0.35);
-        }
-        body.theme-men .super-cat-tab.active,
-        body.theme-women .super-cat-tab.active,
-        body.theme-kids .super-cat-tab.active {
-            border-bottom-color: #1a1a1a;
-        }
-        body.theme-men .cat-name,
-        body.theme-women .cat-name,
-        body.theme-kids .cat-name {
-            color: #333;
-        }
-        body.theme-men .cat-circle,
-        body.theme-women .cat-circle,
-        body.theme-kids .cat-circle {
-            border-color: #e8e8e8;
-            background: #f5f5f5;
-        }
     </style>
 
     <script>
@@ -773,27 +492,22 @@
                 .catch(() => {});
         })();
 
-        // Renders just the subcategory circles + trailing arrow — the pills
-        // to their left are handled separately by loadSuperCategoryTabs().
-        // The whole row (pills + circles) collapses when neither has anything to
-        // show, so an empty vertical doesn't leave a blank padded bar on screen.
+        // Renders just the subcategory circles — the main-category tabs
+        // in the navbar come from initSuperCatTabs() in main.js.
+        // The row is open only while a tab is picked and it has circles to show.
+        let catRowWanted = false;
         function updateRowVisibility() {
             const hasItems = document.getElementById('catItemsWrap').children.length > 0;
-            document.querySelector('.cat-circles-section').style.display = hasItems ? '' : 'none';
+            document.getElementById('catRow').classList.toggle('open', catRowWanted && hasItems);
         }
 
         function renderCategoryItems(superCategoryId, data) {
             const wrap = document.getElementById('catItemsWrap');
 
-            const arrowHref = superCategoryId
-                ? `pages/products.html?super_category_id=${superCategoryId}&vertical=${PAGE_VERTICAL}`
-                : `pages/products.html?vertical=${PAGE_VERTICAL}`;
-            const arrow = `<a href="${arrowHref}" class="cat-row-arrow" aria-label="View all"><i class="fas fa-arrow-right"></i></a>`;
-
             if (!data || !data.length) {
-                // Nothing to show at all (e.g. no shops yet in this vertical) —
-                // an arrow with nothing to point past is just clutter.
+                // Nothing to show at all (e.g. no shops yet in this vertical)
                 wrap.innerHTML = '';
+                wrap.classList.remove('swapping');
                 updateRowVisibility();
                 requestAnimationFrame(updateCatScrollBtns);
                 return;
@@ -814,7 +528,8 @@
                         <span class="cat-name">${cat.category_name}</span>
                     </a>`;
             });
-            wrap.innerHTML = items.join('') + arrow;
+            wrap.innerHTML = items.join('');
+            wrap.classList.remove('swapping');
             updateRowVisibility();
             requestAnimationFrame(updateCatScrollBtns);
             wrap.querySelectorAll('img[data-fallback]').forEach(img => {
@@ -825,6 +540,10 @@
         }
 
         function loadCategoryCircles(superCategoryId) {
+            // Already open: fade the old circles out while the new ones load
+            if (document.getElementById('catRow').classList.contains('open')) {
+                document.getElementById('catItemsWrap').classList.add('swapping');
+            }
             const url = superCategoryId
                 ? `api/customer/categories.php?super_category_id=${superCategoryId}&vertical=${PAGE_VERTICAL}`
                 : `api/customer/categories.php?vertical=${PAGE_VERTICAL}`;
@@ -833,46 +552,28 @@
                 .then(res => renderCategoryItems(superCategoryId, res.success ? res.data : []))
                 .catch(() => renderCategoryItems(superCategoryId, []));
         }
-        loadCategoryCircles(null);
 
-        // Men -> sky blue, Women -> pink, Kids -> yellow, anything else (All) -> back to black.
-        function setMoodTheme(categoryName) {
-            document.body.classList.remove('theme-men', 'theme-women', 'theme-kids');
-            const key = (categoryName || '').trim().toLowerCase();
-            if (key === 'men' || key === 'women' || key === 'kids') {
-                document.body.classList.add('theme-' + key);
+        // The tabs themselves are rendered by initSuperCatTabs() in main.js as links
+        // to pages/categories.html; on the homepage a click swaps the circles row
+        // below instead of leaving the page. Nothing is highlighted (and the row
+        // stays folded) until chosen; clicking the open tab again folds it away.
+        document.getElementById('superCatTabs').addEventListener('click', function (e) {
+            const tab = e.target.closest('.super-cat-tab');
+            if (!tab) return;
+            e.preventDefault();
+            const closing = tab.classList.contains('active');
+            this.querySelectorAll('.super-cat-tab').forEach(t => t.classList.remove('active'));
+            if (closing) {
+                catRowWanted = false;
+                updateRowVisibility();
+                setMoodTheme('');
+                return;
             }
-        }
-
-        (function loadSuperCategoryTabs() {
-            const tabsEl = document.getElementById('superCatTabs');
-
-            fetch(`api/customer/super-categories.php?vertical=${PAGE_VERTICAL}`)
-                .then(r => r.json())
-                .then(res => {
-                    if (!res.success || !res.data.length) return; // no super categories set up — leave pills hidden
-                    const tabs = [{ super_category_id: 0, super_category_name: 'All' }, ...res.data];
-                    tabsEl.innerHTML = tabs.map((t, i) => `
-                        <button class="super-cat-tab${i === 0 ? ' active' : ''}" data-super-category-id="${t.super_category_id}">
-                            ${t.super_category_name}
-                        </button>`).join('');
-                })
-                .catch(() => {});
-
-            // Delegated so it keeps working after loadCategoryCircles() rewrites
-            // the items (and would otherwise rewrite the pills too, if they lived
-            // in the same innerHTML replacement).
-            tabsEl.addEventListener('click', function (e) {
-                const btn = e.target.closest('.super-cat-tab');
-                if (!btn) return;
-                tabsEl.querySelectorAll('.super-cat-tab').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                const id = parseInt(btn.dataset.superCategoryId, 10) || null;
-                const name = btn.textContent.trim();
-                loadCategoryCircles(id);
-                setMoodTheme(name);
-            });
-        })();
+            tab.classList.add('active');
+            catRowWanted = true;
+            loadCategoryCircles(parseInt(tab.dataset.superCategoryId, 10) || null);
+            setMoodTheme(tab.textContent);
+        });
 
         function scrollCategories(dir) {
             const track = document.getElementById('catScrollTrack');

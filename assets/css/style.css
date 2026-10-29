@@ -2096,3 +2096,347 @@ a {
     .checkout-loc-card { flex-direction: column; align-items: stretch; }
     .checkout-loc-map { flex-basis: auto; height: 140px; }
 }
+
+/* ===================================
+   MAIN CATEGORY TABS (All / Men / Women ...), SUBCATEGORY CIRCLES, MOOD THEMES
+   Shared by every customer page (moved from index.html / cosmetics.html)
+   =================================== */
+/* Single thin arc peeking in from the bottom-right corner of the circles
+   strip, layered over each theme's gradient. */
+:root {
+    --corner-arc: radial-gradient(circle at 88% 175%, transparent 0 229px, rgba(201,153,92,0.55) 230px 231.5px, transparent 232.5px);
+    --mono-gradient: linear-gradient(120deg, #1a1a1a 0%, #5c5c5c 100%);
+}
+
+/* ── Category Circles ── */
+/* Default ("All") is a black-to-grey gradient, same as the tabs strip
+   above it, so the whole top area reads as one consistent block.
+   Men/Women/Kids override this to their light gradient further down. */
+.cat-circles-section {
+    background: var(--corner-arc), var(--mono-gradient);
+    padding: 0;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    position: relative;
+    transition: background 0.3s;
+}
+/* Homepage row: folded away until All / Men / Women is picked, then it
+   grows open (grid row 0fr -> 1fr) and the circles fade/slide in. */
+.cat-circles-section.cat-row-collapsible {
+    display: grid;
+    grid-template-rows: 0fr;
+    border-bottom-width: 0;
+    transition: grid-template-rows 0.4s cubic-bezier(.4,0,.2,1), background 0.3s;
+}
+.cat-circles-section.cat-row-collapsible > .container-xl {
+    min-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transform: translateY(-10px);
+    transition: opacity 0.3s ease, transform 0.35s ease;
+}
+.cat-circles-section.cat-row-collapsible.open {
+    grid-template-rows: 1fr;
+    border-bottom-width: 1px;
+}
+.cat-circles-section.cat-row-collapsible.open > .container-xl {
+    opacity: 1;
+    transform: none;
+    transition-delay: 0.1s;
+}
+/* switching Men -> Women while open: old circles fade out, new ones in */
+.cat-items-wrap.swapping .cat-circle-item { opacity: 0; transform: translateY(4px); }
+.cat-circle-item { transition: opacity 0.2s ease, transform 0.2s ease; }
+@media (prefers-reduced-motion: reduce) {
+    .cat-circles-section.cat-row-collapsible,
+    .cat-circles-section.cat-row-collapsible > .container-xl,
+    .cat-circle-item { transition: none; }
+}
+/* Pills and circles render as direct siblings in one flex row even
+   though they're grouped in wrapper divs in the markup. */
+.cat-pills-wrap, .cat-items-wrap {
+    display: contents;
+}
+.cat-scroll-row {
+    position: relative;
+}
+.cat-scroll-track {
+    display: flex;
+    align-items: center;
+    overflow-x: auto;
+    scroll-behavior: smooth;
+    gap: 8px;
+    padding: 10px 2px;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+.cat-scroll-track::-webkit-scrollbar { display: none; }
+.cat-circle-item {
+    flex: 0 0 auto;
+    width: 72px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-decoration: none;
+    color: inherit;
+    cursor: pointer;
+    padding: 4px 2px;
+}
+.cat-circle-item:hover .cat-circle {
+    border-color: var(--primary-color, #8B5E3C);
+    transform: scale(1.06);
+}
+.cat-circle {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 2px solid rgba(255,255,255,0.18);
+    background: #2a2a2a;
+    transition: border-color 0.2s, transform 0.2s;
+    flex-shrink: 0;
+}
+.cat-circle img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.cat-circle-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f0ebe5;
+    color: #a08060;
+    font-size: 24px;
+}
+.cat-name {
+    margin-top: 5px;
+    font-size: 11px;
+    font-weight: 600;
+    text-align: center;
+    color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 70px;
+    line-height: 1.2;
+}
+.cat-scroll-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 2;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+    font-size: 11px;
+    color: #555;
+    transition: background 0.2s;
+}
+.cat-scroll-btn:hover { background: #f5f5f5; }
+.cat-scroll-btn[hidden] { display: none; }
+.cat-scroll-left { left: 8px; }
+.cat-scroll-right { right: 8px; }
+@media (max-width: 767px) {
+    .cat-circle { width: 46px; height: 46px; }
+    .cat-circle-item { width: 62px; }
+    .cat-scroll-btn { width: 24px; height: 24px; font-size: 10px; }
+}
+
+/* ── Main categories in the navbar (All / Men / Women / Kids ...) ── */
+/* Text tabs beside the logo with an underline on the active one; on a
+   phone they drop to their own scrollable row under the logo. */
+.nav-super-cats {
+    display: flex;
+    align-self: stretch;
+    align-items: stretch;
+    margin-left: 1.5rem;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+.nav-super-cats::-webkit-scrollbar { display: none; }
+.nav-super-cats:empty { display: none; }
+.super-cat-tab {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    border: 0;
+    border-bottom: 3px solid transparent;
+    background: transparent;
+    color: rgba(255,255,255,0.88);
+    /* same type as the Shops / Cosmetics / Products links (.navbar-nav .nav-link) */
+    font-size: 0.9rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    text-transform: capitalize;
+    padding: 3px 0.9rem 0; /* the 3px offsets the underline so text lines up with the links */
+    cursor: pointer;
+    white-space: nowrap;
+    transition: border-color 0.15s, color 0.15s;
+}
+.super-cat-tab:hover { color: #fff; border-bottom-color: rgba(255,255,255,0.45); }
+.super-cat-tab.active { color: #fff; border-bottom-color: #fff; }
+.nav-main-links { flex-direction: row; align-items: center; }
+@media (max-width: 991.98px) {
+    nav.navbar > .container-fluid { flex-wrap: wrap !important; }
+    .nav-super-cats {
+        order: 10;
+        flex: 0 0 100%;
+        margin: 6px 0 0;
+        height: 38px;
+    }
+    .super-cat-tab { padding: 3px 12px 0; font-size: 0.85rem; }
+}
+
+/* ── Category mood themes — nav + tabs + circles (body.theme-* set by main.js) ── */
+/* Nav stays a plain gradient (search bar/icons need a clean backdrop);
+   the circles strip layers the corner arc on top. */
+/* Default ("All") nav uses the same black-to-grey gradient as the strips below */
+nav.navbar {
+    background-image: var(--mono-gradient);
+    padding-top: 0.4rem !important;
+    padding-bottom: 0.4rem !important;
+    /* thin grey divider instead of the dark drop shadow */
+    box-shadow: none !important;
+    border-bottom: 1px solid rgba(255,255,255,0.14) !important;
+}
+body.theme-men nav.navbar {
+    background: linear-gradient(120deg, #7EC8E3 0%, #ffffff 100%) !important;
+}
+body.theme-women nav.navbar {
+    background: linear-gradient(120deg, #F48FB1 0%, #ffffff 100%) !important;
+}
+body.theme-kids nav.navbar {
+    background: linear-gradient(120deg, #FFD54F 0%, #ffffff 100%) !important;
+}
+body.theme-men .cat-circles-section {
+    background: var(--corner-arc), linear-gradient(120deg, #7EC8E3 0%, #ffffff 100%) !important;
+}
+body.theme-women .cat-circles-section {
+    background: var(--corner-arc), linear-gradient(120deg, #F48FB1 0%, #ffffff 100%) !important;
+}
+body.theme-kids .cat-circles-section {
+    background: var(--corner-arc), linear-gradient(120deg, #FFD54F 0%, #ffffff 100%) !important;
+}
+body.theme-men nav.navbar,
+body.theme-women nav.navbar,
+body.theme-kids nav.navbar {
+    border-bottom: 1px solid rgba(26,26,26,0.12) !important;
+}
+body.theme-men .navbar-nav .nav-link,
+body.theme-women .navbar-nav .nav-link,
+body.theme-kids .navbar-nav .nav-link,
+body.theme-men .navbar-brand,
+body.theme-women .navbar-brand,
+body.theme-kids .navbar-brand {
+    color: #1a1a1a !important;
+}
+body.theme-men .nav-cart-link .cart-icon,
+body.theme-women .nav-cart-link .cart-icon,
+body.theme-kids .nav-cart-link .cart-icon,
+body.theme-men .navbar-nav .nav-link i,
+body.theme-women .navbar-nav .nav-link i,
+body.theme-kids .navbar-nav .nav-link i {
+    color: #1a1a1a;
+}
+body.theme-men .nav-search-input,
+body.theme-women .nav-search-input,
+body.theme-kids .nav-search-input {
+    background: rgba(255,255,255,0.65);
+    border-color: rgba(0,0,0,0.15);
+    color: #1a1a1a;
+}
+body.theme-men .nav-search-input::placeholder,
+body.theme-women .nav-search-input::placeholder,
+body.theme-kids .nav-search-input::placeholder {
+    color: rgba(26,26,26,0.55);
+}
+body.theme-men .nav-search-btn,
+body.theme-women .nav-search-btn,
+body.theme-kids .nav-search-btn {
+    background: rgba(255,255,255,0.65);
+    border-color: rgba(0,0,0,0.15);
+    color: #1a1a1a;
+}
+/* phone top-bar icons (search / wishlist / cart) dark on the light themes */
+body.theme-men .mob-top-icons .mob-icon,
+body.theme-women .mob-top-icons .mob-icon,
+body.theme-kids .mob-top-icons .mob-icon {
+    color: #1a1a1a;
+}
+body.theme-men .navbar-toggler-icon,
+body.theme-women .navbar-toggler-icon,
+body.theme-kids .navbar-toggler-icon {
+    filter: invert(1);
+}
+body.theme-men .super-cat-tab,
+body.theme-women .super-cat-tab,
+body.theme-kids .super-cat-tab {
+    color: #1a1a1a;
+}
+body.theme-men .super-cat-tab:hover,
+body.theme-women .super-cat-tab:hover,
+body.theme-kids .super-cat-tab:hover {
+    border-bottom-color: rgba(26,26,26,0.35);
+}
+body.theme-men .super-cat-tab.active,
+body.theme-women .super-cat-tab.active,
+body.theme-kids .super-cat-tab.active {
+    border-bottom-color: #1a1a1a;
+}
+body.theme-men .cat-name,
+body.theme-women .cat-name,
+body.theme-kids .cat-name {
+    color: #333;
+}
+body.theme-men .cat-circle,
+body.theme-women .cat-circle,
+body.theme-kids .cat-circle {
+    border-color: #e8e8e8;
+    background: #f5f5f5;
+}
+
+/* Subcategory grid on pages/categories.html — same circles, wrapping instead of scrolling */
+.cat-grid {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px 4px;
+    padding: 16px 0;
+}
+.cat-grid .cat-circle-item { width: 84px; }
+.cat-grid .cat-circle { width: 60px; height: 60px; }
+.cat-grid .cat-name { max-width: 80px; }
+.cat-circle-item.active .cat-circle { border: 3px solid #c9995c; }
+.cat-circle-item.active .cat-name { color: #c9995c; }
+body.theme-men .cat-circle-item.active .cat-name,
+body.theme-women .cat-circle-item.active .cat-name,
+body.theme-kids .cat-circle-item.active .cat-name { color: #1a1a1a; text-decoration: underline; }
+
+/* ── Utility bar above the navbar: location chip, phone, help ── */
+/* In each page's markup so it is there on first paint (no jump). */
+.tc-utility-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;
+    background:#fff;padding:6px 20px;border-bottom:1px solid #eee;min-height:41px}
+.tc-loc-chip{display:inline-flex;align-items:center;gap:6px;max-width:220px;background:transparent;border:0;
+    color:#1a1a1a;font-size:.86rem;font-weight:600;padding:4px 6px;border-radius:8px;white-space:nowrap;cursor:pointer}
+.tc-loc-chip:hover{background:rgba(0,0,0,.05)}
+.tc-loc-chip-text{overflow:hidden;text-overflow:ellipsis}
+.tc-loc-caret{font-size:.65rem;opacity:.7}
+.tc-utility-right{display:flex;align-items:center;gap:18px}
+.tc-utility-link{display:inline-flex;align-items:center;gap:5px;color:#1a1a1a;text-decoration:none;font-size:.82rem;font-weight:600}
+.tc-utility-link:hover{color:#8B5E3C}
+@media (max-width:575px){
+    .tc-utility-bar{padding:5px 12px;min-height:37px}
+    .tc-loc-chip{max-width:140px;font-size:.8rem}
+    .tc-utility-right{gap:10px}
+    .tc-utility-link span{display:none}
+}
