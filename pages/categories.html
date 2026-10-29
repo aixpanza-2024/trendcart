@@ -223,10 +223,15 @@
                         circle(pageUrl(0), '<div class="cat-circle-placeholder" style="background:#1a1a1a;color:#fff;font-size:18px;"><i class="fas fa-th-large"></i></div>', 'All', !categoryId) +
                         cats.map(c => circle(
                             pageUrl(c.category_id),
-                            c.category_image ? `<img src="../${esc(c.category_image.replace(/^\//, ''))}" alt="${esc(c.category_name)}" loading="lazy" onerror="this.outerHTML=''">` : avatar(tcName(c.category_name)),
+                            c.category_image ? `<img src="../${esc(c.category_image.replace(/^\//, ''))}" alt="${esc(c.category_name)}" loading="lazy" data-fallback="${esc(tcName(c.category_name))}">` : avatar(tcName(c.category_name)),
                             tcName(c.category_name),
                             parseInt(c.category_id) === categoryId
                         )).join('');
+
+                    // Image missing on the server: show the letter circle instead of a blank one
+                    grid.querySelectorAll('img[data-fallback]').forEach(img => {
+                        img.addEventListener('error', () => img.replaceWith(document.createRange().createContextualFragment(avatar(img.dataset.fallback))));
+                    });
 
                     const picked = cats.find(c => parseInt(c.category_id) === categoryId);
                     if (picked) {
