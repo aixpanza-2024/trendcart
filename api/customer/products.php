@@ -37,10 +37,24 @@ try {
         $sizes_stock_expr = "(SELECT GROUP_CONCAT(CONCAT(ps.size_label,':',ps.stock_quantity) ORDER BY ps.display_order SEPARATOR ',') FROM product_sizes ps WHERE ps.product_id = p.product_id) AS sizes_stock";
     } catch (\PDOException $e) { /* table absent */ }
 
+    // Colours for the card's colour buttons (same list as the product page), "Red|Blue".
+    // variants_stock ("Red|M:5,Red|L:0") is only set when stock is split by colour,
+    // so picking a colour on the card shows which sizes are left in it.
+    $colors_expr = "NULL AS colors";
+    $variants_stock_expr = "NULL AS variants_stock";
+    try {
+        $conn->query("SELECT 1 FROM `product_colors` LIMIT 0");
+        $colors_expr = "(SELECT GROUP_CONCAT(pc.color_name ORDER BY pc.display_order, pc.color_id SEPARATOR '|') FROM product_colors pc WHERE pc.product_id = p.product_id) AS colors";
+    } catch (\PDOException $e) { /* table absent */ }
+    try {
+        $conn->query("SELECT 1 FROM `product_variants` LIMIT 0");
+        $variants_stock_expr = "(SELECT GROUP_CONCAT(CONCAT(pv.color_name,'|',pv.size_label,':',pv.stock_quantity) ORDER BY pv.display_order SEPARATOR ',') FROM product_variants pv WHERE pv.product_id = p.product_id AND pv.color_name <> '') AS variants_stock";
+    } catch (\PDOException $e) { /* table absent */ }
+
     $sql = "SELECT p.product_id, p.product_name, p.price, p.original_price,
                    p.discount_percentage, p.product_description,
                    p.category_id, p.created_at, p.orders_count,
-                   $size_expr, $sizes_stock_expr,
+                   $size_expr, $sizes_stock_expr, $colors_expr, $variants_stock_expr,
                    s.shop_id, s.shop_name,
                    c.category_name,
                    (SELECT image_url FROM product_images

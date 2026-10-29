@@ -312,6 +312,7 @@ function buildProductCard(p) {
                     <div class="card-price mb-2">
                         ₹${parseFloat(p.price).toLocaleString()}${originalPrice}
                     </div>
+                    ${cardColorRow(p)}
                     ${sizeRow}
                     ${qtyRow}
                     ${cartBtn}
@@ -320,26 +321,14 @@ function buildProductCard(p) {
         </div>`;
 }
 
-/* ── Card size / qty helpers ─────────────────────────────────────── */
-function cardSelectSize(btn) {
-    btn.closest('.card-size-row').querySelectorAll('.card-size-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    // Reset qty to 1 when size changes
-    const card    = btn.closest('.product-card, .na-card');
-    const display = card ? card.querySelector('.card-qty-display') : null;
-    const amount  = card ? card.querySelector('.card-qty-amount')  : null;
-    const price   = parseFloat(card ? card.dataset.price : 0) || 0;
-    if (display) display.textContent = '1';
-    if (amount && price) amount.textContent = '₹' + price.toLocaleString('en-IN');
-}
-
+/* ── Card qty helpers (colour / size buttons: cardSelectColor, cardSelectSize in cart.js) ── */
 function cardChangeQty(btn, delta) {
     const row        = btn.closest('.card-qty-row');
     const display    = row.querySelector('.card-qty-display');
     const amount     = row.querySelector('.card-qty-amount');
     const card       = btn.closest('.product-card, .na-card');
     const price      = parseFloat(card ? card.dataset.price : 0) || 0;
-    const activeSize = card ? card.querySelector('.card-size-btn.active') : null;
+    const activeSize = cardActiveSize(card);
     const maxStock   = activeSize ? (parseInt(activeSize.dataset.stock) || 99) : 99;
 
     let qty = Math.max(1, Math.min(maxStock, parseInt(display.textContent) + delta));
@@ -348,13 +337,12 @@ function cardChangeQty(btn, delta) {
 }
 
 function cardAddToCart(productId, productName, productPrice, productImage, shopName, shopId, addBtn) {
-    const card       = addBtn.closest('.product-card');
-    const activeSize = card ? card.querySelector('.card-size-btn.active') : null;
-    const size       = activeSize ? activeSize.dataset.size : null;
+    const card   = addBtn.closest('.product-card');
+    const choice = cardChoice(card);
+    if (!choice) return;
+    const size   = choice.size;
 
-    if (!size) { showToast('Please select a size first', 'error'); return; }
-
-    const maxStock = parseInt(activeSize.dataset.stock) || 0;
+    const maxStock = parseInt(choice.sizeBtn.dataset.stock) || 0;
     const qtyEl    = card ? card.querySelector('.card-qty-display') : null;
     const qty      = qtyEl ? (parseInt(qtyEl.textContent) || 1) : 1;
 
@@ -362,14 +350,16 @@ function cardAddToCart(productId, productName, productPrice, productImage, shopN
         showToast(`Only ${maxStock} left in stock for size ${size}`, 'error');
         return;
     }
-    quickAddToCart(addBtn, productId, productName, productPrice, productImage, shopName, shopId, size, qty);
+    quickAddToCart(addBtn, productId, productName, productPrice, productImage, shopName, shopId, size, qty, choice.color);
 }
 
 function cardAddToCartNoSize(productId, productName, productPrice, productImage, shopName, shopId, addBtn) {
-    const card  = addBtn.closest('.product-card');
-    const qtyEl = card ? card.querySelector('.card-qty-display') : null;
-    const qty   = qtyEl ? (parseInt(qtyEl.textContent) || 1) : 1;
-    quickAddToCart(addBtn, productId, productName, productPrice, productImage, shopName, shopId, null, qty);
+    const card   = addBtn.closest('.product-card');
+    const choice = cardChoice(card);
+    if (!choice) return;
+    const qtyEl  = card ? card.querySelector('.card-qty-display') : null;
+    const qty    = qtyEl ? (parseInt(qtyEl.textContent) || 1) : 1;
+    quickAddToCart(addBtn, productId, productName, productPrice, productImage, shopName, shopId, null, qty, choice.color);
 }
 
 async function loadCategories(activeCategoryId, superCategoryId) {

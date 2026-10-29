@@ -85,13 +85,8 @@ function buildArrivalCard(p, badge) {
            </div>`
         : '';
 
-    const cartBtn = hasSizes
-        ? `<button class="btn btn-primary btn-sm w-100 mt-1"
+    const cartBtn = `<button class="btn btn-primary btn-sm w-100 mt-1"
                onclick="naAddToCart('${pid}','${safeName}',${price},'${safeImg}','${safeShop}','${p.shop_id}',this)">
-               <i class="fas fa-cart-plus"></i> Add to Cart
-           </button>`
-        : `<button class="btn btn-primary btn-sm w-100 mt-1"
-               onclick="quickAddToCart(this,'${pid}','${safeName}',${price},'${safeImg}','${safeShop}','${p.shop_id}')">
                <i class="fas fa-cart-plus"></i> Add to Cart
            </button>`;
 
@@ -110,6 +105,7 @@ function buildArrivalCard(p, badge) {
                 <div class="na-name">${p.product_name}</div>
                 <div class="na-shop"><i class="fas fa-store"></i>${p.shop_name}</div>
                 <div class="na-price">₹${price.toLocaleString('en-IN')}</div>
+                ${cardColorRow(p)}
                 ${sizeRow}
                 ${cartBtn}
             </div>
@@ -117,8 +113,7 @@ function buildArrivalCard(p, badge) {
 }
 
 function naAddToCart(productId, productName, productPrice, productImage, shopName, shopId, btn) {
-    const card       = btn.closest('.na-card');
-    const activeSize = card ? card.querySelector('.card-size-btn.active') : null;
-    const size       = activeSize ? activeSize.dataset.size : null;
-    quickAddToCart(btn, productId, productName, productPrice, productImage, shopName, shopId, size);
+    const choice = cardChoice(btn.closest('.na-card'));
+    if (!choice) return;
+    quickAddToCart(btn, productId, productName, productPrice, productImage, shopName, shopId, choice.size, 1, choice.color);
 }

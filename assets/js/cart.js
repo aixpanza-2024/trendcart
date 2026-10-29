@@ -448,14 +448,14 @@ if (window.location.pathname.includes('cart.html')) {
 /* ===================================
    QUICK ADD TO CART (with animation)
    =================================== */
-function quickAddToCart(button, productId, productName, productPrice, productImage, shopName, shopId, size, qty = 1) {
+function quickAddToCart(button, productId, productName, productPrice, productImage, shopName, shopId, size, qty = 1, color = null) {
     // Add loading state to button
     const originalHTML = button.innerHTML;
     button.disabled = true;
     button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Adding...';
 
     setTimeout(() => {
-        addToCart(productId, productName, productPrice, productImage, shopName, shopId || null, size || null, null, qty);
+        addToCart(productId, productName, productPrice, productImage, shopName, shopId || null, size || null, color || null, qty);
 
         // Reset button
         button.disabled = false;
@@ -470,6 +470,108 @@ function quickAddToCart(button, productId, productName, productPrice, productIma
             button.innerHTML = originalHTML;
         }, 2000);
     }, 500);
+}
+
+/* ===================================
+   PRODUCT CARD OPTIONS — colour + size buttons on home / listing cards
+   (api/customer/products.php sends colors "Red|Blue" and, for stock split
+   by colour, variants_stock "Red|M:5,Red|L:0")
+   =================================== */
+function _cardEsc(s) {
+    return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+/** colour -> { size: stock } for products whose stock is split by colour. */
+function _cardVariantStock(vs) {
+    const map = {};
+    (vs || '').split(',').forEach(pair => {
+        const bar = pair.indexOf('|'), colon = pair.lastIndexOf(':');
+        if (bar < 0 || colon < bar) return;
+        const color = pair.substring(0, bar), size = pair.substring(bar + 1, colon);
+        (map[color] = map[color] || {})[size] = parseInt(pair.substring(colon + 1)) || 0;
+    });
+    return map;
+}
+
+function cardColorRow(p) {
+    const colors = (p.colors || '').split('|').map(c => c.trim()).filter(Boolean);
+    if (!colors.length) return '';
+    const stock = _cardVariantStock(p.variants_stock);
+    const split = Object.keys(stock).length > 0;
+    return `<div class="card-size-row card-color-row mb-2" data-vs="${_cardEsc(p.variants_stock || '')}">
+               <span class="card-size-label">Colour:</span>
+               ${colors.map(c => {
+                   const oos = split && !Object.values(stock[c] || {}).some(n => n > 0);
+                   return `<button type="button" class="card-size-btn card-color-btn${oos ? ' oos' : ''}"
+                       ${oos ? 'disabled title="Out of stock"' : 'onclick="cardSelectColor(this)"'}
+                       data-color="${_cardEsc(c)}">${_cardEsc(c)}</button>`;
+               }).join('')}
+           </div>`;
+}
+
+function _cardSizeButtons(card) {
+    return card ? card.querySelectorAll('.card-size-row:not(.card-color-row) .card-size-btn') : [];
+}
+
+function cardActiveSize(card) {
+    return card ? card.querySelector('.card-size-row:not(.card-color-row) .card-size-btn.active') : null;
+}
+
+function _cardResetQty(card) {
+    const display = card ? card.querySelector('.card-qty-display') : null;
+    const amount  = card ? card.querySelector('.card-qty-amount')  : null;
+    const price   = parseFloat(card ? card.dataset.price : 0) || 0;
+    if (display) display.textContent = '1';
+    if (amount && price) amount.textContent = '₹' + price.toLocaleString('en-IN');
+}
+
+function cardSelectSize(btn) {
+    btn.closest('.card-size-row').querySelectorAll('.card-size-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    _cardResetQty(btn.closest('.product-card, .na-card'));
+}
+
+/** Pick a colour; when stock is split by colour, sizes not in it become out of stock. */
+function cardSelectColor(btn) {
+    const row  = btn.closest('.card-color-row');
+    const card = btn.closest('.product-card, .na-card');
+    row.querySelectorAll('.card-color-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+
+    const stock = _cardVariantStock(row.dataset.vs)[btn.dataset.color];
+    if (stock) {
+        _cardSizeButtons(card).forEach(s => {
+            const n = stock[s.dataset.size] || 0;
+            s.dataset.stock = n;
+            s.disabled = n <= 0;
+            s.classList.toggle('oos', n <= 0);
+            if (n <= 0) {
+                s.classList.remove('active');
+                s.title = 'Out of stock in ' + btn.dataset.color;
+                s.removeAttribute('onclick');
+            } else {
+                s.title = '';
+                s.setAttribute('onclick', 'cardSelectSize(this)');
+            }
+        });
+    }
+    _cardResetQty(card);
+}
+
+/**
+ * The colour and size chosen on a card, or null (with a message) when one is
+ * still missing — so the cart only ever gets a complete choice.
+ */
+function cardChoice(card) {
+    const colorRow = card ? card.querySelector('.card-color-row') : null;
+    const color    = colorRow ? colorRow.querySelector('.card-color-btn.active') : null;
+    if (colorRow && !color) { showToast('Please select a colour first', 'error'); return null; }
+
+    const hasSizes = _cardSizeButtons(card).length > 0;
+    const size     = cardActiveSize(card);
+    if (hasSizes && !size) { showToast('Please select a size first', 'error'); return null; }
+
+    return { color: color ? color.dataset.color : null, size: size ? size.dataset.size : null, sizeBtn: size };
 }
 
 /* ===================================
