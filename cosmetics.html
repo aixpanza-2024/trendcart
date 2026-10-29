@@ -55,7 +55,21 @@
             <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
+            <!-- Main categories (All / Men / Women / Kids ...) — clicking one swaps
+                 the subcategory circles below; loaded by loadSuperCategoryTabs() -->
+            <div class="nav-super-cats" id="superCatTabs"><!-- Loaded dynamically --></div>
             <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav nav-main-links">
+                    <li class="nav-item">
+                        <a class="nav-link" href="pages/shops.html?vertical=cosmetics">Shops</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="index.html">Dress</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="pages/products.html?vertical=cosmetics">Products</a>
+                    </li>
+                </ul>
                 <form class="navbar-search-form d-flex" onsubmit="navProductSearch(event)">
                     <div class="input-group">
                         <input type="text" class="form-control nav-search-input" id="navSearchInput"
@@ -66,15 +80,6 @@
                     </div>
                 </form>
                 <ul class="navbar-nav align-items-center ms-2">
-                    <li class="nav-item">
-                        <a class="nav-link" href="pages/shops.html?vertical=cosmetics">Shops</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="index.html">Dress</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="pages/products.html?vertical=cosmetics">Products</a>
-                    </li>
                     <li class="nav-item auth-buttons">
                         <a class="nav-link" href="pages/login.html">
                             <i class="fas fa-user me-1"></i>Login
@@ -96,8 +101,8 @@
         </div>
     </nav>
 
-    <!-- Category + Subcategory Row: All/Skincare/Makeup..., a divider, then the
-         subcategory circles, ending in a plain "view all" arrow -->
+    <!-- Subcategory circles for the main category picked in the navbar,
+         ending in a plain "view all" arrow -->
     <section class="cat-circles-section" style="display:none;">
         <div class="container-xl px-4">
             <div class="cat-scroll-row">
@@ -105,8 +110,6 @@
                     <i class="fas fa-chevron-left"></i>
                 </button>
                 <div class="cat-scroll-track" id="catScrollTrack">
-                    <div class="cat-pills-wrap" id="superCatTabs"><!-- Loaded dynamically --></div>
-                    <div class="cat-row-divider" id="catRowDivider" hidden></div>
                     <div class="cat-items-wrap" id="catItemsWrap"><!-- Loaded dynamically --></div>
                 </div>
                 <button type="button" class="cat-scroll-btn cat-scroll-right" id="catScrollRight" onclick="scrollCategories(1)" aria-label="Scroll right" hidden>
@@ -358,20 +361,6 @@
         .cat-pills-wrap, .cat-items-wrap {
             display: contents;
         }
-        /* Thin vertical pipe between the All/Skincare/Makeup pills and the
-           subcategory circles — only shown once the pills have loaded. */
-        .cat-row-divider {
-            flex: 0 0 auto;
-            width: 1px;
-            align-self: stretch;
-            margin: 4px 8px;
-            background: rgba(255,255,255,0.2);
-        }
-        body.theme-men .cat-row-divider,
-        body.theme-women .cat-row-divider,
-        body.theme-kids .cat-row-divider {
-            background: rgba(26,26,26,0.15);
-        }
         /* Plain "view all" arrow at the end of the row — no label text */
         .cat-row-arrow {
             flex: 0 0 auto;
@@ -493,29 +482,47 @@
             .cat-scroll-btn { width: 24px; height: 24px; font-size: 10px; }
         }
 
-        /* ── Super Category Tabs ── */
-        /* These pills now render as the first items in the single category/
-           subcategory row; the row's own background (below) covers them. */
+        /* ── Main categories in the navbar (All / Men / Women / Kids ...) ── */
+        /* Text tabs beside the logo with an underline on the active one; on a
+           phone they drop to their own scrollable row under the logo. */
+        .nav-super-cats {
+            display: flex;
+            align-self: stretch;
+            align-items: stretch;
+            margin-left: 1.5rem;
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+        .nav-super-cats::-webkit-scrollbar { display: none; }
+        .nav-super-cats:empty { display: none; }
         .super-cat-tab {
             flex: 0 0 auto;
-            border: 1px solid rgba(255,255,255,0.18);
+            border: 0;
+            border-bottom: 3px solid transparent;
             background: transparent;
             color: #fff;
-            font-size: 11.5px;
+            font-size: 13px;
             font-weight: 700;
             letter-spacing: 0.6px;
             text-transform: uppercase;
-            padding: 6px 18px;
-            border-radius: 20px;
+            padding: 0 14px;
             cursor: pointer;
             white-space: nowrap;
-            transition: background 0.15s, color 0.15s, border-color 0.15s;
+            transition: border-color 0.15s, opacity 0.15s;
         }
-        .super-cat-tab:hover { background: rgba(255,255,255,0.1); }
-        .super-cat-tab.active {
-            background: #fff;
-            color: #1a1a1a;
-            border-color: #fff;
+        .super-cat-tab:hover { border-bottom-color: rgba(255,255,255,0.45); }
+        .super-cat-tab.active { border-bottom-color: #fff; }
+        .nav-main-links { flex-direction: row; align-items: center; }
+        .super-cat-tab { padding-top: 3px; } /* offsets the 3px underline so text lines up with the links */
+        @media (max-width: 991.98px) {
+            nav.navbar > .container-fluid { flex-wrap: wrap !important; }
+            .nav-super-cats {
+                order: 10;
+                flex: 0 0 100%;
+                margin: 6px 0 0;
+                height: 38px;
+            }
+            .super-cat-tab { padding: 0 12px; font-size: 12px; }
         }
 
         /* ── Category mood themes — nav + tabs + circles only, this page ── */
@@ -602,14 +609,17 @@
         body.theme-men .super-cat-tab,
         body.theme-women .super-cat-tab,
         body.theme-kids .super-cat-tab {
-            background: rgba(255,255,255,0.75);
-            border-color: rgba(26,26,26,0.12);
-            color: #4a4038;
+            color: #1a1a1a;
         }
         body.theme-men .super-cat-tab:hover,
         body.theme-women .super-cat-tab:hover,
         body.theme-kids .super-cat-tab:hover {
-            background: rgba(255,255,255,0.95);
+            border-bottom-color: rgba(26,26,26,0.35);
+        }
+        body.theme-men .super-cat-tab.active,
+        body.theme-women .super-cat-tab.active,
+        body.theme-kids .super-cat-tab.active {
+            border-bottom-color: #1a1a1a;
         }
         body.theme-men .cat-name,
         body.theme-women .cat-name,
@@ -760,9 +770,8 @@
         // The whole row (pills + circles) collapses when neither has anything to
         // show, so an empty vertical doesn't leave a blank padded bar on screen.
         function updateRowVisibility() {
-            const hasPills = document.getElementById('superCatTabs').children.length > 0;
             const hasItems = document.getElementById('catItemsWrap').children.length > 0;
-            document.querySelector('.cat-circles-section').style.display = (hasPills || hasItems) ? '' : 'none';
+            document.querySelector('.cat-circles-section').style.display = hasItems ? '' : 'none';
         }
 
         function renderCategoryItems(superCategoryId, data) {
@@ -839,9 +848,6 @@
                         <button class="super-cat-tab${i === 0 ? ' active' : ''}" data-super-category-id="${t.super_category_id}">
                             ${t.super_category_name}
                         </button>`).join('');
-                    document.getElementById('catRowDivider').hidden = false;
-                    updateRowVisibility();
-                    requestAnimationFrame(updateCatScrollBtns);
                 })
                 .catch(() => {});
 
