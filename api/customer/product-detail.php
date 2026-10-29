@@ -8,6 +8,7 @@ header('Content-Type: application/json');
 require_once __DIR__ . '/../config/session.php';
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../utils/CustomerLocation.php';
+require_once __DIR__ . '/../utils/TrendingProducts.php';
 
 try {
     $database = new Database();
@@ -47,6 +48,9 @@ try {
         echo json_encode(['success' => false, 'message' => 'Product not found']);
         exit;
     }
+
+    // Counts towards the homepage "Trending Now" row
+    TrendingProducts::recordView($conn, $product_id);
 
     // All images (primary first)
     $imgStmt = $conn->prepare("

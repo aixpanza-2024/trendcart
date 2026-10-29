@@ -6,6 +6,7 @@
 
 header('Content-Type: application/json');
 require_once '../config/database.php';
+require_once '../utils/TrendingProducts.php';
 
 try {
     $database = new Database();
@@ -51,10 +52,13 @@ try {
         $variants_stock_expr = "(SELECT GROUP_CONCAT(CONCAT(pv.color_name,'|',pv.size_label,':',pv.stock_quantity) ORDER BY pv.display_order SEPARATOR ',') FROM product_variants pv WHERE pv.product_id = p.product_id AND pv.color_name <> '') AS variants_stock";
     } catch (\PDOException $e) { /* table absent */ }
 
+    // sort=trending: this week's views + wishlist saves + orders (see TrendingProducts)
+    $trend_expr = $sort === 'trending' ? TrendingProducts::scoreSql($conn) : '0 AS trend_score';
+
     $sql = "SELECT p.product_id, p.product_name, p.price, p.original_price,
                    p.discount_percentage, p.product_description,
                    p.category_id, p.created_at, p.orders_count,
-                   $size_expr, $sizes_stock_expr, $colors_expr, $variants_stock_expr,
+                   $size_expr, $sizes_stock_expr, $colors_expr, $variants_stock_expr, $trend_expr,
                    s.shop_id, s.shop_name,
                    c.category_name,
                    (SELECT image_url FROM product_images
@@ -114,6 +118,8 @@ try {
         case 'price-high': $sql .= " ORDER BY p.price DESC";            break;
         case 'newest':     $sql .= " ORDER BY p.created_at DESC";       break;
         case 'popular':    $sql .= " ORDER BY p.orders_count DESC";     break;
+        // only products with some interest this week; ties go to the newest
+        case 'trending':   $sql .= " HAVING trend_score > 0 ORDER BY trend_score DESC, p.created_at DESC"; break;
         default:           $sql .= " ORDER BY p.is_featured DESC, p.created_at DESC";
     }
 

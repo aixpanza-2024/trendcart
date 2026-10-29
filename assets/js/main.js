@@ -101,7 +101,7 @@ function _loadLocationPicker() {
     const path = window.location.pathname.replace(/\\/g, '/');
     if (/\/(shop|admin)\//.test(path) || !document.querySelector('nav.navbar .navbar-brand')) return;
     const s = document.createElement('script');
-    s.src = (/\/pages\//.test(path) ? '../' : '') + 'assets/js/location-picker.js?v=20261029b';
+    s.src = (/\/pages\//.test(path) ? '../' : '') + 'assets/js/location-picker.js?v=20261029c';
     document.body.appendChild(s);
 }
 

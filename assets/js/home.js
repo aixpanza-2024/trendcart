@@ -9,7 +9,8 @@ const HOME_VERTICAL = document.body.dataset.vertical === 'cosmetics' ? 'cosmetic
 document.addEventListener('DOMContentLoaded', () => {
     loadProductSection('offersTrack', 'on_offer=1', 'offer', 'No offers right now.');
     loadProductSection('productsTrack', '', null, 'No products available yet.');
-    loadProductSection('bestSellersTrack', 'sort=popular', 'bestseller', 'No best sellers yet.');
+    // Trending: hidden altogether until something has views / saves / orders this week
+    loadProductSection('trendingTrack', 'sort=trending', 'trending', null);
 });
 
 async function loadProductSection(trackId, queryParams, badge, emptyMessage) {
@@ -24,6 +25,7 @@ async function loadProductSection(trackId, queryParams, badge, emptyMessage) {
         const data = await res.json();
 
         if (!data.success || !data.data.length) {
+            if (!emptyMessage) { track.closest('section').style.display = 'none'; return; }
             track.innerHTML = `<div class="text-center py-4 w-100" style="color:rgba(255,255,255,0.4)">${emptyMessage}</div>`;
             return;
         }
@@ -46,8 +48,8 @@ function buildArrivalCard(p, badge) {
         : '';
     const cornerBadge = badge === 'offer' && parseFloat(p.discount_percentage) > 0
         ? `<span class="na-badge-new" style="background:#dc3545;">${Math.round(p.discount_percentage)}% OFF</span>`
-        : badge === 'bestseller'
-            ? `<span class="na-badge-new" style="background:#c9995c;">Bestseller</span>`
+        : badge === 'trending'
+            ? `<span class="na-badge-new" style="background:#e4572e;"><i class="fas fa-fire me-1"></i>Trending</span>`
             : '';
 
     const safeName = p.product_name.replace(/'/g, "\\'");

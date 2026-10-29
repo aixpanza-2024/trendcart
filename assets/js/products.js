@@ -12,6 +12,8 @@ let displayLimit = PAGE_SIZE;
 // Dress and Cosmetics are separate storefronts — carried through from the
 // homepage link or any other page that already knows which one we're in.
 const PAGE_VERTICAL = new URLSearchParams(window.location.search).get('vertical') === 'cosmetics' ? 'cosmetics' : 'dress';
+// ?sort=trending — "View All Trending" from the homepage; the API ranks them
+const PAGE_TRENDING = new URLSearchParams(window.location.search).get('sort') === 'trending';
 
 document.addEventListener('DOMContentLoaded', function () {
     const urlParams       = new URLSearchParams(window.location.search);
@@ -72,6 +74,7 @@ async function loadProducts(shopId, categoryId, superCategoryId, onOffer) {
         if (categoryId)      params.set('category_id', categoryId);
         if (superCategoryId) params.set('super_category_id', superCategoryId);
         if (onOffer)          params.set('on_offer', '1');
+        if (PAGE_TRENDING)    params.set('sort', 'trending');
         params.set('vertical', PAGE_VERTICAL);
 
         const res  = await fetch('../api/customer/products.php?' + params);
@@ -130,6 +133,12 @@ async function loadProducts(shopId, categoryId, superCategoryId, onOffer) {
             const subEl   = document.querySelector('#shopHeaderDefault .pb-sub');
             if (titleEl) titleEl.textContent = sc.super_category_name;
             if (subEl)   subEl.textContent   = `Browse everything in ${sc.super_category_name}`;
+        } else if (PAGE_TRENDING) {
+            document.title = 'Trending Now - TrenCart';
+            const titleEl = document.querySelector('#shopHeaderDefault .pb-title');
+            const subEl   = document.querySelector('#shopHeaderDefault .pb-sub');
+            if (titleEl) titleEl.textContent = 'Trending Now';
+            if (subEl)   subEl.textContent   = 'What shoppers are viewing, saving and ordering this week';
         } else if (onOffer) {
             // Offers view — reuse the default header, just retitle it
             document.title = "Today's Offers - TrenCart";
